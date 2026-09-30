@@ -53,6 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...classes.map((c) => `/classes/${c.slug}`),
     "/countries",
     ...countries.map((c) => `/countries/${c.iso2}`),
+    "/interactions",
     "/study",
     "/study/past-papers",
     "/study/lessons",

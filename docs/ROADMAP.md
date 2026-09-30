@@ -127,6 +127,11 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [ ] Real CDSCO data: needs a person to check terms and extract the PDF tables (not automated, not fetched)
 - [ ] Regional-language UI (Hindi/Urdu) and India-specific units/label conventions: not started (needs translation resources)
 ## Phase 12: AI Intelligence
+- [x] Deterministic interaction checker (`/interactions`, API `/interactions/check/`): reviewed interactions only, severity-sorted, sources, explicit "no result is not safe" note
+- [x] Grounded assistant (`apps/assistant`, `/ask`), 21 tests with a fake model: only reviewed records are retrieved; no record -> the model is never called; answer must be JSON citing only provided records; every number must appear in those records (invented/computed doses are discarded); failures return just the related records; prompt-injection test; login required, throttled (20/h), every question and outcome logged for audit; disabled without `ANTHROPIC_API_KEY`
+- [ ] Real-model path untested: no API key here (set `ANTHROPIC_API_KEY`, optional `ASSISTANT_MODEL`, default `claude-opus-5-5`); review the first answers in the Django admin (AssistantLog) before promoting it
+- [ ] Not started: semantic/vector search, OCR/label extraction, AI-drafted content (all would need the same reviewed-record gate)
+- [x] CI fixed to run without `api/.env` (DEBUG/SECRET_KEY env; verified locally with `.env` hidden, 162 tests); Postgres job added as informational (`continue-on-error`) until first seen green
 ## Phase 13: PWA + Performance
 ## Phase 14: Production Hardening
 

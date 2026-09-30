@@ -32,3 +32,9 @@ Config is in `api/pyproject.toml` (`[tool.vercel] entrypoint`) and `api/vercel.j
 
 ## Web on Vercel
 Project Root Directory = `web`. Env vars: `API_URL` (server-side proxy target and data fetching), `NEXT_PUBLIC_API_URL` (only for the Django-admin link in the review panel), `NEXT_PUBLIC_SITE_URL` (canonical origin for sitemap/robots). Deploy the API first so the proxy target exists. `npm run build` was verified locally against a running API.
+
+## Optional AI assistant
+Set `ANTHROPIC_API_KEY` (and optionally `ASSISTANT_MODEL`) on the API project to switch on `/ask`. Without a key the page lists matching reviewed records and says the assistant is off. Each question costs API tokens; the per-user limit is 20 per hour (`REST_FRAMEWORK` rate `assistant`). Review `AssistantLog` in the Django admin regularly.
+
+## Scheduler
+Set `CRON_SECRET` on the API project; Vercel Cron (`api/vercel.json`) then calls `/api/v1/cron/link-check/` daily and `/api/v1/cron/feeds/` every 6 hours with that secret. Without it the endpoints refuse every call.

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.ingestion",
     "apps.opportunities",
     "apps.automation",
+    "apps.assistant",
 ]
 
 MIDDLEWARE = [
@@ -120,12 +121,17 @@ REST_FRAMEWORK = {
         "user": "600/min",
         "auth": "10/min",
         "submit": "20/hour",
+        "assistant": "20/hour",
     },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "EXCEPTION_HANDLER": "apps.core.errors.api_exception_handler",
 }
 SPECTACULAR_SETTINGS = {"TITLE": "Veterinary Intelligence Platform API", "VERSION": "0.1.0"}
+
+# Optional. Without a key the assistant only lists matching reviewed records.
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="claude-opus-5-5")
 
 # Shared secret for scheduler-triggered tasks (/api/v1/cron/<task>/). Empty = endpoint disabled.
 CRON_SECRET = env("CRON_SECRET", default="")

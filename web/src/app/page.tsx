@@ -12,6 +12,12 @@ const TOOLS = [
     title: "All calculators",
     desc: "Dilution, fluids, infusion, CRI, flock water dose, withdrawal date",
   },
+  { href: "/interactions", title: "Interaction checker", desc: "Reviewed drug-drug interactions" },
+  {
+    href: "/ask",
+    title: "Ask the reference",
+    desc: "Answers only from reviewed records, with citations",
+  },
   { href: "/study", title: "Study", desc: "Mock exams from reviewed questions" },
 ];
 
