@@ -90,7 +90,7 @@ def test_approve_creates_only_unreviewed_records_with_source(env):
 def test_second_row_for_same_brand_becomes_duplicate_and_bulk_approve_skips_bad_rows(env):
     batch = stage(env)
     result = services.approve_clean(batch, env["user"])
-    assert result == {"approved": 1, "skipped": 1, "remaining": 0}
+    assert result == {"approved": 1, "skipped": 1, "retried": 0, "remaining": 0}
     dup = batch.rows.get(row_number=2)
     dup.refresh_from_db()
     with pytest.raises(ValidationError, match="already exists"):

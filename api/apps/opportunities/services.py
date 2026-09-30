@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Role
 from apps.core.models import AuditLog
+from apps.push import service as push
 
 from .models import Job, Listing, ListingReport, ListingStatus, Scholarship
 
@@ -14,6 +15,14 @@ KINDS = {"jobs": Job, "scholarships": Scholarship}
 MODERATOR_ROLES = {Role.MODERATOR, Role.ADMIN}
 REPORTS_TO_UNPUBLISH = 3
 MAX_PENDING_PER_USER = 5
+
+
+def _tell_submitter(listing: Listing, title: str, body: str) -> None:
+    """Push a short notice to the person who posted it, once the decision is saved."""
+    kind = "jobs" if isinstance(listing, Job) else "scholarships"
+    path = f"/{kind}/{listing.pk}" if listing.status == ListingStatus.APPROVED else "/account"
+    user = listing.submitted_by
+    transaction.on_commit(lambda: push.notify(user, title, body, path))
 
 
 def _check_moderator(user):
@@ -64,6 +73,7 @@ def approve(listing: Listing, by, note: str = "") -> Listing:
         content_type=ContentType.objects.get_for_model(listing), object_id=listing.pk
     ).delete()
     _audit(by, "listing_approved", listing, "pending", "approved", note)
+    _tell_submitter(listing, "Your listing is live", listing.title)
     if cleared:
         AuditLog.objects.create(
             actor=by,
@@ -89,6 +99,7 @@ def reject(listing: Listing, by, note: str) -> Listing:
     listing.moderation_note = note.strip()[:300]
     listing.save()
     _audit(by, "listing_rejected", listing, before, "rejected", note)
+    _tell_submitter(listing, "Your listing was not approved", listing.title)
     return listing
 
 

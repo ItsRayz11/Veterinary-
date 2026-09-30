@@ -22,7 +22,8 @@ Header names are case-insensitive; common aliases (`brand`, `product`, `generic`
 Limits: 2 MB, 5000 rows per file. Strengths, packs and ingredients are not imported; add them in the admin.
 
 ## What is deliberately not done
-- No fetcher pulls from DRAP, CDSCO or any site. The per-source checklist in `DATA_SOURCES.md` (terms, robots.txt, API/bulk access, scope, legal sign-off) is still unfilled for every source, so none is enabled.
+- No fetcher pulls from DRAP, CDSCO or any site. Files that a person (or this project's owner) downloaded from a public download link are imported with `manage.py import_products <adapter> <file> --country XX --source-title ... --publisher ... --url ... --license-note ...` (adapters: `standard`, `drap-vet-applications`, `drap-vet-biologicals`). It resumes by file checksum, can run in parallel with `--shard i/n`, and always creates unreviewed, hidden records.
+- DRAP's online product registry carries a notice that it must not be used as a reference, so it is not scraped. The per-source checklist in `DATA_SOURCES.md` (terms, robots.txt, API/bulk access, scope, legal sign-off) is still unfilled for every source, so none is enabled.
 - The importer does not decide that a record is correct; it only records where it came from.
 - Prices and doses are not imported here. They have their own governed models.
 
@@ -30,8 +31,8 @@ Limits: 2 MB, 5000 rows per file. Strengths, packs and ingredients are not impor
 | Source | Terms checked | robots.txt | Bulk/API | Scope | Legal sign-off | Enabled |
 |---|---|---|---|---|---|---|
 | DRAP product database | no | no | no | unknown (vet vs human) | no | no |
-| DRAP veterinary application lists | no | no | no | applications, not registrations | no | no |
-| CDSCO veterinary approvals | no | no | no | unknown | no | no |
+| DRAP veterinary application lists | downloaded as public CSV files; no reuse licence stated | n/a (direct file links) | files | applications, not registrations | **no: legal review needed before any public release** | imported 2026-09-30 for internal review only (420 veterinary + 102 biologicals applications, hidden) |
+| CDSCO veterinary approvals | no | site unreachable from the build machine | PDFs | unknown | no | no (files to be supplied by a person) |
 | openFDA / DailyMed animal labels | no | no | API exists (unconfirmed terms) | US only | no | no |
 
 ## India (and any other country)

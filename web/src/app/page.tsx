@@ -29,7 +29,7 @@ const BROWSE = [
 
 export default function Home() {
   return (
-    <main className="mx-auto max-w-2xl space-y-8 pt-6">
+    <div className="mx-auto max-w-2xl space-y-8 pt-6">
       <div className="space-y-3">
         <h1 className="text-xl font-semibold">Veterinary drug reference</h1>
         <SearchBox />
@@ -67,6 +67,6 @@ export default function Home() {
           ))}
         </ul>
       </section>
-    </main>
+    </div>
   );
 }

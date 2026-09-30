@@ -18,6 +18,9 @@
 - `DEBUG=false` (enables secure cookies, HTTPS redirect, HSTS), real `SECRET_KEY`
 - `SHOW_DEVELOPMENT_DATA=false`
 - Create a superuser and the reviewer accounts through the admin
+- Security env on the API project: `REQUIRE_STAFF_MFA` (default on when `DEBUG` is off), `MFA_ENCRYPTION_KEY` (a Fernet key; generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`; losing it means staff must re-enrol), `LOGIN_MAX_FAILURES`, `LOGIN_LOCK_SECONDS`, `WEB_PROXY_SECRET` (same value on the web project)
+- Optional: `SENTRY_DSN` (error monitoring), `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` (web push; `python manage.py generate_vapid_keys`; keep the private key secret and never change the public key once users have subscribed)
+- Search uses `pg_trgm` on Postgres: migration `pharma/0002` runs `CREATE EXTENSION pg_trgm` (Neon allows it)
 
 ## API on Vercel
 Config is in `api/pyproject.toml` (`[tool.vercel] entrypoint`) and `api/vercel.json` (collectstatic at build, function excludes). Static/admin assets are served by WhiteNoise.

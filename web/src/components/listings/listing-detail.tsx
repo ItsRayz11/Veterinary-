@@ -17,7 +17,7 @@ export function ListingDetail({ kind, item }: { kind: Kind; item: Listing }) {
           ["Country", item.country_name ?? ""],
         ];
   return (
-    <main className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4">
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -71,6 +71,6 @@ export function ListingDetail({ kind, item }: { kind: Kind; item: Listing }) {
           Back to {L.plural.toLowerCase()}
         </Link>
       </p>
-    </main>
+    </div>
   );
 }

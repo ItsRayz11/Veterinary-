@@ -15,7 +15,7 @@ export default async function Page({ searchParams }: PageProps<"/calculators/dos
   const sp = await searchParams;
   const label = typeof sp.label === "string" ? sp.label.slice(0, 120) : "";
   return (
-    <main className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4">
       <Breadcrumbs
         items={[{ label: "Home", href: "/" }, { label: "Calculators" }, { label: "Dose" }]}
       />
@@ -29,6 +29,6 @@ export default async function Page({ searchParams }: PageProps<"/calculators/dos
         presetDoseMax={num(sp.dose_max)}
         presetLabel={num(sp.dose) ? label : ""}
       />
-    </main>
+    </div>
   );
 }

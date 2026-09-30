@@ -1,10 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import { Alert } from "@/components/ui/primitives";
+import { reportError } from "@/lib/report-error";
 
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+  useEffect(() => {
+    // Expected "service unreachable" states are not bugs in our code; everything else is reported.
+    if (!error.message.includes("unreachable")) reportError(error, "Page error");
+  }, [error]);
   return (
-    <main className="mx-auto max-w-xl space-y-3 pt-8">
+    <div className="mx-auto max-w-xl space-y-3 pt-8">
       <Alert tone="danger" title="Something went wrong">
         {error.message.includes("unreachable")
           ? "The data service is currently unreachable. Nothing has been lost; please try again shortly."
@@ -17,6 +23,6 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
       >
         Try again
       </button>
-    </main>
+    </div>
   );
 }

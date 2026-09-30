@@ -1,11 +1,14 @@
 """Global search across generics, brands and companies.
 
 Case-insensitive, accent-insensitive (via normalised columns), synonym-aware, with a small
-typo-tolerant fallback. This is the SQLite-safe baseline; on Postgres it is replaced by
-pg_trgm/FTS behind the same `search()` interface (see docs/ARCHITECTURE.md).
+typo-tolerant fallback: pg_trgm similarity on Postgres (GIN indexes from pharma 0002), difflib
+on SQLite (tests, local dev).
 """
 
 from difflib import get_close_matches
+
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db import connection
 
 from apps.companies.models import Company
 from apps.core.text import normalize_name
@@ -35,7 +38,33 @@ def _generics(q: str):
     return sorted(out, key=lambda g: (_rank(g.name, q), g.name))[:LIMIT]
 
 
+TRIGRAM_CUTOFF = 0.3
+
+
+def _trigram_generics(q: str):
+    """Postgres: rank generics and synonyms by trigram similarity (uses the GIN indexes)."""
+    by_name = (
+        Generic.objects.public()
+        .annotate(sim=TrigramSimilarity("normalized_name", q))
+        .filter(sim__gte=TRIGRAM_CUTOFF)
+    )
+    by_syn = (
+        GenericSynonym.objects.filter(generic__in=Generic.objects.public())
+        .annotate(sim=TrigramSimilarity("normalized_synonym", q))
+        .filter(sim__gte=TRIGRAM_CUTOFF)
+        .select_related("generic")
+    )
+    scored = {g.pk: (g.sim, g) for g in by_name}
+    for s in by_syn:
+        if s.generic_id not in scored or scored[s.generic_id][0] < s.sim:
+            scored[s.generic_id] = (s.sim, s.generic)
+    ranked = sorted(scored.values(), key=lambda t: (-t[0], t[1].name))
+    return [g for _, g in ranked[:LIMIT]]
+
+
 def _fuzzy_generics(q: str):
+    if connection.vendor == "postgresql":
+        return _trigram_generics(q)
     names = {g.normalized_name: g for g in Generic.objects.public()}
     for syn in GenericSynonym.objects.filter(generic__in=Generic.objects.public()).select_related(
         "generic"

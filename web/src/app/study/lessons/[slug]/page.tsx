@@ -26,7 +26,7 @@ export default async function LessonPage({ params }: PageProps<"/study/lessons/[
   const { slug } = await params;
   const l = await apiGet<LessonDetail>(`/study/lessons/${slug}/`);
   return (
-    <main className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4">
       <Breadcrumbs
         items={[
           { label: "Study", href: "/study" },
@@ -50,6 +50,6 @@ export default async function LessonPage({ params }: PageProps<"/study/lessons/[
       <Section id="sources" title="Sources">
         <SourcesList sources={l.sources} />
       </Section>
-    </main>
+    </div>
   );
 }

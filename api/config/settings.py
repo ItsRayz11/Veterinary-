@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "apps.opportunities",
     "apps.automation",
     "apps.assistant",
+    "apps.monitoring",
+    "apps.push",
 ]
 
 MIDDLEWARE = [
@@ -52,6 +54,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.StaffMFAMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
@@ -127,6 +130,7 @@ REST_FRAMEWORK = {
         "auth": "10/min",
         "submit": "20/hour",
         "assistant": "20/hour",
+        "client_error": "30/hour",
         "submit_listing": "20/hour",
         "report": "30/hour",
     },
@@ -153,6 +157,28 @@ CSRF_COOKIE_SAMESITE = "Lax"
 # JSON bodies are small; the largest is a 2 MB CSV import wrapped in JSON.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 200
+
+# Optional error monitoring for server errors; empty = off. Personal data is never sent.
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    from apps.monitoring import sentry as _sentry
+
+    _sentry.init(
+        SENTRY_DSN,
+        environment=env("SENTRY_ENVIRONMENT", default="production" if not DEBUG else "development"),
+        traces=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+    )
+
+# Two-factor authentication (apps/accounts/mfa.py). Mandatory for staff in production; off by
+# default in DEBUG so local development and tests do not need an authenticator app.
+REQUIRE_STAFF_MFA = env.bool("REQUIRE_STAFF_MFA", default=not DEBUG)
+# A Fernet key: Fernet.generate_key() from the `cryptography` package, urlsafe-base64, 32 bytes.
+# Set it before enrolling real users; otherwise the key derives from SECRET_KEY.
+MFA_ENCRYPTION_KEY = env("MFA_ENCRYPTION_KEY", default="")
+
+# Per-account sign-in lockout (apps/accounts/lockout.py).
+LOGIN_MAX_FAILURES = env.int("LOGIN_MAX_FAILURES", default=8)
+LOGIN_LOCK_SECONDS = env.int("LOGIN_LOCK_SECONDS", default=900)
 
 # Shared with the web app (same variable name there). When it matches the X-Web-Proxy-Secret
 # header, the API trusts X-Client-IP for per-IP throttling; without it every forwarding header is
@@ -194,3 +220,8 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "std"}},
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
 }
+
+# Web push (optional): generate keys with `manage.py generate_vapid_keys`. Off while unset.
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+VAPID_SUBJECT = env("VAPID_SUBJECT", default="mailto:admin@example.com")

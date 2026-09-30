@@ -44,7 +44,8 @@ class Topic(TimeStampedModel):
         if not self.slug:
             from django.utils.text import slugify
 
-            self.slug = slugify(self.name)[:150] or "topic"
+            limit = self._meta.get_field("slug").max_length or 50
+            self.slug = slugify(self.name)[:limit] or "topic"
         super().save(*args, **kwargs)
 
 

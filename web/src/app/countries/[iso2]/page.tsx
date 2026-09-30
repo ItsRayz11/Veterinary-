@@ -23,7 +23,7 @@ export default async function CountryPage({ params }: PageProps<"/countries/[iso
   const { iso2 } = await params;
   const c = await apiGet<CountryDetail>(`/countries/${iso2}/`);
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -72,6 +72,6 @@ export default async function CountryPage({ params }: PageProps<"/countries/[iso
           </tbody>
         </DataTable>
       )}
-    </main>
+    </div>
   );
 }

@@ -22,7 +22,7 @@ export default async function LessonsPage() {
   const bySubject = new Map<string, LessonRow[]>();
   for (const r of rows) bySubject.set(r.subject, [...(bySubject.get(r.subject) ?? []), r]);
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Lessons" }]} />
       <h1 className="text-xl font-semibold">Lessons</h1>
       {rows.length === 0 ? (
@@ -46,6 +46,6 @@ export default async function LessonsPage() {
           </section>
         ))
       )}
-    </main>
+    </div>
   );
 }

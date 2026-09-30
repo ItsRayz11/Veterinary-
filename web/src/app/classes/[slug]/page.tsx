@@ -23,7 +23,7 @@ export default async function ClassPage({ params }: PageProps<"/classes/[slug]">
   const { slug } = await params;
   const c = await apiGet<ClassDetail>(`/drug-classes/${slug}/`);
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -59,6 +59,6 @@ export default async function ClassPage({ params }: PageProps<"/classes/[slug]">
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

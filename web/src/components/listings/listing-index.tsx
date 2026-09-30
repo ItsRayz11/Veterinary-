@@ -13,7 +13,7 @@ function meta(l: Listing): string {
 export function ListingIndex({ kind, items }: { kind: Kind; items: Listing[] }) {
   const L = LABELS[kind];
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">{L.plural}</h1>
         <Link className="text-primary underline" href={L.newPath}>
@@ -46,6 +46,6 @@ export function ListingIndex({ kind, items }: { kind: Kind; items: Listing[] }) 
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

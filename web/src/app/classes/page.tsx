@@ -39,7 +39,7 @@ function Tree({ rows, parent }: { rows: ClassRow[]; parent: string | null }) {
 export default async function ClassesIndex() {
   const rows = await apiGet<ClassRow[]>("/drug-classes/");
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Drug classes" }]} />
       <h1 className="text-2xl font-semibold">Drug classes</h1>
       {rows.length === 0 ? (
@@ -47,6 +47,6 @@ export default async function ClassesIndex() {
       ) : (
         <Tree rows={rows} parent={null} />
       )}
-    </main>
+    </div>
   );
 }

@@ -32,7 +32,7 @@ def test_bulk_approval_works_in_bounded_chunks_and_always_makes_progress(env):  
     # six rows; the last repeats brand "C-0" of company "Scale Co 0" (a duplicate once row 1 exists)
     batch = stage(env, _csv("C", 5) + "C-0,Enrofloxacin,Scale Co 0,C-Rdup\n")
     first = services.approve_clean(batch, env["user"], limit=2)
-    assert first == {"approved": 2, "skipped": 0, "remaining": 4}
+    assert first == {"approved": 2, "skipped": 0, "retried": 0, "remaining": 4}
     second = services.approve_clean(batch, env["user"], limit=2)
     assert second["approved"] == 2 and second["remaining"] == 2
     third = services.approve_clean(batch, env["user"], limit=10)
@@ -42,6 +42,7 @@ def test_bulk_approval_works_in_bounded_chunks_and_always_makes_progress(env):  
     assert services.approve_clean(batch, env["user"]) == {
         "approved": 0,
         "skipped": 0,
+        "retried": 0,
         "remaining": 0,
     }
 

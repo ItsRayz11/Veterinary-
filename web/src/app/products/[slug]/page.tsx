@@ -24,7 +24,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   const prices = await apiGet<Prices>(`/products/${slug}/prices/`);
 
   return (
-    <main className="space-y-6">
+    <div className="space-y-6">
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -222,6 +222,6 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       <Section id="sources" title="Sources">
         <SourcesList sources={p.sources} />
       </Section>
-    </main>
+    </div>
   );
 }

@@ -7,18 +7,31 @@ link to the import's Source, and only become public through the normal review wo
 import csv
 import hashlib
 import io
+import json
+from decimal import Decimal, InvalidOperation
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models.functions import Mod
 from django.utils import timezone
 
 from apps.companies.models import Company, CompanyAlias
 from apps.core.models import AuditLog, ReviewStatus
 from apps.core.text import normalize_name
-from apps.pharma.models import Generic, GenericSynonym, Product, ProductRegistration
+from apps.pharma.models import (
+    DosageForm,
+    Generic,
+    GenericSynonym,
+    Ingredient,
+    Product,
+    ProductIngredient,
+    ProductPack,
+    ProductRegistration,
+)
 from apps.pharma.models import RegistrationStatus as RegStatus
 from apps.sources.models import Source, SourceLink
+from apps.units.models import Unit
 
 from .models import ImportBatch, RowStatus, StagedRecord
 
@@ -26,12 +39,15 @@ MAX_BYTES = 2_000_000
 MAX_ROWS = 5000
 REQUIRED = ("brand_name", "generic_name", "manufacturer")
 OPTIONAL = ("registration_number", "registration_status")
+# Optional detail columns. `ingredients` and `packs` hold JSON lists inside their CSV cells:
+#   ingredients: [{"name", "value", "unit", "per_value", "per_unit"}]
+#   packs:       [{"size", "unit", "form"}]   (form = dosage form slug)
+JSON_COLUMNS = ("ingredients", "packs")
 HEADER_ALIASES = {
     "brand": "brand_name",
     "product": "brand_name",
     "product_name": "brand_name",
     "generic": "generic_name",
-    "composition": "generic_name",
     "company": "manufacturer",
     "manufacturer_name": "manufacturer",
     "reg_no": "registration_number",
@@ -53,13 +69,26 @@ def parse_csv(text: str) -> list[dict]:
     if not reader.fieldnames:
         raise ValidationError("The file is empty.")
     mapping = {f: _header(f) for f in reader.fieldnames}
+    seen: dict[str, str] = {}
+    for original, canonical in mapping.items():
+        if (
+            canonical in seen
+        ):  # two columns meaning the same field would silently overwrite each other
+            raise ValidationError(
+                f"Columns '{seen[canonical]}' and '{original}' both mean '{canonical}'; keep one."
+            )
+        seen[canonical] = original
     missing = [c for c in REQUIRED if c not in mapping.values()]
     if missing:
         raise ValidationError(f"Missing required column(s): {', '.join(missing)}.")
     rows = []
     try:
         for raw in reader:
-            rows.append({mapping[k]: (v or "").strip() for k, v in raw.items() if k in mapping})
+            row = {mapping[k]: (v or "").strip() for k, v in raw.items() if k in mapping}
+            for column in JSON_COLUMNS:
+                if column in row:
+                    row[column] = _json_list(row[column], column)
+            rows.append(row)
             if len(rows) > MAX_ROWS:
                 raise ValidationError(f"More than {MAX_ROWS} rows; split the file.")
     except csv.Error as exc:
@@ -67,6 +96,18 @@ def parse_csv(text: str) -> list[dict]:
     if not rows:
         raise ValidationError("The file has a header but no rows.")
     return rows
+
+
+def _json_list(value: str, column: str) -> list:
+    if not value:
+        return []
+    try:
+        data = json.loads(value)
+    except ValueError as exc:
+        raise ValidationError(f"Column '{column}' must contain a JSON list.") from exc
+    if not isinstance(data, list) or not all(isinstance(x, dict) for x in data):
+        raise ValidationError(f"Column '{column}' must contain a JSON list of objects.")
+    return data
 
 
 def find_generic(name: str) -> Generic | None:
@@ -247,6 +288,82 @@ def _link(source: Source, obj) -> None:
     )
 
 
+def _decimal(value) -> Decimal | None:
+    try:
+        d = Decimal(str(value).replace(",", "").strip())
+    except (InvalidOperation, ValueError):
+        return None
+    return d if d.is_finite() and d > 0 else None
+
+
+def _truthy(value) -> bool:
+    return str(value).strip().lower() in ("1", "true", "yes", "y")
+
+
+def _apply_details(product: Product, generic: Generic, generic_created: bool, raw: dict) -> None:
+    """Notes, composition strengths and pack sizes from optional columns.
+
+    Only fully readable values become structured data; everything is left unreviewed, and the
+    original composition text is kept on the product so a reviewer can compare it with the source.
+    """
+    notes = str(raw.get("notes", "")).strip()
+    composition = str(raw.get("composition", "")).strip()
+    parts = [notes] if notes else []
+    if composition:
+        parts.append(f"Composition as stated by the source: {composition}")
+    unparsed = raw.get("ingredients") in (None, []) and composition
+    if unparsed:
+        parts.append("Strengths were not read automatically; check them against the source.")
+    fields = []
+    if parts:
+        product.description = "\n\n".join(parts)
+        fields.append("description")
+    if _truthy(raw.get("is_biologic", "")):
+        product.is_biologic, product.category = True, "Veterinary biological"
+        fields += ["is_biologic", "category"]
+    if fields:
+        product.save(update_fields=[*fields, "updated_at"])
+
+    units: dict[str, Unit | None] = {}
+
+    def unit(code):
+        if code not in units:
+            units[code] = Unit.objects.filter(code=code).first() if code else None
+        return units[code]
+
+    seen = set()
+    for ing in raw.get("ingredients") or []:
+        name, value, u = (
+            str(ing.get("name", "")).strip(),
+            _decimal(ing.get("value")),
+            unit(ing.get("unit")),
+        )
+        per_value = _decimal(ing.get("per_value")) or Decimal(1)
+        if not name or value is None or u is None or normalize_name(name) in seen:
+            continue
+        seen.add(normalize_name(name))
+        ingredient, _ = Ingredient.objects.get_or_create(
+            normalized_name=normalize_name(name), defaults={"name": name}
+        )
+        if generic_created:
+            generic.ingredients.add(ingredient)
+        ProductIngredient.objects.create(
+            product=product,
+            ingredient=ingredient,
+            strength_value=value,
+            strength_unit=u,
+            per_value=per_value,
+            per_unit=unit(ing.get("per_unit")),
+        )
+    for pack in raw.get("packs") or []:
+        form = DosageForm.objects.filter(slug=str(pack.get("form", ""))).first()
+        size, u = _decimal(pack.get("size")), unit(pack.get("unit"))
+        if form and size and u:
+            ProductPack.objects.get_or_create(
+                product=product, dosage_form=form, pack_size_value=size, pack_size_unit=u
+            )
+
+
 @transaction.atomic
 def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> StagedRecord:
     """Create (or reuse) generic, company, product and registration as UNREVIEWED records."""
@@ -259,6 +376,7 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
         raise ValidationError(row.message or "This row cannot be approved.")
     source = batch.source
     generic = row.matched_generic
+    generic_created = generic is None
     if generic is None:
         generic = Generic.objects.create(
             name=row.generic_name, review_status=ReviewStatus.NEEDS_VERIFICATION
@@ -266,10 +384,18 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
         _link(source, generic)
     company = row.matched_company
     if company is None:
+        raw = row.raw or {}
+        importer = str(raw.get("company_role", "")).lower() == "importer"
         company = Company.objects.create(
             name=row.manufacturer_name,
             country=batch.country,
-            is_manufacturer=True,
+            is_manufacturer=not importer,
+            is_importer=importer,
+            description=(
+                f"Address as listed by the source: {raw['manufacturer_address']}"
+                if raw.get("manufacturer_address")
+                else ""
+            ),
             review_status=ReviewStatus.NEEDS_VERIFICATION,
         )
         _link(source, company)
@@ -284,6 +410,7 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
     except IntegrityError as exc:
         raise ValidationError("This brand already exists for the company.") from exc
     _link(source, product)
+    _apply_details(product, generic, generic_created, row.raw or {})
     if row.registration_number:
         reg = ProductRegistration.objects.create(
             product=product,
@@ -332,15 +459,29 @@ def reject_row(row: StagedRecord, by, reason: str) -> StagedRecord:
 APPROVE_CHUNK = 50
 
 
-def approve_clean(batch: ImportBatch, by, limit: int = APPROVE_CHUNK) -> dict:
+def approve_clean(
+    batch: ImportBatch, by, limit: int = APPROVE_CHUNK, shard: tuple[int, int] | None = None
+) -> dict:
     """Approve up to `limit` clean pending rows (each approval writes ~20 rows, and a request
     must finish inside the platform time limit). Call again while `remaining` is above zero.
 
-    Returns counts: approved, skipped (flagged when re-checked) and remaining pending rows.
+    `shard=(index, count)` restricts the work to rows whose id % count == index, so several
+    processes can work on one batch at the same time. Two shards may race to create the same
+    generic or company; the loser's row is rolled back and simply left pending, and the next
+    pass finds what the winner created (reported as `retried`).
+
+    Returns counts: approved, skipped (flagged when re-checked), retried and remaining rows.
     """
-    done = skipped = 0
-    rows = batch.rows.filter(status=RowStatus.PENDING).select_related("batch__country")
-    for row in rows[:limit]:
+    done = skipped = retried = 0
+
+    def pending():
+        qs = batch.rows.filter(status=RowStatus.PENDING)
+        if shard:
+            count, index = shard[1], shard[0]
+            qs = qs.annotate(_shard=Mod("id", count)).filter(_shard=index)
+        return qs
+
+    for row in pending().select_related("batch__country")[:limit]:
         try:
             approve_row(row, by, check_complete=False)
             done += 1
@@ -351,11 +492,14 @@ def approve_clean(batch: ImportBatch, by, limit: int = APPROVE_CHUNK) -> dict:
             if row.status == RowStatus.PENDING:
                 row.status, row.message = RowStatus.DUPLICATE, " ".join(exc.messages)[:300]
             row.save(update_fields=["status", "message", "updated_at"])
+        except IntegrityError:
+            retried += 1  # lost a race with another shard; rolled back, still pending
     _maybe_complete(batch)
     return {
         "approved": done,
         "skipped": skipped,
-        "remaining": batch.rows.filter(status=RowStatus.PENDING).count(),
+        "retried": retried,
+        "remaining": pending().count(),
     }
 
 

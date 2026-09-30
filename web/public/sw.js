@@ -166,3 +166,37 @@ self.addEventListener("message", (event) => {
     })(),
   );
 });
+
+// Web push: show the notice and open the page it points to. Payload is title/body/url only.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    /* not JSON: fall back to a generic notice */
+  }
+  const title = typeof data.title === "string" ? data.title.slice(0, 80) : "VetRef";
+  const body = typeof data.body === "string" ? data.body.slice(0, 160) : "";
+  const url = typeof data.url === "string" && /^\/(?!\/)/.test(data.url) ? data.url : "/";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) {
+        if (w.url === target && "focus" in w) return w.focus();
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
+});

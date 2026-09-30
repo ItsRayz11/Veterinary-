@@ -27,21 +27,21 @@ What is protected, how, and what is still open. Every control below names the te
 - **Postgres behaviour** (CI job `api-postgres`), and that `CSRF_TRUSTED_ORIGINS` contains the exact web origin (an authenticated POST from another origin is refused, which is intended).
 
 ## Known gaps (not fixed, on purpose or for lack of a decision)
-- **No two-factor authentication** for staff. Reviewer, moderator and admin accounts are the crown jewels; add TOTP before onboarding real reviewers.
-- **No per-account lockout**; only the per-IP throttle. Behind a shared NAT that can throttle honest users, and a distributed attacker is not slowed.
+- **Two-factor is TOTP only** (no WebAuthn/passkeys, no SMS). Staff must enrol (`REQUIRE_STAFF_MFA`); losing both the phone and the recovery codes needs an admin to reset the device in the Django admin.
+- **Lockout is per account and cache-based.** The counter lives in the Django cache, so on a multi-instance deployment set a shared cache (Redis) for it to be exact; a locked account can be used to annoy its owner (accepted trade-off, `LOGIN_LOCK_SECONDS` is short).
 - **CSP allows `'unsafe-inline'`** for scripts and styles because Next.js emits inline bootstrap code. Moving to per-request nonces removes it.
 - **DNS rebinding** between URL validation and connection in `safe_http` (documented there; only staff-registered URLs are fetched).
-- **No WAF, bot protection or error-monitoring service.** Vercel's firewall and a Sentry-style tool are suggested; none is configured.
+- **No WAF or bot protection.** Vercel's firewall is suggested; none is configured. Error monitoring exists (own intake + optional `SENTRY_DSN`); server-side log drain is not configured.
 - **HSTS `includeSubDomains` / `preload`** are off (`SECURE_HSTS_INCLUDE_SUBDOMAINS`, `SECURE_HSTS_PRELOAD`). Turn them on only when every subdomain of the domain is HTTPS-only forever; preloading is very hard to undo.
 - **Postgres has not been tested here.** CI has an informational Postgres job; treat production database behaviour as unproven until it is green.
 - **Admin URL** can be moved with `ADMIN_URL`; that reduces probing only.
-- **No penetration test or third-party review** has been done.
+- **No third-party penetration test.** Only automated and self-written checks have been run (route sweep with hostile input, bandit, pip-audit, npm audit, axe). Web push endpoints are restricted to browser-vendor push hosts so a subscription cannot point the server at internal addresses.
 
 ## Reporting a vulnerability
 Owner to fill in a contact address (for example a `security@` mailbox) and publish it at `/.well-known/security.txt` once a domain exists.
 
 ## Owner decisions still needed
 1. Who the qualified veterinarian reviewers are (governance depends on it).
-2. Whether to require 2FA for all staff roles (recommended: yes).
+2. 2FA is enforced for staff by default in production; confirm that is wanted for editors and moderators too.
 3. HSTS preload and subdomain policy.
-4. Where errors and logs go (Sentry, Vercel logs drain, etc.).
+4. Whether to create a Sentry project (`SENTRY_DSN`) and/or a Vercel log drain.

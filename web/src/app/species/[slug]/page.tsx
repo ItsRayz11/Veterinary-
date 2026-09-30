@@ -24,7 +24,7 @@ export default async function SpeciesPage({ params }: PageProps<"/species/[slug]
   const { slug } = await params;
   const s = await apiGet<SpeciesDetail>(`/species/${slug}/`);
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -80,6 +80,6 @@ export default async function SpeciesPage({ params }: PageProps<"/species/[slug]
           </tbody>
         </DataTable>
       )}
-    </main>
+    </div>
   );
 }

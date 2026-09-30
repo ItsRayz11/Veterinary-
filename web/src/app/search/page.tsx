@@ -30,7 +30,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
     results && !results.generics.length && !results.products.length && !results.companies.length;
 
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <h1 className="text-xl font-semibold">Search</h1>
       <SearchBox autoFocus />
       {failed && (
@@ -74,7 +74,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           />
         </div>
       )}
-    </main>
+    </div>
   );
 }
 

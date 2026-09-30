@@ -18,7 +18,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
   const generics = [...new Map(c.products.map((p) => [p.generic, p.generic_name])).entries()];
 
   return (
-    <main className="space-y-6">
+    <div className="space-y-6">
       <Breadcrumbs
         items={[{ label: "Home", href: "/" }, { label: "Companies" }, { label: c.name }]}
       />
@@ -97,6 +97,6 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
           </ul>
         </Section>
       )}
-    </main>
+    </div>
   );
 }

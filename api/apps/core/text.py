@@ -13,14 +13,18 @@ def normalize_name(value: str) -> str:
 
 
 def unique_slug(model, base: str, instance=None, field: str = "slug") -> str:
+    """A slug unique within `model`, always within the column's max_length (PostgreSQL enforces
+    it; SQLite silently does not, which once hid a crash on long names)."""
     from django.utils.text import slugify
 
-    root = slugify(base)[:150] or "item"
+    limit = model._meta.get_field(field).max_length or 50
+    root = (slugify(base)[: limit - 8] or "item").strip("-") or "item"  # room for "-<number>"
     slug, n = root, 2
     qs = model.objects.all()
     if instance is not None and instance.pk:
         qs = qs.exclude(pk=instance.pk)
     while qs.filter(**{field: slug}).exists():
-        slug = f"{root}-{n}"
+        suffix = f"-{n}"
+        slug = f"{root[: limit - len(suffix)]}{suffix}"
         n += 1
     return slug

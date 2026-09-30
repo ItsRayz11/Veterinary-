@@ -8,6 +8,9 @@ export interface User {
   username: string;
   email: string;
   role: string;
+  mfa_enabled?: boolean;
+  mfa_required?: boolean; // staff in production
+  mfa_verified?: boolean; // this session has passed the second factor
 }
 
 /** Roles that may open the staff review panel (the API still enforces each action's own permission). */

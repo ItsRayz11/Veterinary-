@@ -24,7 +24,7 @@ const ALL = [
 
 export default function CalculatorsIndex() {
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Calculators" }]} />
       <h1 className="text-2xl font-semibold">Calculators</h1>
       <ul className="grid gap-2 sm:grid-cols-2">
@@ -40,6 +40,6 @@ export default function CalculatorsIndex() {
           </li>
         ))}
       </ul>
-    </main>
+    </div>
   );
 }

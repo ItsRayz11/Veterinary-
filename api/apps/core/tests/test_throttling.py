@@ -59,8 +59,11 @@ def login(client, username, **headers):
 
 
 @pytest.fixture(autouse=True)
-def _fresh_cache():
+def _fresh_cache(settings):
     cache.clear()
+    settings.LOGIN_MAX_FAILURES = (
+        10_000  # these tests are about the per-IP limit, not account locks
+    )
 
 
 def test_spoofing_x_forwarded_for_does_not_escape_the_login_limit(db, settings):

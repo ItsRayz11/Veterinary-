@@ -161,7 +161,7 @@ Verification after all three rounds: 262 API tests (CI-equivalent environment, `
 - [x] Service worker (`public/sw.js`): public reference pages and calculators available offline (calculators precached with their JS chunks), static assets cache-first, network-first navigation with an offline page, bounded cache; never touches `/api/`, accounts, admin, exams, flashcards, assistant or auth pages. 16 tests run the real worker in a sandbox; a deliberate mutation (removing `/account` from the deny list) was caught
 - [x] Query-budget guards on 13 public endpoints + growth tests (`core/tests/test_query_budget.py`). The growth test found a real N+1 (drug page re-fetched the generic once per brand: 13 -> 23 queries); fixed in `brands_for_generic`, count now flat
 - [ ] Not verified on real devices/browsers: installability prompt, Lighthouse scores, offline behaviour in an actual browser (only unit-tested + HTTP-level)
-- [ ] Web push notifications (needs VAPID keys + subscription store + an email/notification decision); background sync
+- [x] Web push notifications: see Phase 15. Background sync is not done
 - [ ] API-level HTTP caching headers/CDN rules and image optimisation (no images yet)
 ## Phase 14: Production Hardening
 - [x] Audits run and recorded: `pip-audit` and `npm audit` clean; secrets scan of working tree + full git history clean (no keys, tokens or connection strings; `.env` never tracked); `manage.py check --deploy` clean (2 HSTS advisories deliberately silenced, owner decision); OpenAPI schema warning-free with 63 unique operations (`--fail-on-warn` test)
@@ -170,6 +170,19 @@ Verification after all three rounds: 262 API tests (CI-equivalent environment, `
 - [x] Accessibility (automated part): WCAG AA contrast test of every text/background token pair in light and dark themes (fails when a token is broken, checked by mutation); tables have captions, forms have labels, skip link, focus and aria-live regions exist from earlier phases
 - [x] Real-browser end-to-end check (`web/scripts/browser-check.mjs`, 13 checks): calculators compute under the CSP, service worker precaches, calculators work with the server truly stopped, private pages never cached
 - [x] Docs: `SECURITY.md` (controls, gaps, owner decisions), `RUNBOOK.md` (first deploy, backups/restore, rotation, incidents), `API.md`, `TESTING.md`; CI runs the deploy check
-- [ ] Not done, needs owner decisions or a test environment: staff two-factor auth, per-account lockout, error monitoring/log drain, WAF, Postgres search (`pg_trgm`, needs a Postgres test DB), first green CI run and Postgres job, penetration test, full manual screen-reader/mobile QA, HSTS preload
+- [x] Closed in Phase 15: staff two-factor auth, per-account lockout, error monitoring, `pg_trgm` search, automated accessibility/mobile sweep, penetration-style tests
+- [ ] Still open: WAF/log drain, first green CI run, third-party penetration test, manual screen-reader QA, HSTS preload
 
 (Phases 2-14 get task-level checklists when they start, per the continuity rule. Scope per phase is defined in `PRODUCT_SPEC.md`.)
+## Phase 15: Completion pass (2FA, lockout, monitoring, real Pakistan data, search, push, security/accessibility sweeps)
+- [x] Staff two-factor (TOTP): `apps/accounts/mfa.py`, enrolment/verify/recovery/disable API, hashed single-use recovery codes, replay protection, secret encrypted with `MFA_ENCRYPTION_KEY`, enforced for staff roles and the Django admin (`REQUIRE_STAFF_MFA`, default on when `DEBUG` is off). UI in the account page and sign-in; real-browser check `web/scripts/mfa-check.mjs` (6 checks)
+- [x] Per-account lockout (`apps/accounts/lockout.py`): hashed username counter, `LOGIN_MAX_FAILURES` / `LOGIN_LOCK_SECONDS`, same answer for unknown users (no account enumeration)
+- [x] Error monitoring: anonymous, scrubbed, deduplicated browser-error intake (`apps/monitoring`), staff Errors tab, optional Sentry via `SENTRY_DSN`
+- [x] Real Pakistan data: DRAP's public lists of veterinary drug applications (420) and veterinary biologicals applications (102) imported into Neon as **unreviewed, hidden** records (0 public, 0 registrations, provenance and licence note on every record) with `manage.py import_products`. Applications are never presented as registrations
+- [ ] Real India data: `cdsco.gov.in` could not be reached from the build machine; the CDSCO PDFs must be downloaded by a person and supplied (see `INGESTION.md`), then an adapter written and the rows reviewed
+- [ ] Real exam questions: not sourced. The importer (`manage.py import_questions`) and review workflow exist; the questions need a rights-holder (a university, publisher or open-licence source) or reviewer-authored originals
+- [x] Typo-tolerant search: `pg_trgm` similarity and GIN indexes on Postgres (migration `pharma/0002`), `difflib` fallback elsewhere
+- [x] Web push (`apps/push`, VAPID keys via env, endpoints restricted to browser-vendor push services, expired subscriptions pruned): notifies the poster when a job or scholarship is approved or declined. Off until `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` are set
+- [x] Penetration-style sweep: every API route is called as anonymous/user/staff with hostile payloads (`core/tests/test_pentest_matrix.py`): no 5xx, staff areas closed. `bandit` clean (one SHA1 use marked non-security), `pip-audit` and `npm audit` clean
+- [x] Accessibility/mobile: `web/scripts/a11y-check.mjs` (axe-core, 16 pages x phone/desktop x light/dark, overflow and tap targets) clean after fixing the missing `<main>` landmark and headings on gated pages
+- [ ] Not possible here: real screen-reader sessions, real phones, a human penetration test

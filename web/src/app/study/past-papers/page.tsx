@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Past-paper index" };
 export default async function PastPapersPage() {
   const papers = await apiGet<PastPaper[]>("/study/past-papers/");
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Past papers" }]} />
       <h1 className="text-xl font-semibold">Past-paper index</h1>
       <p className="text-sm text-muted">
@@ -52,6 +52,6 @@ export default async function PastPapersPage() {
           </tbody>
         </DataTable>
       )}
-    </main>
+    </div>
   );
 }

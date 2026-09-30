@@ -22,7 +22,7 @@ interface Book {
 export default async function BooksPage() {
   const books = await apiGet<Book[]>("/study/books/");
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Books" }]} />
       <h1 className="text-xl font-semibold">Book references</h1>
       <p className="text-sm text-muted">Titles are cited only; we do not host book text.</p>
@@ -56,6 +56,6 @@ export default async function BooksPage() {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

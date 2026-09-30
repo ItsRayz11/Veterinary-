@@ -28,7 +28,7 @@ export default async function CalculatorPage({ params }: PageProps<"/calculators
   const def = bySlug(slug);
   if (!def) notFound();
   return (
-    <main className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4">
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -43,6 +43,6 @@ export default async function CalculatorPage({ params }: PageProps<"/calculators
         rate. Confirm every value against its source and the product label.
       </Alert>
       <GenericCalculator slug={def.slug} />
-    </main>
+    </div>
   );
 }

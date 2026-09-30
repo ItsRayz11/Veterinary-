@@ -20,7 +20,7 @@ interface CountryRow {
 export default async function CountriesIndex() {
   const rows = await apiGet<CountryRow[]>("/countries/");
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Countries" }]} />
       <h1 className="text-2xl font-semibold">Countries</h1>
       {rows.length === 0 ? (
@@ -40,6 +40,6 @@ export default async function CountriesIndex() {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

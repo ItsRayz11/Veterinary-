@@ -52,7 +52,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
     .filter((k) => k.items.length);
 
   return (
-    <main className="space-y-6">
+    <div className="space-y-6">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Drugs" }, { label: g.name }]} />
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">{g.name}</h1>
@@ -263,6 +263,6 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
       <Section id="sources" title="Sources">
         <SourcesList sources={g.sources} />
       </Section>
-    </main>
+    </div>
   );
 }

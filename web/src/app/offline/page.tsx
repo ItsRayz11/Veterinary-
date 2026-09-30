@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Offline", robots: { index: false } }
 
 export default function OfflinePage() {
   return (
-    <main className="mx-auto max-w-md space-y-3 pt-8">
+    <div className="mx-auto max-w-md space-y-3 pt-8">
       <h1 className="text-xl font-semibold">You are offline</h1>
       <p className="text-sm text-muted">
         This page is not saved on your device. Pages you opened before, and the calculators, still
@@ -17,6 +17,6 @@ export default function OfflinePage() {
           Open the calculators
         </Link>
       </p>
-    </main>
+    </div>
   );
 }

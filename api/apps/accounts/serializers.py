@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, password_validation
 from rest_framework import serializers
 
+from . import mfa
 from .models import Role, User
 
 # Roles a visitor may pick at sign-up. Privileged roles are only granted by admins.
@@ -8,14 +9,28 @@ SELF_SERVE_ROLES = (Role.REGISTERED, Role.STUDENT, Role.PROFESSIONAL)
 
 
 class UserSerializer(serializers.ModelSerializer):
+    mfa_enabled = serializers.SerializerMethodField()
+    mfa_required = serializers.SerializerMethodField()
+    mfa_verified = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ("id", "username", "email", "role")
+        fields = ("id", "username", "email", "role", "mfa_enabled", "mfa_required", "mfa_verified")
         read_only_fields = fields
+
+    def get_mfa_enabled(self, user):
+        return mfa.enabled(user)
+
+    def get_mfa_required(self, user):
+        return mfa.required_for(user)
+
+    def get_mfa_verified(self, user):
+        request = self.context.get("request")
+        return bool(request and mfa.session_passed(request))
 
 
 # Accounts the platform itself uses; nobody may register them (case-insensitive).
-RESERVED_USERNAMES = frozenset({"feed-bot"})
+RESERVED_USERNAMES = frozenset({"feed-bot", "import-bot"})
 
 
 class RegisterSerializer(serializers.ModelSerializer):

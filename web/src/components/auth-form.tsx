@@ -20,6 +20,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const [error, setError] = useState<ClientApiError | null>(null);
   const [busy, setBusy] = useState(false);
+  // After a correct password, accounts with two-factor on must also enter a code.
+  const [needsCode, setNeedsCode] = useState(false);
   const register = mode === "register";
 
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -31,7 +33,19 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     setBusy(true);
     setError(null);
     try {
-      await apiSend("POST", register ? "/auth/register" : "/auth/login", payload);
+      if (needsCode) {
+        await apiSend("POST", "/auth/mfa/verify", { code: payload.code });
+      } else {
+        const res = await apiSend<{ mfa_required?: boolean }>(
+          "POST",
+          register ? "/auth/register" : "/auth/login",
+          payload,
+        );
+        if (res?.mfa_required) {
+          setNeedsCode(true);
+          return;
+        }
+      }
       notifyAuthChanged();
       router.push(
         safeNext(new URLSearchParams(window.location.search).get("next"), window.location.origin),
@@ -48,6 +62,32 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   const fe = error?.fields ?? {};
   const fieldKeys = Object.keys(fe).filter((k) => k !== "non_field_errors" && k !== "detail");
+
+  if (needsCode) {
+    return (
+      <form onSubmit={submit} className="mx-auto max-w-sm space-y-4" noValidate>
+        <h1 className="text-xl font-semibold">Two-factor code</h1>
+        <p className="text-sm text-muted">
+          Enter the 6-digit code from your authenticator app, or one of your recovery codes.
+        </p>
+        {error && <Alert tone="danger">{fe.code ?? fe.detail ?? error.message}</Alert>}
+        <Field id="code" label="Code">
+          <TextInput
+            id="code"
+            name="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            required
+          />
+        </Field>
+        <Button type="submit" loading={busy} className="w-full">
+          Verify
+        </Button>
+      </form>
+    );
+  }
+
   return (
     <form onSubmit={submit} className="mx-auto max-w-sm space-y-4" noValidate>
       <h1 className="text-xl font-semibold">{register ? "Create an account" : "Sign in"}</h1>

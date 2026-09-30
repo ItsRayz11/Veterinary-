@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Two-factor authentication</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; margin: 0; background: #f7f8fa; color: #16202b; }
+    main { max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
+    .card { background: #fff; border: 1px solid #d9dee5; border-radius: 8px; padding: 1.25rem; }
+    input[type=text] { font: inherit; padding: .6rem; width: 100%; box-sizing: border-box; }
+    button { font: inherit; padding: .7rem 1.1rem; margin-top: .75rem; min-height: 44px;
+             background: #0b6e6e; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+    code { word-break: break-all; background: #f0f2f5; padding: .1rem .3rem; border-radius: 4px; }
+    .error { color: #b3261e; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0e1418; color: #e6ecf1; } .card { background: #151d23; border-color: #2b3944; }
+      code { background: #1c262e; } .error { color: #f28b82; } input[type=text] { background: #1c262e; color: inherit; border: 1px solid #2b3944; }
+      button { background: #45b3b3; color: #06201f; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Two-factor authentication</h1>
+  <div class="card">
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+    {% if mode == "verify" %}
+      <p>Enter the 6-digit code from your authenticator app, or one of your recovery codes.</p>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <label for="code">Code</label>
+        <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" autofocus required>
+        <button type="submit">Verify</button>
+      </form>
+
+    {% elif mode == "setup" %}
+      <p>Staff accounts need two-factor authentication. In an authenticator app (Google Authenticator, Authy, Microsoft Authenticator, 1Password...) add an account using this key, then enter the 6-digit code it shows.</p>
+      <p>Key: <code>{{ secret }}</code></p>
+      {% if otpauth_uri %}<p>Or open this link on your phone: <a href="{{ otpauth_uri }}">add to authenticator</a></p>{% endif %}
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <label for="code">6-digit code</label>
+        <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" required>
+        <button type="submit">Turn on two-factor</button>
+      </form>
+
+    {% elif mode == "done" %}
+      <p><strong>Two-factor is on.</strong> Save these recovery codes somewhere safe. Each works once if you lose your phone, and they are not shown again.</p>
+      <ul>{% for c in recovery_codes %}<li><code>{{ c }}</code></li>{% endfor %}</ul>
+      <p><a href="{{ next }}">Continue</a></p>
+    {% endif %}
+  </div>
+</main>
+</body>
+</html>

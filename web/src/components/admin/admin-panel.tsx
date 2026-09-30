@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/primitives";
 import { apiFetch } from "@/lib/client-api";
 import { STAFF_ROLES, useUser } from "@/lib/use-user";
 import { AutomationTab } from "./automation-tab";
+import { ErrorsTab } from "./errors-tab";
 import { ImportsTab } from "./imports-tab";
 import { ListingsTab } from "./listings-tab";
 import { AuditLogTab, PricesTab, QuestionReportsTab, ReviewQueueTab } from "./tabs";
@@ -21,7 +22,8 @@ export interface Summary {
   can_approve_clinical: boolean;
 }
 
-type TabKey = "queue" | "imports" | "listings" | "automation" | "prices" | "reports" | "audit";
+type TabKey =
+  "queue" | "imports" | "listings" | "automation" | "errors" | "prices" | "reports" | "audit";
 
 export function AdminPanel() {
   const user = useUser();
@@ -40,16 +42,36 @@ export function AdminPanel() {
   }, [staff, version]);
 
   if (user === undefined) return <Skeleton className="h-32 w-full" />;
+  if (staff && user.mfa_required && !user.mfa_verified)
+    return (
+      <>
+        <h1 className="sr-only">Review panel</h1>
+        <Alert tone="warn" title="Two-factor authentication needed">
+          Staff must use two-factor authentication.{" "}
+          {user.mfa_enabled ? (
+            "Sign out and sign in again, then enter your code."
+          ) : (
+            <Link href="/account" className="underline">
+              Set it up in your account
+            </Link>
+          )}
+          .
+        </Alert>
+      </>
+    );
   if (!staff)
     return (
-      <Alert tone="warn" title="Staff only">
-        This panel is for reviewers, editors, moderators and admins.{" "}
-        {!user && (
-          <Link href="/login?next=/admin-panel" className="underline">
-            Sign in
-          </Link>
-        )}
-      </Alert>
+      <>
+        <h1 className="sr-only">Review panel</h1>
+        <Alert tone="warn" title="Staff only">
+          This panel is for reviewers, editors, moderators and admins.{" "}
+          {!user && (
+            <Link href="/login?next=/admin-panel" className="underline">
+              Sign in
+            </Link>
+          )}
+        </Alert>
+      </>
     );
 
   const queueTotal = summary ? Object.values(summary.review_queue).reduce((a, b) => a + b, 0) : 0;
@@ -76,6 +98,7 @@ export function AdminPanel() {
       show: isModerator,
     },
     { key: "automation", label: "Automation", show: true },
+    { key: "errors", label: "Errors", show: true },
     { key: "audit", label: "Audit log", show: user.role === "admin" },
   ];
   const refresh = () => setVersion((v) => v + 1);
@@ -130,6 +153,7 @@ export function AdminPanel() {
         {tab === "prices" && isModerator && <PricesTab onChanged={refresh} />}
         {tab === "reports" && isModerator && <QuestionReportsTab onChanged={refresh} />}
         {tab === "automation" && <AutomationTab />}
+        {tab === "errors" && <ErrorsTab />}
         {tab === "audit" && user.role === "admin" && <AuditLogTab />}
       </div>
     </div>

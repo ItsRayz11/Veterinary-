@@ -37,9 +37,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <div id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-4 sm:pb-8">
+      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-4 sm:pb-8">
         {children}
-      </div>
+      </main>
       <footer className="hidden border-t border-border py-4 text-center text-xs text-muted sm:block">
         Clinical reference for licensed veterinary professionals. Does not replace clinical
         judgement or the product label.

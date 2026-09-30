@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function InteractionsPage() {
   return (
-    <main className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Interactions" }]} />
       <h1 className="text-2xl font-semibold">Interaction checker</h1>
       <Alert tone="warn" title="Only reviewed interactions are listed">
@@ -18,6 +18,6 @@ export default function InteractionsPage() {
         reference.
       </Alert>
       <InteractionChecker />
-    </main>
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 
+from . import mfa
 from .models import Role
 
 
@@ -10,13 +11,19 @@ class HasRole(BasePermission):
 
     def has_permission(self, request, view):
         u = request.user
-        return bool(u and u.is_authenticated and (u.is_superuser or u.role in self.roles))
+        allowed = bool(u and u.is_authenticated and (u.is_superuser or u.role in self.roles))
+        if allowed and mfa.required_for(u) and not mfa.session_passed(request):
+            raise mfa.MFARequired()
+        return allowed
 
 
 class IsClinicalApprover(BasePermission):
     def has_permission(self, request, view):
         u = request.user
-        return bool(u and u.is_authenticated and u.can_approve_clinical)
+        allowed = bool(u and u.is_authenticated and u.can_approve_clinical)
+        if allowed and mfa.required_for(u) and not mfa.session_passed(request):
+            raise mfa.MFARequired()
+        return allowed
 
 
 class IsModerator(HasRole):

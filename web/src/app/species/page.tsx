@@ -21,7 +21,7 @@ export default async function SpeciesIndex() {
   const rows = await apiGet<SpeciesRow[]>("/species/");
   const top = rows.filter((r) => !r.parent);
   return (
-    <main className="space-y-4">
+    <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Species" }]} />
       <h1 className="text-2xl font-semibold">Species</h1>
       {rows.length === 0 ? (
@@ -48,6 +48,6 @@ export default async function SpeciesIndex() {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }
