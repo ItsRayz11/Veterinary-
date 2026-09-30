@@ -1,8 +1,0 @@
-▲ Next.js 16.3.7 (Turbopack)
-- Local:         http://localhost:3000
-- Network:       http://192.168.100.8:3000
-✓ Ready in 7.0s
-✓ Running next.config.ts took 3.7s
-⚠ Slow filesystem detected. The benchmark took 281ms. If \\?\E:\Veterinary Medicine\web\.next\dev is a network drive, consider moving it to a local folder.
-See more: https://nextjs.org/docs/app/guides/local-development
-
