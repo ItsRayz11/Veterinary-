@@ -95,7 +95,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Moderation service: moderator/admin only, no self-approval, reason required to reject, audit log; accepted report unpublishes disputed price but keeps history
 - [x] Admin approve/reject actions; price table on product page with source, location, last-checked
 - [x] Submission/report forms on the product page (suggest price / report incorrect; goes to moderation; verified live: submission reaches staff queue, self-approval blocked). Fixed CSRF-token rotation after login in the browser client
-- [ ] Price charts + analytics (increase/decrease, region comparison)
+- [x] Price analytics (`pricing/analytics.py`, 6 tests): change and % vs previous (exact decimals, half-up), min/max, region comparison; never mixes currency, price type, pack or location; unpublished excluded. Product page shows trend line (SVG + data table) and regional table; verified live with fictional local prices
 
 ## Phase 8: Education
 - [x] Subject > Topic (optional link to a generic), structured MCQ Question + Options (DB: max one correct option), difficulty, country/exam/university/year/source

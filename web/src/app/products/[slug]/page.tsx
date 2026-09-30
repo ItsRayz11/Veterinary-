@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet, type Prices, type ProductDetail } from "@/lib/api";
 import { SourcesList } from "@/components/sources-list";
+import { PriceTrends } from "@/components/price-trends";
 import { PriceSubmitForm } from "@/components/price-submit-form";
 import { StatusLine } from "@/components/status-line";
 import { Breadcrumbs, DataTable, EmptyState, Section, td, th } from "@/components/ui/primitives";
@@ -212,6 +213,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             Prices are shown only with a source or after moderation.
           </EmptyState>
         )}
+        <PriceTrends analytics={prices.analytics} />
         <div className="mt-3">
           <PriceSubmitForm slug={p.slug} current={prices.current} />
         </div>

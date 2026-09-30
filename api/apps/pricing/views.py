@@ -8,7 +8,7 @@ from rest_framework.throttling import UserRateThrottle
 from apps.countries.models import Country
 from apps.pharma.models import Product, ProductPack
 
-from . import selectors
+from . import analytics, selectors
 from .models import PriceRecord, PriceSubmission, PriceType, SubmissionKind
 
 
@@ -44,6 +44,10 @@ def product_prices(request, slug):
         {
             "current": [_record(r) for r in selectors.current_prices(records)],
             "history": [_record(r) for r in records],
+            "analytics": {
+                "series": analytics.price_series(records),
+                "region_comparison": analytics.region_comparison(records),
+            },
             "note": "Prices are indicative, may vary by location and change without notice.",
         }
     )

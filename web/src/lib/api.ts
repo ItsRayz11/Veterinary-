@@ -154,8 +154,36 @@ export interface PriceRow {
   last_verified: string | null;
 }
 
+export interface PriceSeries {
+  pack_id: number;
+  pack: string;
+  country: string;
+  region: string;
+  city: string;
+  price_type: string;
+  currency: string;
+  points: { date: string; amount: string }[];
+  latest: string;
+  min: string;
+  max: string;
+  change: string | null;
+  change_percent: string | null;
+  direction: "up" | "down" | "same" | "none";
+}
+
+export interface RegionComparison {
+  pack: string;
+  country: string;
+  price_type: string;
+  currency: string;
+  regions: { region: string; amount: string; observed_on: string }[];
+  spread: string;
+  spread_percent: string;
+}
+
 export interface Prices {
   current: PriceRow[];
   history: PriceRow[];
+  analytics: { series: PriceSeries[]; region_comparison: RegionComparison[] };
   note: string;
 }
