@@ -92,7 +92,7 @@ def product_detail(request, slug):
             "ingredients__per_unit",
             "packs__dosage_form",
             "packs__pack_size_unit",
-            "registrations__country",
+            selectors.public_registrations(),
         ),
         slug=slug,
     )
@@ -148,7 +148,7 @@ def company_detail(request, slug):
     products = (
         selectors.products_for_company(company)
         .select_related("manufacturer__country")
-        .prefetch_related("registrations__country")
+        .prefetch_related(selectors.public_registrations())
     )
     return Response(
         {

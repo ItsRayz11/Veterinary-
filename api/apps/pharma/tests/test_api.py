@@ -111,3 +111,18 @@ def test_calculator_endpoint(api):
 def test_generic_detail_query_budget(api, django_assert_max_num_queries):
     with django_assert_max_num_queries(20):
         assert api.get("/api/v1/generics/enrofloxacin/").status_code == 200
+
+
+def test_unreviewed_registration_is_not_exposed(api, settings):
+    from apps.countries.models import Country
+    from apps.pharma.models import Product, ProductRegistration
+
+    product = Product.objects.get(slug="dev-enro-1")
+    ProductRegistration.objects.create(
+        product=product, country=Country.objects.get(iso2="IN"), registration_number="X-1"
+    )  # not dev data, status needs_verification -> must stay hidden
+    brands = api.get("/api/v1/generics/enrofloxacin/").json()["brands"]
+    assert [b["countries"] for b in brands if b["slug"] == "dev-enro-1"] == [["PK"]]
+    assert api.get("/api/v1/generics/enrofloxacin/?country=IN").json()["brands"] == []
+    regs = api.get("/api/v1/products/dev-enro-1/").json()["registrations"]
+    assert [r["country"] for r in regs] == ["PK"]

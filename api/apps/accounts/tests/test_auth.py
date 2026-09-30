@@ -41,3 +41,13 @@ def test_bad_login_uses_error_envelope(api):
 def test_weak_password_rejected(api):
     r = api.post("/api/v1/auth/register/", {"username": "c", "email": "c@x.com", "password": "123"})
     assert r.status_code == 400
+
+
+@pytest.mark.django_db
+def test_login_is_rate_limited(api):
+    codes = [
+        api.post("/api/v1/auth/login/", {"username": "x", "password": "y"}).status_code
+        for _ in range(12)
+    ]
+    assert 429 in codes
+    assert codes[0] == 400

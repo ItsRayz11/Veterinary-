@@ -4,13 +4,18 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import SimpleRateThrottle
 
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
 
-class AuthThrottle(ScopedRateThrottle):
+class AuthThrottle(SimpleRateThrottle):
+    """Per-IP limit on register/login attempts (rate configured as 'auth' in settings)."""
+
     scope = "auth"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
 
 
 @api_view(["GET"])

@@ -17,4 +17,4 @@ Thumbs.db
 .idea/
 
 # graphify output
-graphify-out/cache/
+graphify-out/
