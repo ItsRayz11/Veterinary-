@@ -122,6 +122,10 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [ ] No feed is registered yet (needs verified sources); Redis/worker queue deferred (not needed at this scale)
 - [ ] Known limit: DNS rebinding between validation and connect (documented; only staff-registered URLs are fetched)
 ## Phase 11: India
+- [x] Country-agnostic proof: found and removed the one hardcoded `["PK","IN"]` (drug page country filter, now driven by `/countries/`); permanent guard test scans 250+ source files for country literals (would have caught it); parity tests run import, registration, country page and price currency for PK, IN and US through the same code
+- [x] India in reference data (INR, CDSCO/DAHD); import workflow for CDSCO lists documented in `INGESTION.md`
+- [ ] Real CDSCO data: needs a person to check terms and extract the PDF tables (not automated, not fetched)
+- [ ] Regional-language UI (Hindi/Urdu) and India-specific units/label conventions: not started (needs translation resources)
 ## Phase 12: AI Intelligence
 ## Phase 13: PWA + Performance
 ## Phase 14: Production Hardening

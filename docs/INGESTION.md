@@ -33,3 +33,12 @@ Limits: 2 MB, 5000 rows per file. Strengths, packs and ingredients are not impor
 | DRAP veterinary application lists | no | no | no | applications, not registrations | no | no |
 | CDSCO veterinary approvals | no | no | no | unknown | no | no |
 | openFDA / DailyMed animal labels | no | no | API exists (unconfirmed terms) | US only | no | no |
+
+## India (and any other country)
+The pipeline is country-agnostic: the country is chosen per import and every rule (duplicates, registration numbers, currency, availability) is data-driven. India is already in the reference data (INR, CDSCO / DAHD).
+Suggested workflow for CDSCO's published veterinary approval lists (PDF tables, `DATA_SOURCES.md`):
+1. A person checks the CDSCO terms and records the outcome in the per-source table above. Nothing is fetched automatically.
+2. Extract the table to CSV with the columns above (a spreadsheet or a PDF table tool), then spot-check rows against the PDF.
+3. Import through the Imports tab with the CDSCO document as the source and its licence/terms note.
+4. Review and approve as for any other country; records stay unreviewed until the review workflow promotes them.
+Approvals in the PDFs are approvals, not proof a product is on sale; do not mark availability beyond what the document states.

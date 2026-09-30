@@ -41,7 +41,10 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
   const qs = new URLSearchParams();
   if (country) qs.set("country", country);
   if (species) qs.set("species", species);
-  const g = await apiGet<GenericDetail>(`/generics/${slug}/${qs.size ? `?${qs}` : ""}`);
+  const [g, countries] = await Promise.all([
+    apiGet<GenericDetail>(`/generics/${slug}/${qs.size ? `?${qs}` : ""}`),
+    apiGet<{ iso2: string; name: string }[]>("/countries/", 300),
+  ]);
 
   const speciesInDoses = [...new Map(g.doses.map((d) => [d.species, d.species_name])).entries()];
   const notesByKind = Object.entries(KIND)
@@ -210,13 +213,13 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
           >
             All countries
           </Link>
-          {["PK", "IN"].map((c) => (
+          {countries.map((c) => (
             <Link
-              key={c}
-              href={`/drugs/${g.slug}?country=${c}`}
-              className={country === c ? "font-medium" : "text-primary underline"}
+              key={c.iso2}
+              href={`/drugs/${g.slug}?country=${c.iso2}`}
+              className={country === c.iso2 ? "font-medium" : "text-primary underline"}
             >
-              {c === "PK" ? "Pakistan" : "India"}
+              {c.name}
             </Link>
           ))}
         </p>
