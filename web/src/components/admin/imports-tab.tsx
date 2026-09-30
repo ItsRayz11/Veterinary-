@@ -119,7 +119,9 @@ function ImportForm({ onStaged }: { onStaged: (id: number) => void }) {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
+    // currentTarget is null once the handler awaits, so keep the form element now.
+    const form = e.currentTarget;
+    const f = new FormData(form);
     setBusy(true);
     setError(null);
     try {
@@ -137,7 +139,7 @@ function ImportForm({ onStaged }: { onStaged: (id: number) => void }) {
       });
       setCsv("");
       setFileName("");
-      e.currentTarget.reset();
+      form.reset();
       onStaged(b.id);
     } catch (err) {
       setError(errText(err));
@@ -249,12 +251,15 @@ function BatchReview({ id, onChanged }: { id: number; onChanged: () => void }) {
 
   async function approveClean() {
     try {
-      const r = await apiSend<{ approved: number; skipped: number }>(
+      const r = await apiSend<{ approved: number; skipped: number; remaining: number }>(
         "POST",
         `/staff/imports/${id}/approve-clean`,
         {},
       );
-      setInfo(`${r.approved} approved, ${r.skipped} skipped.`);
+      setInfo(
+        `${r.approved} approved, ${r.skipped} flagged as duplicates or invalid, ${r.remaining} still pending.` +
+          (r.remaining > 0 ? " Press the button again to continue." : ""),
+      );
       setN((v) => v + 1);
       onChanged();
     } catch (e) {
@@ -274,7 +279,7 @@ function BatchReview({ id, onChanged }: { id: number; onChanged: () => void }) {
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <Button variant="secondary" onClick={approveClean}>
-          Approve all clean pending rows
+          Approve the next 50 clean pending rows
         </Button>
         <Field id={`filter-${id}`} label="Show rows">
           <Select id={`filter-${id}`} value={filter} onChange={(e) => setFilter(e.target.value)}>

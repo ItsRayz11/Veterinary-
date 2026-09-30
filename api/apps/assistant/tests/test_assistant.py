@@ -199,3 +199,42 @@ def test_staff_role_users_are_not_special_for_the_assistant(world):
         service.ask(editor, Q, FakeLLM(reply("Avoid in growing animals [G1]."))).get("status")
         == "answered"
     )
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "Give 500mg every 24 hours [G1].",  # unit glued to an invented number
+        "The dose is 10mg/kg [G1].",
+        "Use 2.6mg/kg [G1].",  # near miss of the recorded 2.5
+        "Give ten mg/kg [G1].",  # spelled-out number
+        "Give it twice daily at 5 mg/kg [G1].",  # invented frequency word
+        "Give half of 5 mg/kg [G1].",
+        "Use ½ of the dose [G1].",  # fraction character
+    ],
+)
+def test_bypass_attempts_on_the_number_check_are_rejected(world, answer):
+    r = service.ask(world["user"], Q, FakeLLM(reply(answer)))
+    assert r["status"] == AnswerStatus.UNVERIFIED and r["answer"] == ""
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "The record lists 2.5mg/kg to 5mg/kg every 24 hours [G1].",  # units glued, all in record
+        "Doses are 2.5 to 5 mg/kg (G1) for cattle.",
+        "One record matched; it warns to avoid use in growing animals [G1].",
+    ],
+)
+def test_faithful_answers_with_glued_units_pass(world, answer):
+    r = service.ask(world["user"], Q, FakeLLM(reply(answer)))
+    assert r["status"] == AnswerStatus.ANSWERED
+
+
+def test_ids_and_words_inside_other_tokens_are_not_treated_as_numbers():
+    assert service.numbers_are_grounded("Vitamin B12 and H2O [G1]", "note")
+    assert not service.numbers_are_grounded("Vitamin 12", "note")
+
+
+def test_citation_pattern_matches_record_ids_only():
+    assert service.CITATION.sub("", "see [G1] and G2, not H2 or G") == "see  and , not H2 or G"

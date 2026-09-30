@@ -5,7 +5,7 @@ Goal: get real catalogue data in through a reviewed, traceable path. Nothing imp
 ## Flow (implemented, `apps/ingestion`)
 1. **Stage.** Staff upload a CSV in the review panel (Imports tab) or via `POST /api/v1/staff/imports/`. Required: country, source title, source URL or publisher, and a **licence/terms note**. The file's SHA-256 is stored; the same file cannot be imported twice for a country.
 2. **Match.** Each row is matched to existing records (generic by name/synonym, company by name/alias within the country, product by manufacturer + brand). Invalid rows (missing fields, unknown registration status) and duplicates (existing brand, existing registration number) are flagged, not created.
-3. **Approve or reject.** A staff member approves rows one by one, or approves all clean pending rows. Approval creates missing Generic / Company / Product / Registration rows as `needs_verification` and links every created row to the import's Source. Rejection needs a reason. Every action writes an audit entry.
+3. **Approve or reject.** A staff member approves rows one by one, or approves clean pending rows 50 at a time (repeat until none remain; flagged rows are marked duplicate/invalid and leave the pending list). Approval creates missing Generic / Company / Product / Registration rows as `needs_verification` and links every created row to the import's Source. Rejection needs a reason. Every action writes an audit entry.
 4. **Review.** Records appear in the normal Review queue. Only the governed workflow (source required, vet reviewer for sign-off, no self-approval) can make them public.
 
 ## CSV format

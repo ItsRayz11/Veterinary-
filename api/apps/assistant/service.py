@@ -33,8 +33,18 @@ found there.
 - Cite the record ids you used, like G1.
 - Reply with JSON only: {"answer": "<plain text, at most 150 words>", "citations": ["G1"]}."""
 
-NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?![\w])")
+# Digits with or without an attached unit ("500mg", "2.5mg/kg"); letters glued to the FRONT of a
+# number ("B12", "H2O") are not doses. Record ids such as G1 are removed before checking.
+NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
 CITATION = re.compile(r"\[?\bG\d+\b\]?")
+# Spelled-out numbers and fractions are checked too, so "ten mg/kg" cannot bypass the digit rule.
+# "one" is left out: it is too common in ordinary sentences ("one of the records").
+NUMBER_WORDS = frozenset(
+    "zero two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen "
+    "sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety "
+    "hundred thousand once twice thrice half double triple dozen quarter".split()
+)
+FRACTION_CHARS = frozenset("½¼¾⅓⅔")
 
 
 def _norm_numbers(text: str) -> set[str]:
@@ -47,11 +57,16 @@ def _norm_numbers(text: str) -> set[str]:
     return out
 
 
+def _number_words(text: str) -> set[str]:
+    found = {w for w in re.findall(r"[a-z]+", text.lower()) if w in NUMBER_WORDS}
+    return found | {c for c in text if c in FRACTION_CHARS}
+
+
 def numbers_are_grounded(answer: str, context_text: str) -> bool:
-    """Every number in `answer` (record ids like G1 excluded) appears in the records."""
-    return _norm_numbers(CITATION.sub(" ", answer)) <= _norm_numbers(
-        CITATION.sub(" ", context_text)
-    )
+    """Every number in `answer` appears in the records: digits (with or without a glued unit),
+    spelled-out numbers and fractions. Record ids like G1 are excluded."""
+    a, c = CITATION.sub(" ", answer), CITATION.sub(" ", context_text)
+    return _norm_numbers(a) <= _norm_numbers(c) and _number_words(a) <= _number_words(c)
 
 
 def parse_answer(raw: str) -> dict | None:

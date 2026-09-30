@@ -10,7 +10,7 @@ function loadWorker() {
   const listeners: Record<string, Listener> = {};
   const stores = new Map<string, Map<string, Response>>();
   const fetched: string[] = [];
-  const network = { online: true, pages: {} as Record<string, string> };
+  const network = { online: true, delay: 0, pages: {} as Record<string, string> };
 
   const key = (r: Request | string) =>
     typeof r === "string" ? new URL(r, "https://site.test").href : r.url;
@@ -32,6 +32,7 @@ function loadWorker() {
   const fakeFetch = async (input: Request | string) => {
     const url = key(input);
     fetched.push(new URL(url).pathname);
+    if (network.delay) await new Promise((r) => setTimeout(r, network.delay));
     if (!network.online) throw new TypeError("offline");
     const path = new URL(url).pathname;
     const body = network.pages[path] ?? `network ${path}`;
@@ -46,7 +47,12 @@ function loadWorker() {
     skipWaiting: async () => undefined,
     clients: { claim: async () => undefined },
   };
-  vm.runInNewContext(readFileSync(join(process.cwd(), "public", "sw.js"), "utf8"), {
+  // Shorten the navigation timeout so slow-network behaviour can be tested quickly.
+  const source = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8").replace(
+    "const NAV_TIMEOUT_MS = 4000;",
+    "const NAV_TIMEOUT_MS = 50;",
+  );
+  vm.runInNewContext(source, {
     self,
     caches,
     fetch: fakeFetch,
@@ -149,6 +155,27 @@ describe("service worker", () => {
     sw.network.online = false;
     const res = await sw.request("/calculators/dilution");
     expect(await res!.text()).toContain("calc.js");
+  });
+
+  it("waits for a slow network when nothing is saved (slow is not offline)", async () => {
+    sw.network.delay = 200; // longer than the 50 ms test timeout
+    sw.network.pages["/species/cat"] = "slow but real page";
+    const res = await sw.request("/species/cat");
+    expect(await res!.text()).toBe("slow but real page");
+  });
+
+  it("serves the saved copy when the network is slow, and refreshes it afterwards", async () => {
+    sw.network.pages["/drugs/x"] = "old copy";
+    await (await sw.request("/drugs/x"))!.text(); // saved
+    sw.network.pages["/drugs/x"] = "new copy";
+    sw.network.delay = 200;
+    const started = Date.now();
+    const res = await sw.request("/drugs/x");
+    expect(await res!.text()).toBe("old copy");
+    expect(Date.now() - started).toBeLessThan(150); // did not wait for the network
+    await new Promise((r) => setTimeout(r, 300)); // the late response refreshes the cache
+    sw.network.online = false;
+    expect(await (await sw.request("/drugs/x"))!.text()).toBe("new copy");
   });
 
   it("ignores malformed messages", async () => {

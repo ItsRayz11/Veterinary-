@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
+from apps.core.models import AuditLog
 from apps.opportunities import services
 from apps.opportunities.models import Job, ListingStatus, Scholarship
 
@@ -177,3 +178,26 @@ def test_scholarship_filters_and_staff_endpoints_permissions():
     assert (
         m.post(f"/api/v1/staff/listings/jobs/{job.pk}/zap/", {}, format="json").status_code == 400
     )
+
+
+def test_reports_are_cleared_when_a_moderator_re_approves(db):
+    author, mod = user("a"), user("m", Role.MODERATOR)
+    job = make_job(author)
+    services.approve(job, mod)
+    reporters = [user(f"r{i}") for i in range(4)]
+    for r in reporters[:3]:
+        services.report(job, r, "scam")
+    job.refresh_from_db()
+    assert job.status == ListingStatus.PENDING  # sent back after 3 reports
+    services.approve(job, mod, "checked, it is genuine")
+    assert AuditLog.objects.filter(
+        action="listing_reports_cleared", after={"reports_cleared": 3}
+    ).exists()
+    # one new report must not unpublish it (old ones no longer count) ...
+    services.report(job, reporters[3], "dead link")
+    job.refresh_from_db()
+    assert job.status == ListingStatus.APPROVED
+    # ... and an earlier reporter is allowed to report again
+    services.report(job, reporters[0], "still looks wrong")
+    job.refresh_from_db()
+    assert job.status == ListingStatus.APPROVED

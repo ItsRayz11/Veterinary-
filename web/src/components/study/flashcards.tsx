@@ -21,7 +21,8 @@ export function Flashcards() {
   const [cards, setCards] = useState<Card[] | null>(null);
   const [i, setI] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // loading the session failed
+  const [saveError, setSaveError] = useState<string | null>(null); // saving one answer failed
   const [reviewed, setReviewed] = useState(0);
 
   useEffect(() => {
@@ -68,13 +69,14 @@ export function Flashcards() {
 
   const card = cards[i];
   async function answer(correct: boolean) {
+    setSaveError(null);
     try {
       await apiSend("POST", `/study/flashcards/${card.id}/review`, { correct });
       setReviewed((n) => n + 1);
       setFlipped(false);
       setI((n) => n + 1);
     } catch {
-      setError("Could not save your answer. Try again.");
+      setSaveError("Could not save your answer. Your place is kept; try again.");
     }
   }
 
@@ -89,6 +91,7 @@ export function Flashcards() {
       >
         {flipped ? card.back : card.front}
       </div>
+      {saveError && <Alert tone="danger">{saveError}</Alert>}
       {flipped ? (
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => answer(false)}>

@@ -35,8 +35,15 @@ export function InteractionChecker() {
   const [q, setQ] = useState("");
   const [options, setOptions] = useState<Drug[]>([]);
   const [chosen, setChosen] = useState<Drug[]>([]);
-  const [result, setResult] = useState<Result | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Each answer remembers which selection it was computed for, so a result (especially the
+  // reassuring "nothing recorded") is never shown next to a different list of drugs.
+  const [result, setResult] = useState<{ key: string; data: Result } | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+
+  const key = chosen
+    .map((c) => c.slug)
+    .sort()
+    .join(",");
 
   useEffect(() => {
     if (q.trim().length < 2) return;
@@ -55,21 +62,21 @@ export function InteractionChecker() {
   useEffect(() => {
     if (chosen.length < 2) return;
     let live = true;
-    apiFetch<Result>(`/interactions/check?generics=${chosen.map((c) => c.slug).join(",")}`)
+    apiFetch<Result>(`/interactions/check?generics=${key}`)
       .then((r) => {
-        if (!live) return;
-        setResult(r);
-        setError(null);
+        if (live && r) setResult({ key, data: r });
       })
-      .catch(() => live && setError("Could not check interactions."));
+      .catch(() => live && setFailed(key));
     return () => {
       live = false;
     };
-  }, [chosen]);
+  }, [chosen.length, key]);
 
   const shown =
     q.trim().length >= 2 ? options.filter((o) => !chosen.some((c) => c.slug === o.slug)) : [];
-  const active = chosen.length >= 2 ? result : null;
+  const enough = chosen.length >= 2;
+  const active = enough && result?.key === key ? result.data : null;
+  const loading = enough && !active && failed !== key;
 
   return (
     <div className="space-y-4">
@@ -107,10 +114,7 @@ export function InteractionChecker() {
                 type="button"
                 aria-label={`Remove ${c.name}`}
                 className="text-muted hover:text-text"
-                onClick={() => {
-                  setChosen((list) => list.filter((x) => x.slug !== c.slug));
-                  setResult(null);
-                }}
+                onClick={() => setChosen((list) => list.filter((x) => x.slug !== c.slug))}
               >
                 ×
               </button>
@@ -118,9 +122,10 @@ export function InteractionChecker() {
           ))}
         </ul>
       )}
-      {error && <Alert tone="danger">{error}</Alert>}
+      {enough && failed === key && <Alert tone="danger">Could not check interactions.</Alert>}
       <div aria-live="polite" className="space-y-3">
-        {chosen.length < 2 && <p className="text-sm text-muted">Choose at least two drugs.</p>}
+        {!enough && <p className="text-sm text-muted">Choose at least two drugs.</p>}
+        {loading && <p className="text-sm text-muted">Checking…</p>}
         {active && active.interactions.length === 0 && (
           <EmptyState title="No reviewed interaction is recorded for these drugs.">
             {active.note}

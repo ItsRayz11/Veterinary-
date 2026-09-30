@@ -38,3 +38,11 @@ Set `ANTHROPIC_API_KEY` (and optionally `ASSISTANT_MODEL`) on the API project to
 
 ## Scheduler
 Set `CRON_SECRET` on the API project; Vercel Cron (`api/vercel.json`) then calls `/api/v1/cron/link-check/` daily and `/api/v1/cron/feeds/` every 6 hours with that secret. Without it the endpoints refuse every call.
+
+## Moving the Django admin
+Set `ADMIN_URL=your-path/` on the API project (must end with `/`) and `NEXT_PUBLIC_ADMIN_PATH=your-path/` on the web project so the review panel links to it. This only reduces probing; access is still protected by login and roles.
+
+## Time limits (Vercel functions stop after 30 s)
+- Link checks probe at most 25 sources per run, 5 s per request, and stop starting new probes after 12 s; feed runs use the same budget. The rest is picked up by the next run (never-checked first, then least recently checked).
+- CSV imports stage a whole file with a fixed number of queries; approving is done 50 rows per click ("Approve the next 50 clean pending rows") so each request finishes in time.
+- Set `NUM_PROXIES` (see SECURITY.md) so per-IP throttling sees real client addresses.

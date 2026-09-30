@@ -87,7 +87,7 @@ def feed(db):
 @pytest.fixture
 def net(monkeypatch):
     state = {"robots": True, "status": 200, "body": RSS}
-    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url: state["robots"])
+    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url, **kw: state["robots"])
     monkeypatch.setattr(
         tasks.safe_http, "fetch", lambda url, **kw: (state["status"], state["body"], url)
     )
@@ -159,12 +159,14 @@ def test_link_check_records_ok_fail_and_skipped(db, monkeypatch):
     )
     Source.objects.create(source_type="other", title="No url", publisher="Someone")
     codes = {"good.example": 200, "bad.example": 404}
-    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url: "no.example" not in url)
+    monkeypatch.setattr(
+        tasks.safe_http, "allowed_by_robots", lambda url, **kw: "no.example" not in url
+    )
     monkeypatch.setattr(
         tasks.safe_http, "fetch", lambda url, **kw: (codes[url.split("/")[2]], b"", url)
     )
     result = tasks.check_source_links()
-    assert result == {"checked": 3, "ok": 1, "failed": 1, "skipped": 1}
+    assert result == {"checked": 3, "ok": 1, "failed": 1, "skipped": 1, "stopped_early": False}
     assert SourceHealth.objects.get(source=good).ok
     b = SourceHealth.objects.get(source=bad)
     assert (
@@ -183,7 +185,7 @@ def test_link_check_falls_back_to_get_when_head_refused(db, monkeypatch):
         calls.append(method)
         return (405 if method == "HEAD" else 200), b"", url
 
-    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url: True)
+    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url, **kw: True)
     monkeypatch.setattr(tasks.safe_http, "fetch", fake)
     assert tasks.check_source_links()["ok"] == 1 and calls == ["HEAD", "GET"]
 
@@ -194,7 +196,7 @@ def test_unreachable_source_is_a_failure_not_a_crash(db, monkeypatch):
     def boom(url, **kw):
         raise safe_http.FetchError("The URL points to a non-public address.")
 
-    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url: True)
+    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url, **kw: True)
     monkeypatch.setattr(tasks.safe_http, "fetch", boom)
     assert tasks.check_source_links()["failed"] == 1
     assert "non-public" in SourceHealth.objects.get().error
@@ -221,3 +223,124 @@ def test_cron_endpoint_requires_the_secret(db, settings):
     ok = api.get("/api/v1/cron/feeds/", HTTP_AUTHORIZATION="Bearer s3cret")
     assert ok.status_code == 200 and ok.json()["status"] == "ok"
     assert api.get("/api/v1/cron/nope/", HTTP_AUTHORIZATION="Bearer s3cret").status_code == 404
+
+
+# ---------- review fixes ----------
+
+ATOM_MULTI = b"""<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Multi</title>
+<link rel="enclosure" href="https://example.org/file.pdf"/>
+<link rel="replies" href="https://example.org/comments.atom"/>
+<link rel="alternate" href="https://example.org/the-job"/>
+<link rel="alternate" href="https://example.org/second-alternate"/>
+<summary>s</summary></entry></feed>"""
+
+
+def test_atom_entry_uses_the_alternate_link_not_enclosures():
+    [item] = tasks.parse_feed(ATOM_MULTI)
+    assert item["link"] == "https://example.org/the-job"
+
+
+def test_link_check_prefers_never_checked_sources_and_rotates(db, monkeypatch):
+    """Unchecked sources go first on every database, so >limit sources all get covered."""
+    from django.utils import timezone
+
+    sources = [
+        Source.objects.create(source_type="other", title=f"S{i}", url=f"https://s{i}.example/a")
+        for i in range(4)
+    ]
+    for src in sources[:2]:  # two already checked earlier
+        SourceHealth.objects.create(source=src, checked_at=timezone.now(), ok=True)
+    seen = []
+    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url, **kw: True)
+    monkeypatch.setattr(
+        tasks.safe_http, "fetch", lambda url, **kw: (seen.append(url) or 200, b"", url)
+    )
+    tasks.check_source_links(limit=2)
+    assert sorted(seen) == ["https://s2.example/a", "https://s3.example/a"]  # the unchecked pair
+    seen.clear()
+    tasks.check_source_links(limit=2)
+    assert sorted(seen) == ["https://s0.example/a", "https://s1.example/a"]  # then the oldest
+
+
+def test_link_check_stops_when_the_time_budget_is_used_and_resumes_next_run(db, monkeypatch):
+    for i in range(5):
+        Source.objects.create(source_type="other", title=f"S{i}", url=f"https://s{i}.example/a")
+    ticks = iter(range(0, 1000, 5))  # each clock() call advances 5 "seconds"
+    monkeypatch.setattr(tasks.safe_http, "allowed_by_robots", lambda url, **kw: True)
+    monkeypatch.setattr(tasks.safe_http, "fetch", lambda url, **kw: (200, b"", url))
+    first = tasks.check_source_links(limit=5, budget_seconds=12, clock=lambda: next(ticks))
+    assert first["stopped_early"] is True and 0 < first["checked"] < 5
+    later = tasks.check_source_links(limit=5)
+    assert later["stopped_early"] is False and SourceHealth.objects.count() == 5
+
+
+def test_robots_txt_is_fetched_once_per_host(monkeypatch):
+    calls = []
+
+    def fake_fetch(url, **kw):
+        calls.append(url)
+        return 200, b"User-agent: *\nDisallow: /private", url
+
+    monkeypatch.setattr(safe_http, "fetch", fake_fetch)
+    cache = {}
+    assert safe_http.allowed_by_robots("https://h.example/a", cache=cache)
+    assert safe_http.allowed_by_robots("https://h.example/b", cache=cache)
+    assert not safe_http.allowed_by_robots("https://h.example/private/x", cache=cache)
+    assert calls == ["https://h.example/robots.txt"]
+
+
+def test_unconfirmable_robots_denies_the_whole_host_once(monkeypatch):
+    calls = []
+
+    def fake_fetch(url, **kw):
+        calls.append(url)
+        return 503, b"", url
+
+    monkeypatch.setattr(safe_http, "fetch", fake_fetch)
+    cache = {}
+    assert not safe_http.allowed_by_robots("https://h.example/a", cache=cache)
+    assert not safe_http.allowed_by_robots("https://h.example/b", cache=cache)
+    assert len(calls) == 1
+
+
+def test_stale_running_job_is_closed_on_the_next_run(db):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    stale = JobRun.objects.create(task="feeds")
+    JobRun.objects.filter(pk=stale.pk).update(created_at=timezone.now() - timedelta(hours=1))
+    fresh = JobRun.objects.create(task="feeds")  # a genuinely running one must be left alone
+    tasks.run_task("feeds")
+    stale.refresh_from_db()
+    fresh.refresh_from_db()
+    assert stale.status == "failed" and "Interrupted" in stale.error
+    assert fresh.status == "running"
+
+
+def test_feeds_run_least_recently_run_first_and_stop_at_the_budget(feed, net):
+    other = Feed.objects.create(
+        name="Second",
+        url="https://example.org/two.xml",
+        kind="jobs",
+        organization="Two",
+        default_job_type="full_time",
+        license_note="ok",
+        enabled=True,
+    )
+    from django.utils import timezone
+
+    Feed.objects.filter(pk=feed.pk).update(last_run_at=timezone.now())  # ran just now
+    order = []
+    real = tasks.run_feed
+    tasks.run_feed = lambda f: (order.append(f.pk), {"created": 0})[1]
+    try:
+        assert tasks.run_all_feeds()["feeds"] == 2
+        assert order == [other.pk, feed.pk]  # never-run feed first
+        ticks = iter(range(0, 100, 10))
+        order.clear()
+        summary = tasks.run_all_feeds(budget_seconds=15, clock=lambda: next(ticks))
+        assert summary["stopped_early"] is True and order == [other.pk]  # 2nd feed skipped
+    finally:
+        tasks.run_feed = real

@@ -116,6 +116,10 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
     ],
+    # How many reverse proxies sit in front of the API (Vercel edge, the web app's /api rewrite...).
+    # Per-IP throttling reads the client address from X-Forwarded-For using this; wrong values
+    # make everyone share one address or let clients spoof theirs. Verify after the first deploy.
+    "NUM_PROXIES": env.int("NUM_PROXIES", default=None),
     "DEFAULT_THROTTLE_RATES": {
         "anon": "120/min",
         "user": "600/min",

@@ -58,7 +58,21 @@ def approve(listing: Listing, by, note: str = "") -> Listing:
     listing.moderated_by, listing.moderated_at = by, timezone.now()
     listing.moderation_note = note[:300]
     listing.save()
+    # Reports made before this review are settled by it: clearing them lets the same users report
+    # again later and stops old reports counting towards the next automatic unpublish.
+    cleared, _ = ListingReport.objects.filter(
+        content_type=ContentType.objects.get_for_model(listing), object_id=listing.pk
+    ).delete()
     _audit(by, "listing_approved", listing, "pending", "approved", note)
+    if cleared:
+        AuditLog.objects.create(
+            actor=by,
+            action="listing_reports_cleared",
+            object_type=listing._meta.label,
+            object_id=str(listing.pk),
+            after={"reports_cleared": cleared},
+            reason=note[:300],
+        )
     return listing
 
 

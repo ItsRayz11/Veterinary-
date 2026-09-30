@@ -88,8 +88,56 @@ def find_company(name: str, country) -> Company | None:
     return alias.company if alias else None
 
 
-def _match(row: StagedRecord, country) -> None:
-    """Fill match fields and flag duplicates/errors on an unsaved-or-saved staged row."""
+class Matcher:
+    """In-memory lookups so staging a whole file costs a fixed number of queries.
+
+    Loads names once (generics, synonyms, the country's companies and aliases, their existing
+    brands and the country's registration numbers) instead of querying per row.
+    """
+
+    def __init__(self, country):
+        self.country = country
+        self._generics = dict(Generic.objects.values_list("normalized_name", "pk"))
+        for key, generic_id in GenericSynonym.objects.values_list(
+            "normalized_synonym", "generic_id"
+        ):
+            self._generics.setdefault(key, generic_id)
+        self._companies = dict(
+            Company.objects.filter(country=country).values_list("normalized_name", "pk")
+        )
+        for key, company_id in CompanyAlias.objects.values_list("normalized_alias", "company_id"):
+            self._companies.setdefault(key, company_id)
+        self._products = {
+            (m, b): pk
+            for m, b, pk in Product.objects.filter(
+                manufacturer__in=set(self._companies.values())
+            ).values_list("manufacturer_id", "normalized_brand_name", "pk")
+        }
+        self._numbers = set(
+            ProductRegistration.objects.filter(country=country).values_list(
+                "registration_number", flat=True
+            )
+        )
+
+    def generic_id(self, name: str):
+        return self._generics.get(normalize_name(name))
+
+    def company_id(self, name: str):
+        return self._companies.get(normalize_name(name))
+
+    def product_id(self, company_id, brand: str):
+        return self._products.get((company_id, normalize_name(brand)))
+
+    def has_number(self, number: str) -> bool:
+        return number in self._numbers
+
+
+def _match(row: StagedRecord, country, matcher: Matcher | None = None) -> None:
+    """Fill match fields and flag duplicates/errors on a staged row.
+
+    Pass a `Matcher` when processing many rows (no queries per row); without one each lookup
+    queries the database, which is fine for a single interactive approval.
+    """
     if not (row.brand_name and row.generic_name and row.manufacturer_name):
         row.status, row.message = RowStatus.ERROR, "Brand, generic and manufacturer are required."
         return
@@ -97,21 +145,29 @@ def _match(row: StagedRecord, country) -> None:
         row.status = RowStatus.ERROR
         row.message = f"Unknown registration status '{row.registration_status}'."
         return
-    row.matched_generic = find_generic(row.generic_name)
-    row.matched_company = find_company(row.manufacturer_name, country)
-    if row.matched_company:
-        row.matched_product = Product.objects.filter(
-            manufacturer=row.matched_company,
-            normalized_brand_name=normalize_name(row.brand_name),
-        ).first()
-    if row.matched_product:
+    if matcher is not None:
+        row.matched_generic_id = matcher.generic_id(row.generic_name)
+        row.matched_company_id = matcher.company_id(row.manufacturer_name)
+        if row.matched_company_id:
+            row.matched_product_id = matcher.product_id(row.matched_company_id, row.brand_name)
+        number_taken = bool(row.registration_number) and matcher.has_number(row.registration_number)
+    else:
+        row.matched_generic = find_generic(row.generic_name)
+        row.matched_company = find_company(row.manufacturer_name, country)
+        if row.matched_company:
+            row.matched_product = Product.objects.filter(
+                manufacturer=row.matched_company,
+                normalized_brand_name=normalize_name(row.brand_name),
+            ).first()
+        number_taken = (
+            bool(row.registration_number)
+            and ProductRegistration.objects.filter(
+                country=country, registration_number=row.registration_number
+            ).exists()
+        )
+    if row.matched_product_id:
         row.status, row.message = RowStatus.DUPLICATE, "This brand already exists for the company."
-    elif (
-        row.registration_number
-        and ProductRegistration.objects.filter(
-            country=country, registration_number=row.registration_number
-        ).exists()
-    ):
+    elif number_taken:
         row.status = RowStatus.DUPLICATE
         row.message = "This registration number already exists in this country."
 
@@ -153,6 +209,7 @@ def stage_batch(
         created_by=user,
     )
     staged = []
+    matcher = Matcher(country)
     for i, raw in enumerate(rows, start=1):
         row = StagedRecord(
             batch=batch,
@@ -164,7 +221,7 @@ def stage_batch(
             registration_number=raw.get("registration_number", "")[:100],
             registration_status=raw.get("registration_status", "").lower()[:16],
         )
-        _match(row, country)
+        _match(row, country, matcher)
         staged.append(row)
     StagedRecord.objects.bulk_create(staged)
     AuditLog.objects.create(
@@ -188,7 +245,7 @@ def _link(source: Source, obj) -> None:
 
 
 @transaction.atomic
-def approve_row(row: StagedRecord, by) -> StagedRecord:
+def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> StagedRecord:
     """Create (or reuse) generic, company, product and registration as UNREVIEWED records."""
     if row.status not in (RowStatus.PENDING, RowStatus.DUPLICATE):
         raise ValidationError("Only pending rows can be approved.")
@@ -244,7 +301,8 @@ def approve_row(row: StagedRecord, by) -> StagedRecord:
         object_id=str(row.pk),
         after={"product": product.pk, "batch": batch.pk},
     )
-    _maybe_complete(batch)
+    if check_complete:
+        _maybe_complete(batch)
     return row
 
 
@@ -268,16 +326,34 @@ def reject_row(row: StagedRecord, by, reason: str) -> StagedRecord:
     return row
 
 
-def approve_clean(batch: ImportBatch, by) -> dict:
-    """Approve every pending row that has no error/duplicate flag. Returns counts."""
+APPROVE_CHUNK = 50
+
+
+def approve_clean(batch: ImportBatch, by, limit: int = APPROVE_CHUNK) -> dict:
+    """Approve up to `limit` clean pending rows (each approval writes ~20 rows, and a request
+    must finish inside the platform time limit). Call again while `remaining` is above zero.
+
+    Returns counts: approved, skipped (flagged when re-checked) and remaining pending rows.
+    """
     done = skipped = 0
-    for row in batch.rows.filter(status=RowStatus.PENDING).select_related("batch__country"):
+    rows = batch.rows.filter(status=RowStatus.PENDING).select_related("batch__country")
+    for row in rows[:limit]:
         try:
-            approve_row(row, by)
+            approve_row(row, by, check_complete=False)
             done += 1
-        except ValidationError:
+        except ValidationError as exc:
             skipped += 1
-    return {"approved": done, "skipped": skipped}
+            # Persist why it was skipped (the failed approval rolled back its own writes), so the
+            # row leaves the pending list and repeated calls make progress.
+            if row.status == RowStatus.PENDING:
+                row.status, row.message = RowStatus.DUPLICATE, " ".join(exc.messages)[:300]
+            row.save(update_fields=["status", "message", "updated_at"])
+    _maybe_complete(batch)
+    return {
+        "approved": done,
+        "skipped": skipped,
+        "remaining": batch.rows.filter(status=RowStatus.PENDING).count(),
+    }
 
 
 def _maybe_complete(batch: ImportBatch) -> None:

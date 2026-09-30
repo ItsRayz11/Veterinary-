@@ -22,6 +22,10 @@ What is protected, how, and what is still open. Every control below names the te
 | Weak transport | HTTPS redirect, secure cookies, HSTS (1 year) when `DEBUG=false`; `SECURE_PROXY_SSL_HEADER` for the Vercel proxy | `manage.py check --deploy` is clean |
 | Oversized requests | `DATA_UPLOAD_MAX_MEMORY_SIZE` 3 MB, import file cap 2 MB / 5000 rows | `test_hardening.py`, `ingestion` tests |
 
+## To verify after the first deployment
+- **Client IP seen by the API.** The login throttle is per IP. Behind Vercel and the web app rewrite the API may see a proxy address, so everyone would share one limit (or a spoofed header could dodge it). Set `NUM_PROXIES` to the number of proxies in front of the API, then confirm two different clients get separate throttle buckets.
+- **Postgres behaviour** (CI job `api-postgres`), and that `CSRF_TRUSTED_ORIGINS` contains the exact web origin (an authenticated POST from another origin is refused, which is intended).
+
 ## Known gaps (not fixed, on purpose or for lack of a decision)
 - **No two-factor authentication** for staff. Reviewer, moderator and admin accounts are the crown jewels; add TOTP before onboarding real reviewers.
 - **No per-account lockout**; only the per-IP throttle. Behind a shared NAT that can throttle honest users, and a distributed attacker is not slowed.

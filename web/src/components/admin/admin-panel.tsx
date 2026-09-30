@@ -93,7 +93,7 @@ export function AdminPanel() {
         Full data editing is in the{" "}
         <a
           className="text-primary underline"
-          href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}/admin/`}
+          href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}/${process.env.NEXT_PUBLIC_ADMIN_PATH ?? "admin/"}`}
         >
           Django admin
         </a>

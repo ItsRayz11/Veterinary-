@@ -3,9 +3,12 @@
 import hashlib
 import html
 import re
+import time
+from datetime import timedelta
 
 from defusedxml import ElementTree
 from django.contrib.auth import get_user_model
+from django.db.models import F
 from django.utils import timezone
 
 from apps.opportunities.models import Job, Scholarship
@@ -14,7 +17,13 @@ from apps.sources.models import Source
 from . import safe_http
 from .models import Feed, FeedKind, JobRun, RunStatus, SourceHealth
 
-LINK_CHECK_LIMIT = 50
+# Vercel stops a function after 30 s (api/vercel.json). Each probe is capped at PROBE_TIMEOUT and
+# the loop stops starting new probes after LINK_CHECK_BUDGET seconds, so a run finishes in time;
+# the rest waits for the next run (never-checked first, then least recently checked).
+LINK_CHECK_LIMIT = 25
+LINK_CHECK_BUDGET = 12
+PROBE_TIMEOUT = 5
+STALE_RUN_MINUTES = 15
 FEED_MAX_ITEMS = 30
 BOT_USERNAME = "feed-bot"
 
@@ -37,13 +46,15 @@ def bot_user():
 # ---------- link health ----------
 
 
-def _probe(url: str) -> tuple[int | None, str]:
-    if not safe_http.allowed_by_robots(url):
+def _probe(url: str, robots_cache: dict) -> tuple[int | None, str]:
+    if not safe_http.allowed_by_robots(url, timeout=PROBE_TIMEOUT, cache=robots_cache):
         return None, "skipped: robots.txt does not allow automated access"
-    status, _, _ = safe_http.fetch(url, method="HEAD")
+    status, _, _ = safe_http.fetch(url, method="HEAD", timeout=PROBE_TIMEOUT)
     if status in (403, 405, 501):  # some servers refuse HEAD
         try:
-            status, _, _ = safe_http.fetch(url, method="GET", max_bytes=2_000_000)
+            status, _, _ = safe_http.fetch(
+                url, method="GET", max_bytes=2_000_000, timeout=PROBE_TIMEOUT
+            )
         except safe_http.FetchError as exc:
             if "larger than" not in str(exc):
                 raise
@@ -51,16 +62,30 @@ def _probe(url: str) -> tuple[int | None, str]:
     return status, ""
 
 
-def check_source_links(limit: int = LINK_CHECK_LIMIT) -> dict:
-    """Check the least recently checked Source URLs; record the result per source."""
+def check_source_links(
+    limit: int = LINK_CHECK_LIMIT, budget_seconds: float = LINK_CHECK_BUDGET, clock=time.monotonic
+) -> dict:
+    """Check never-checked, then least recently checked, Source URLs; record each result.
+
+    Stops starting new probes once `budget_seconds` have passed (see LINK_CHECK_BUDGET).
+    """
     qs = (
-        Source.objects.exclude(url="").select_related("health").order_by("health__checked_at", "pk")
+        Source.objects.exclude(url="")
+        .select_related("health")
+        # NULLs first explicitly: PostgreSQL sorts them last, SQLite first.
+        .order_by(F("health__checked_at").asc(nulls_first=True), "pk")
     )
+    started = clock()
+    robots_cache: dict = {}
     ok = failed = skipped = 0
+    stopped_early = False
     for source in qs[:limit]:
+        if clock() - started > budget_seconds:
+            stopped_early = True
+            break
         code, error = None, ""
         try:
-            code, error = _probe(source.url)
+            code, error = _probe(source.url, robots_cache)
         except safe_http.FetchError as exc:
             error = str(exc)
         health, _ = SourceHealth.objects.get_or_create(
@@ -79,7 +104,13 @@ def check_source_links(limit: int = LINK_CHECK_LIMIT) -> dict:
         health.status_code, health.error = code, error[:200]
         health.checked_at = timezone.now()
         health.save()
-    return {"checked": ok + failed + skipped, "ok": ok, "failed": failed, "skipped": skipped}
+    return {
+        "checked": ok + failed + skipped,
+        "ok": ok,
+        "failed": failed,
+        "skipped": skipped,
+        "stopped_early": stopped_early,
+    }
 
 
 # ---------- feeds ----------
@@ -100,7 +131,10 @@ def parse_feed(body: bytes) -> list[dict]:
         for child in node:
             cname = child.tag.rsplit("}", 1)[-1]
             if cname == "link":
-                fields["link"] = (child.get("href") or child.text or "").strip()
+                # Atom entries carry several links; only the page itself (rel absent or
+                # "alternate") is the posting. RSS <link> has no rel and is plain text.
+                if child.get("rel") in (None, "alternate") and "link" not in fields:
+                    fields["link"] = (child.get("href") or child.text or "").strip()
             elif cname in ("title", "description", "summary") and cname not in fields:
                 fields[cname] = _tag(child.text or "")
         title, link = fields.get("title", ""), fields.get("link", "")
@@ -183,9 +217,15 @@ def run_feed(feed: Feed) -> dict:
     return finish(f"created {result['created']}, duplicates {result['duplicates']}")
 
 
-def run_all_feeds() -> dict:
-    total = {"feeds": 0, "created": 0}
-    for feed in Feed.objects.filter(enabled=True):
+def run_all_feeds(budget_seconds: float = LINK_CHECK_BUDGET, clock=time.monotonic) -> dict:
+    """Run enabled feeds, least recently run first, stopping before the platform time limit."""
+    started = clock()
+    total = {"feeds": 0, "created": 0, "stopped_early": False}
+    feeds = Feed.objects.filter(enabled=True).order_by(F("last_run_at").asc(nulls_first=True), "pk")
+    for feed in feeds:
+        if clock() - started > budget_seconds:
+            total["stopped_early"] = True  # the rest run first next time
+            break
         total["feeds"] += 1
         total["created"] += run_feed(feed)["created"]
     return total
@@ -199,6 +239,13 @@ TASKS = {"link-check": check_source_links, "feeds": run_all_feeds}
 def run_task(name: str) -> JobRun:
     """Run a named task and record the outcome. Unknown names raise KeyError."""
     fn = TASKS[name]
+    # A run killed by the platform (time limit, deploy) never finishes; close it so the audit
+    # trail does not show it as running forever.
+    JobRun.objects.filter(
+        task=name,
+        status=RunStatus.RUNNING,
+        created_at__lt=timezone.now() - timedelta(minutes=STALE_RUN_MINUTES),
+    ).update(status=RunStatus.FAILED, error="Interrupted (no completion recorded)")
     run = JobRun.objects.create(task=name)
     try:
         run.summary = fn()

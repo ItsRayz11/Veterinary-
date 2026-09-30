@@ -84,6 +84,17 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - Phases 1-5 post-commit review (graphify dependency graph + manual read): no import cycles; core abstractions are Generic/Product/ReviewStatus as intended. Found and fixed: (1) auth throttle was a silent no-op, (2) unreviewed registrations leaked into product pages and country lists. Both now covered by tests.
 - Known, deferred: fuzzy search loads all generic names on a miss (fine at small scale; replace with pg_trgm on Postgres); `docs/API.md` and `INGESTION.md` not written yet (`DEPLOYMENT.md`, `TESTING.md` now exist).
 
+## Final review (phases 6-14)
+A high-effort code review of everything since the last push, plus a manual pass, found and fixed:
+- **Assistant number check bypass (safety):** numbers with a glued unit (`500mg`, `2.5mg/kg`) were not checked, and spelled-out numbers / fractions were ignored. Now digits with or without units, number words and fraction characters must all appear in the records; 12 bypass tests. A stray control character in a regex (from script escaping) was found and removed; the tree was scanned for others (none).
+- **Link check on Postgres:** `NULLS FIRST` was database-dependent, so never-checked sources could starve; explicit ordering + rotation test. **30 s function limit:** per-probe timeout, 12 s budget, per-host robots cache, stale-run cleanup; feeds share the budget.
+- **Atom feeds:** the posting link was overwritten by enclosure/replies links; only `alternate` is used.
+- **Reports carried over** after a moderator re-approved a listing; now cleared (and audited) on approval.
+- **Import form** threw after a successful upload (`currentTarget` after `await`); **flashcards** lost the whole session on one failed save; **interaction checker** could show a stale "nothing recorded" result for a different drug list; **service worker** showed "offline" on a slow but working network; **admin link** ignored `ADMIN_URL`.
+- **Import scale (manual finding):** ~4 queries per row to stage and ~25 to approve would time out on a 5,000-row file. Staging is now ~20 queries for any size (in-memory matcher, agreement test), approval is chunked (50/click) and flagged rows leave the pending list.
+- **Throttle behind proxies (manual finding):** `NUM_PROXIES` setting added; must be verified after deploy.
+- Real-browser end-to-end runs: calculators, offline, login/logout, admin panel, CSP (all passing).
+
 ## Phase 6: Pakistan Data
 - [x] Reviewed ingestion pipeline (`apps/ingestion`, `docs/INGESTION.md`): CSV stage -> match (generic/company/product/registration, duplicates, errors) -> staff approve/reject -> unreviewed records linked to the Source; checksum + licence note required; audit log; admin + Imports tab in the review panel; 6 tests; verified live (imports stay hidden until reviewed)
 - [ ] Real Pakistan data: blocked on per-source terms/legal sign-off (checklist in `INGESTION.md` all unfilled); no fetcher enabled; nothing invented

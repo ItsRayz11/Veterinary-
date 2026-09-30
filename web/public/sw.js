@@ -100,15 +100,21 @@ function withTimeout(promise, ms) {
 async function networkFirstPage(request) {
   const url = new URL(request.url);
   const cache = await caches.open(PAGE_CACHE);
-  try {
-    const res = await withTimeout(fetch(request), NAV_TIMEOUT_MS);
+  const cached = await cache.match(request);
+  // Always try the network; a good response refreshes the saved copy even when it arrives late.
+  const network = fetch(request).then((res) => {
     if (res.ok && res.type === "basic" && allowedPage(url.pathname)) {
       cache.put(request, res.clone());
       trimPages();
     }
     return res;
+  });
+  network.catch(() => {}); // a late failure after we already answered must not be unhandled
+  try {
+    // With a saved copy, do not keep the user waiting on a slow network. With none, wait for the
+    // network exactly as the browser would: a slow connection is not the same as being offline.
+    return cached ? await withTimeout(network, NAV_TIMEOUT_MS) : await network;
   } catch {
-    const cached = await cache.match(request);
     return cached || (await cache.match(OFFLINE_URL)) || Response.error();
   }
 }

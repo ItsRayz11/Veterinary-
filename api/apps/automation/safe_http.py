@@ -78,16 +78,29 @@ def fetch(
     raise FetchError("Too many redirects.")
 
 
-def allowed_by_robots(url: str) -> bool:
-    """False when robots.txt disallows our agent, or when it cannot be determined for a 5xx."""
+def allowed_by_robots(
+    url: str, *, timeout: int = DEFAULT_TIMEOUT, cache: dict | None = None
+) -> bool:
+    """False when robots.txt disallows our agent, or when it cannot be determined for a 5xx.
+
+    Pass the same `cache` dict for a batch of URLs so each host's robots.txt is fetched once.
+    A cached value of None means "could not confirm permission" and denies the whole host.
+    """
     parts = urlparse(url)
-    robots_url = f"{parts.scheme}://{parts.netloc}/robots.txt"
+    host = f"{parts.scheme}://{parts.netloc}"
+    if cache is not None and host in cache:
+        parser = cache[host]
+        return parser is not None and parser.can_fetch(USER_AGENT, url)
+    parser = None
     try:
-        status, body, _ = fetch(robots_url, max_bytes=200_000)
+        status, body, _ = fetch(f"{host}/robots.txt", max_bytes=200_000, timeout=timeout)
+        if not (status in (401, 403) or status >= 500):  # those mean permission is unconfirmed
+            parser = RobotFileParser()
+            parser.parse(
+                body.decode("utf-8", errors="replace").splitlines() if status < 400 else []
+            )
     except FetchError:
-        return False
-    if status in (401, 403) or status >= 500:
-        return False  # cannot confirm permission
-    parser = RobotFileParser()
-    parser.parse(body.decode("utf-8", errors="replace").splitlines() if status < 400 else [])
-    return parser.can_fetch(USER_AGENT, url)
+        parser = None
+    if cache is not None:
+        cache[host] = parser
+    return parser is not None and parser.can_fetch(USER_AGENT, url)
