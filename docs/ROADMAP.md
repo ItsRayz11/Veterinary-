@@ -133,6 +133,12 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [ ] Not started: semantic/vector search, OCR/label extraction, AI-drafted content (all would need the same reviewed-record gate)
 - [x] CI fixed to run without `api/.env` (DEBUG/SECRET_KEY env; verified locally with `.env` hidden, 162 tests); Postgres job added as informational (`continue-on-error`) until first seen green
 ## Phase 13: PWA + Performance
+- [x] Installable PWA: manifest (name, standalone, theme colours, maskable icon, shortcuts), stdlib-generated icons (`web/scripts/make-icons.py`), apple-touch icon, theme-color meta; verified in a production build (manifest, icons, `sw.js` served with `no-cache`)
+- [x] Service worker (`public/sw.js`): public reference pages and calculators available offline (calculators precached with their JS chunks), static assets cache-first, network-first navigation with an offline page, bounded cache; never touches `/api/`, accounts, admin, exams, flashcards, assistant or auth pages. 16 tests run the real worker in a sandbox; a deliberate mutation (removing `/account` from the deny list) was caught
+- [x] Query-budget guards on 13 public endpoints + growth tests (`core/tests/test_query_budget.py`). The growth test found a real N+1 (drug page re-fetched the generic once per brand: 13 -> 23 queries); fixed in `brands_for_generic`, count now flat
+- [ ] Not verified on real devices/browsers: installability prompt, Lighthouse scores, offline behaviour in an actual browser (only unit-tested + HTTP-level)
+- [ ] Web push notifications (needs VAPID keys + subscription store + an email/notification decision); background sync
+- [ ] API-level HTTP caching headers/CDN rules and image optimisation (no images yet)
 ## Phase 14: Production Hardening
 
 (Phases 2-14 get task-level checklists when they start, per the continuity rule. Scope per phase is defined in `PRODUCT_SPEC.md`.)

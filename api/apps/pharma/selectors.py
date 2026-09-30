@@ -26,7 +26,7 @@ def brands_for_generic(generic: Generic, country_iso2: str | None = None):
     qs = (
         Product.objects.public()
         .filter(generic=generic)
-        .select_related("manufacturer", "manufacturer__country")
+        .select_related("generic", "manufacturer", "manufacturer__country")
         .prefetch_related(public_registrations(), "packs__dosage_form", "packs__pack_size_unit")
     )
     if country_iso2:
