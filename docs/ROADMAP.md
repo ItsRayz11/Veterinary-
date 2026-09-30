@@ -27,8 +27,9 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Tooling: ruff, pytest(-django), eslint, prettier, vitest, typecheck (all passing locally)
 - [x] Logging + uniform API error envelope + `/api/v1/health/`
 - [x] Design tokens (light/dark) + first component (StatusBadge)
-- [ ] Base UI kit: buttons, inputs, tables, tabs, alerts, breadcrumbs, skeletons, empty/error states, search UI, app shell with mobile bottom nav
-- [ ] Web -> API client + env config
+- [x] Base UI kit (part): alerts, breadcrumbs, data table, section nav, empty/error/not-found states, search UI, app shell with skip link + mobile bottom nav
+- [ ] Base UI kit (remaining): buttons, form controls, skeleton/loading states, modal
+- [x] Web -> API client (server `apiGet`, same-origin `/api/v1` rewrite for browser code)
 
 ## Phase 2: Core Pharmaceutical Database
 - [x] Country (jurisdiction) model
@@ -55,7 +56,27 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [ ] Public references section per page (needs Phase 4 API)
 
 ## Phase 4: Drug Encyclopedia UI
+- [x] Public read API: generics, products, companies, countries, species, grouped search (accent/case-insensitive, synonyms, did-you-mean)
+- [x] Search: global box with live results + /search page
+- [x] Generic page: summary, sections nav, species-filtered dosing table, safety, brands table (country filter), sources
+- [x] Product page: composition/strengths, packs, country availability, withdrawal (strict), sources
+- [x] Company page: catalogue + generic portfolio; navigation both ways (generic -> brand -> company -> products)
+- [x] Review status + "development data" shown on every record; empty states say verified info is unavailable
+- [ ] Species pages (`/species/[slug]`), country landing pages, medicine categories (drug class browse)
+- [ ] Typo tolerance on Postgres (pg_trgm) and brand-name fuzzy match; current fuzzy covers generics only
+- [ ] SEO: sitemap, robots, JSON-LD, OG images (Phase 14 audit)
+- [ ] Manual mobile/browser QA (only HTTP-level checks done so far)
+
 ## Phase 5: Calculators
+- [x] Pure engines in Python (authoritative) and TypeScript (instant UI), identical results via shared hand-computed vectors (`shared/calc-vectors.json`)
+- [x] mg/kg, mg->mL, mL->mg, % -> mg/mL, dilution, dehydration deficit, daily fluid, infusion rate, drip rate, CRI, drinking-water flock dose, withdrawal end date
+- [x] Input validation, formula + steps exposed, max-dose warning (never clips), exact decimals
+- [x] API endpoint with function whitelist
+- [x] Dose calculator page (weight lb/kg, mg/mL or %, prefill link from calculator-ready doses only)
+- [ ] UI pages for the other calculators (dilution, fluids, drip, CRI, flock, withdrawal date)
+- [ ] Guided flow: pick species -> generic -> indication -> product strength (needs verified data, Phase 6)
+- [ ] Medication schedule / reminders (needs user accounts UI)
+
 ## Phase 6: Pakistan Data
 ## Phase 7: Pricing
 ## Phase 8: Education
