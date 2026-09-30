@@ -92,6 +92,17 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [ ] Price charts + analytics (increase/decrease, region comparison)
 
 ## Phase 8: Education
+- [x] Subject > Topic (optional link to a generic), structured MCQ Question + Options (DB: max one correct option), difficulty, country/exam/university/year/source
+- [x] Publishing rule: question needs source, >= 2 options and exactly one correct option before it can go public
+- [x] Filters: subject, topic, university, exam, country, year, difficulty
+- [x] Mock exams of 20/50/100 questions: random from filtered pool, answers hidden until submit, scoring, per-topic breakdown, weak topics, history
+- [x] Answer validation (option must belong to its question; users can only see their own exams)
+- [x] Bookmarks (toggle), question error reports, past-paper index (links to legal sources only, licence note required)
+- [x] Admin: options inline, governed publish actions, readiness check
+- [ ] Web UI: study hub, question practice, exam runner, results (not started)
+- [ ] Real question content and past-paper index entries (none exist; nothing invented)
+- [ ] Flashcards, notes/lessons, book references, progress-over-time charts
+
 ## Phase 9: Jobs + Scholarships
 ## Phase 10: Automation
 ## Phase 11: India

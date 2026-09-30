@@ -17,8 +17,14 @@ def set_review_status(record, new_status: str, by, reason: str = ""):
     new_status = ReviewStatus(new_status)
     old_status = record.review_status
 
-    if new_status in NEEDS_SOURCE and not has_source(record):
+    if new_status in NEEDS_SOURCE and not (
+        has_source(record) or getattr(record, "source_id", None)
+    ):
         raise ValidationError("A source must be linked before this status can be set.")
+
+    hook = getattr(record, "validate_publishable", None)
+    if hook and new_status in PUBLIC_STATUSES:
+        hook()  # model-specific readiness, e.g. a question needs exactly one correct option
 
     if new_status in SIGNED_OFF_STATUSES:
         if not by.can_approve_clinical:
