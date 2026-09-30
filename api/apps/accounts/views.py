@@ -7,11 +7,12 @@ from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 
 from apps.core.schema import untyped_schema
+from apps.core.throttling import ClientIPMixin
 
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
 
-class AuthThrottle(SimpleRateThrottle):
+class AuthThrottle(ClientIPMixin, SimpleRateThrottle):
     """Per-IP limit on register/login attempts (rate configured as 'auth' in settings)."""
 
     scope = "auth"

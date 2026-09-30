@@ -23,6 +23,7 @@ from .models import Feed, FeedKind, JobRun, RunStatus, SourceHealth
 LINK_CHECK_LIMIT = 25
 LINK_CHECK_BUDGET = 12
 PROBE_TIMEOUT = 5
+PROBE_DEADLINE = 8  # all requests for ONE source (robots, HEAD, GET, redirects) together
 STALE_RUN_MINUTES = 15
 FEED_MAX_ITEMS = 30
 BOT_USERNAME = "feed-bot"
@@ -47,13 +48,16 @@ def bot_user():
 
 
 def _probe(url: str, robots_cache: dict) -> tuple[int | None, str]:
-    if not safe_http.allowed_by_robots(url, timeout=PROBE_TIMEOUT, cache=robots_cache):
+    deadline = time.monotonic() + PROBE_DEADLINE
+    if not safe_http.allowed_by_robots(
+        url, timeout=PROBE_TIMEOUT, cache=robots_cache, deadline=deadline
+    ):
         return None, "skipped: robots.txt does not allow automated access"
-    status, _, _ = safe_http.fetch(url, method="HEAD", timeout=PROBE_TIMEOUT)
+    status, _, _ = safe_http.fetch(url, method="HEAD", timeout=PROBE_TIMEOUT, deadline=deadline)
     if status in (403, 405, 501):  # some servers refuse HEAD
         try:
             status, _, _ = safe_http.fetch(
-                url, method="GET", max_bytes=2_000_000, timeout=PROBE_TIMEOUT
+                url, method="GET", max_bytes=2_000_000, timeout=PROBE_TIMEOUT, deadline=deadline
             )
         except safe_http.FetchError as exc:
             if "larger than" not in str(exc):
@@ -88,6 +92,8 @@ def check_source_links(
             code, error = _probe(source.url, robots_cache)
         except safe_http.FetchError as exc:
             error = str(exc)
+        except Exception as exc:  # noqa: BLE001 - one bad source must never abort the batch
+            error = f"Unexpected error: {type(exc).__name__}"
         health, _ = SourceHealth.objects.get_or_create(
             source=source, defaults={"checked_at": timezone.now(), "ok": True}
         )
@@ -227,7 +233,12 @@ def run_all_feeds(budget_seconds: float = LINK_CHECK_BUDGET, clock=time.monotoni
             total["stopped_early"] = True  # the rest run first next time
             break
         total["feeds"] += 1
-        total["created"] += run_feed(feed)["created"]
+        try:
+            total["created"] += run_feed(feed)["created"]
+        except Exception as exc:  # noqa: BLE001 - a broken feed must not starve the others
+            feed.last_run_at = timezone.now()  # so it stops sorting first on every later run
+            feed.last_result = f"failed: unexpected {type(exc).__name__}"[:300]
+            feed.save(update_fields=["last_run_at", "last_result", "updated_at"])
     return total
 
 

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
 from rest_framework import status as http
 from rest_framework.decorators import api_view, permission_classes
@@ -35,6 +36,7 @@ def summary(request):
             "listings_pending": Job.objects.filter(status=ListingStatus.PENDING).count()
             + Scholarship.objects.filter(status=ListingStatus.PENDING).count(),
             "role": request.user.role,
+            "admin_url": f"/{settings.ADMIN_URL}",
             "can_approve_clinical": request.user.can_approve_clinical,
         }
     )

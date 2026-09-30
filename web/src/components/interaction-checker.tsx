@@ -64,7 +64,13 @@ export function InteractionChecker() {
     let live = true;
     apiFetch<Result>(`/interactions/check?generics=${key}`)
       .then((r) => {
-        if (live && r) setResult({ key, data: r });
+        if (!live) return;
+        if (r) {
+          setResult({ key, data: r });
+          setFailed(null);
+        } else {
+          setFailed(key); // 401/403: not an answer, so never leave "Checking…" on screen
+        }
       })
       .catch(() => live && setFailed(key));
     return () => {

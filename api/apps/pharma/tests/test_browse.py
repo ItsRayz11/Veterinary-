@@ -26,7 +26,7 @@ def test_drug_class_tree_counts_and_detail_include_descendants(api, classed):
     parent, leaf = classed
     rows = {r["slug"]: r for r in api.get("/api/v1/drug-classes/").json()}
     assert rows[leaf.slug]["generic_count"] == 1
-    assert rows[parent.slug]["generic_count"] == 0
+    assert rows[parent.slug]["generic_count"] == 1  # includes its sub-class, like the detail page
     top = api.get(f"/api/v1/drug-classes/{parent.slug}/").json()
     assert [g["slug"] for g in top["generics"]] == ["enrofloxacin"]
     assert [c["slug"] for c in top["children"]] == [leaf.slug]

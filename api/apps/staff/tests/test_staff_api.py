@@ -157,3 +157,10 @@ def test_automation_status_and_manual_run_permissions(catalog):
     assert admin.post("/api/v1/staff/automation/run/nope/", {}, format="json").status_code == 404
     assert AuditLog.objects.filter(action="automation_run_manually").exists()
     assert admin.get("/api/v1/staff/automation/").json()["runs"][0]["task"] == "feeds"
+
+
+def test_summary_gives_staff_the_configured_admin_path(catalog, settings):
+    settings.ADMIN_URL = "private-path/"
+    editor, _ = client_for(Role.EDITOR)
+    assert editor.get("/api/v1/staff/summary/").json()["admin_url"] == "/private-path/"
+    assert APIClient().get("/api/v1/staff/summary/").status_code in (401, 403)  # never public

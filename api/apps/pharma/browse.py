@@ -59,22 +59,34 @@ def species_detail(request, slug):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def drug_class_list(request):
-    counts = dict(
+    direct = dict(
         Generic.objects.public()
         .exclude(drug_class__isnull=True)
         .values_list("drug_class")
         .annotate(n=Count("pk"))
         .values_list("drug_class", "n")
     )
+    classes = list(DrugClass.objects.select_related("parent"))
+    children: dict[int | None, list[int]] = {}
+    for c in classes:
+        children.setdefault(c.parent_id, []).append(c.pk)
+    totals: dict[int, int] = {}
+
+    def total(pk: int) -> int:
+        """Generics in this class and everything below it, matching what the detail page lists."""
+        if pk not in totals:
+            totals[pk] = direct.get(pk, 0) + sum(total(k) for k in children.get(pk, []))
+        return totals[pk]
+
     return Response(
         [
             {
                 "slug": c.slug,
                 "name": c.name,
                 "parent": c.parent.slug if c.parent else None,
-                "generic_count": counts.get(c.pk, 0),
+                "generic_count": total(c.pk),
             }
-            for c in DrugClass.objects.select_related("parent")
+            for c in classes
         ]
     )
 

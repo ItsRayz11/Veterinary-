@@ -16,6 +16,7 @@ export interface Summary {
   price_submissions_pending: number;
   question_reports_open: number;
   listings_pending?: number;
+  admin_url?: string; // from the API, so a private ADMIN_URL never ships in the public bundle
   role: string;
   can_approve_clinical: boolean;
 }
@@ -93,7 +94,7 @@ export function AdminPanel() {
         Full data editing is in the{" "}
         <a
           className="text-primary underline"
-          href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}/${process.env.NEXT_PUBLIC_ADMIN_PATH ?? "admin/"}`}
+          href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}${summary?.admin_url ?? "/admin/"}`}
         >
           Django admin
         </a>

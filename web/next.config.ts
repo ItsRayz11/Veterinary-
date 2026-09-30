@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 import { securityHeaders } from "./src/lib/security-headers";
 
-const API_URL = process.env.API_URL ?? "http://127.0.0.1:8000";
-
 const nextConfig: NextConfig = {
   async headers() {
     return [
@@ -17,10 +15,8 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Same-origin proxy (Django routes end with "/", Next strips it, so it is re-added here) so browser code (search box, calculators, auth cookies) never needs CORS.
-  async rewrites() {
-    return [{ source: "/api/v1/:path*", destination: `${API_URL}/api/v1/:path*/` }];
-  },
+  // The /api/v1/* bridge to the Django API lives in src/proxy.ts (it also forwards the real
+  // client IP for throttling), so no rewrites are configured here.
 };
 
 export default nextConfig;

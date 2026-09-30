@@ -113,7 +113,9 @@ async function networkFirstPage(request) {
   try {
     // With a saved copy, do not keep the user waiting on a slow network. With none, wait for the
     // network exactly as the browser would: a slow connection is not the same as being offline.
-    return cached ? await withTimeout(network, NAV_TIMEOUT_MS) : await network;
+    const res = cached ? await withTimeout(network, NAV_TIMEOUT_MS) : await network;
+    // A server error (outage, bad deploy) is worse than a slightly old saved copy.
+    return cached && res.status >= 500 ? cached : res;
   } catch {
     return cached || (await cache.match(OFFLINE_URL)) || Response.error();
   }

@@ -7,17 +7,17 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import UserRateThrottle
 
 from apps.accounts.permissions import IsModerator
 from apps.core.schema import untyped_schema
+from apps.core.throttling import UserThrottle
 from apps.countries.models import Country
 
 from . import services
 from .models import Job, Listing, ListingStatus, Scholarship
 
 
-class SubmitThrottle(UserRateThrottle):
+class SubmitThrottle(UserThrottle):
     scope = "submit"
 
 

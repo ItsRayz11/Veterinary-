@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/primitives";
 import { Button, Field, Select, TextInput } from "@/components/ui/forms";
 import { ClientApiError, apiSend } from "@/lib/client-api";
+import { safeNext } from "@/lib/safe-next";
 import { notifyAuthChanged } from "@/lib/use-user";
 
 const ROLES = [
@@ -13,12 +14,6 @@ const ROLES = [
   { value: "student", label: "Veterinary student" },
   { value: "professional", label: "Veterinary professional" },
 ];
-
-/** Only same-site relative paths are allowed as redirect targets (no open redirect). */
-function safeNext(): string {
-  const next = new URLSearchParams(window.location.search).get("next");
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
-}
 
 /** Roles chosen here are self-declared; privileged roles are only granted by admins. */
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
@@ -38,7 +33,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     try {
       await apiSend("POST", register ? "/auth/register" : "/auth/login", payload);
       notifyAuthChanged();
-      router.push(safeNext());
+      router.push(
+        safeNext(new URLSearchParams(window.location.search).get("next"), window.location.origin),
+      );
       router.refresh();
     } catch (err) {
       setError(

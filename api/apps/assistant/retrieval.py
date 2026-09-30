@@ -26,25 +26,43 @@ def _fmt(value) -> str:
     return f"{value.normalize():f}" if value is not None else ""
 
 
-def _mentions(question_norm: str, name_norm: str) -> bool:
-    return bool(name_norm) and f" {name_norm} " in f" {question_norm} "
+MAX_NGRAM = 6  # longest name (in words) that can be recognised
+MAX_TOKENS = 60  # only the start of a long question is searched
+
+
+def _candidates(question_norm: str) -> list[str]:
+    """Every run of 1..MAX_NGRAM consecutive words in the question."""
+    tokens = question_norm.split()[:MAX_TOKENS]
+    return sorted(
+        {
+            " ".join(tokens[i:j])
+            for i in range(len(tokens))
+            for j in range(i + 1, min(len(tokens), i + MAX_NGRAM) + 1)
+        }
+    )
 
 
 def find_generics(question: str) -> list[Generic]:
-    """Generics named in the question, via generic name, synonym or brand name (whole words)."""
-    q = normalize_name(question)
-    hits: dict[int, Generic] = {}
-    for g in Generic.objects.public().only("id", "name", "normalized_name"):
-        if _mentions(q, g.normalized_name):
-            hits[g.pk] = g
-    for syn in GenericSynonym.objects.filter(generic__in=Generic.objects.public()).select_related(
-        "generic"
+    """Reviewed generics named in the question, via generic name, synonym or brand name.
+
+    Whole-word matching done as indexed IN lookups on the word runs of the question, so the cost
+    depends on the question's length, not on how many drugs and brands the catalogue holds.
+    """
+    names = _candidates(normalize_name(question))
+    if not names:
+        return []
+    public = Generic.objects.public()
+    hits: dict[int, Generic] = {g.pk: g for g in public.filter(normalized_name__in=names)}
+    for syn in GenericSynonym.objects.filter(
+        normalized_synonym__in=names, generic__in=public
+    ).select_related("generic"):
+        hits.setdefault(syn.generic_id, syn.generic)
+    for product in (
+        Product.objects.public()
+        .filter(normalized_brand_name__in=names, generic__in=public)
+        .select_related("generic")
     ):
-        if _mentions(q, syn.normalized_synonym):
-            hits.setdefault(syn.generic_id, syn.generic)
-    for product in Product.objects.public().select_related("generic"):
-        if _mentions(q, product.normalized_brand_name) and product.generic.is_public:
-            hits.setdefault(product.generic_id, product.generic)
+        hits.setdefault(product.generic_id, product.generic)
     return sorted(hits.values(), key=lambda g: g.name)[:MAX_GENERICS]
 
 

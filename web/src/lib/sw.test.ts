@@ -10,7 +10,7 @@ function loadWorker() {
   const listeners: Record<string, Listener> = {};
   const stores = new Map<string, Map<string, Response>>();
   const fetched: string[] = [];
-  const network = { online: true, delay: 0, pages: {} as Record<string, string> };
+  const network = { online: true, delay: 0, status: 200, pages: {} as Record<string, string> };
 
   const key = (r: Request | string) =>
     typeof r === "string" ? new URL(r, "https://site.test").href : r.url;
@@ -36,7 +36,7 @@ function loadWorker() {
     if (!network.online) throw new TypeError("offline");
     const path = new URL(url).pathname;
     const body = network.pages[path] ?? `network ${path}`;
-    const res = new Response(body, { status: 200 });
+    const res = new Response(body, { status: network.status });
     Object.defineProperty(res, "type", { value: "basic" });
     return res;
   };
@@ -176,6 +176,25 @@ describe("service worker", () => {
     await new Promise((r) => setTimeout(r, 300)); // the late response refreshes the cache
     sw.network.online = false;
     expect(await (await sw.request("/drugs/x"))!.text()).toBe("new copy");
+  });
+
+  it("prefers the saved copy over a 5xx from the server", async () => {
+    sw.network.pages["/drugs/y"] = "good copy";
+    await (await sw.request("/drugs/y"))!.text(); // saved
+    sw.network.status = 503;
+    sw.network.pages["/drugs/y"] = "Service Unavailable";
+    expect(await (await sw.request("/drugs/y"))!.text()).toBe("good copy");
+  });
+
+  it("shows the server error when nothing is saved, and never saves error pages", async () => {
+    sw.network.status = 502;
+    sw.network.pages["/species/horse"] = "Bad gateway";
+    const res = await sw.request("/species/horse");
+    expect(res!.status).toBe(502);
+    sw.network.status = 200;
+    sw.network.online = false;
+    const later = await sw.request("/species/horse");
+    expect(await later!.text()).toBe("cached /offline"); // the error page was not cached
   });
 
   it("ignores malformed messages", async () => {

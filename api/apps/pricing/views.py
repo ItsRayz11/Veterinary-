@@ -3,9 +3,9 @@ from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import UserRateThrottle
 
 from apps.core.schema import untyped_schema
+from apps.core.throttling import UserThrottle
 from apps.countries.models import Country
 from apps.pharma.models import Product, ProductPack
 
@@ -13,7 +13,7 @@ from . import analytics, selectors
 from .models import PriceRecord, PriceSubmission, PriceType, SubmissionKind
 
 
-class SubmitThrottle(UserRateThrottle):
+class SubmitThrottle(UserThrottle):
     scope = "submit"
 
 

@@ -231,9 +231,27 @@ def test_faithful_answers_with_glued_units_pass(world, answer):
     assert r["status"] == AnswerStatus.ANSWERED
 
 
-def test_ids_and_words_inside_other_tokens_are_not_treated_as_numbers():
-    assert service.numbers_are_grounded("Vitamin B12 and H2O [G1]", "note")
-    assert not service.numbers_are_grounded("Vitamin 12", "note")
+def test_only_record_ids_are_exempt_from_the_number_check():
+    assert service.numbers_are_grounded("See [G1] and G2 for details", "no digits here")
+    # digits inside other tokens still count, so they must appear in the records as well
+    assert not service.numbers_are_grounded("Vitamin B12 and H2O [G1]", "note")
+    assert service.numbers_are_grounded("Vitamin B12 and H2O [G1]", "Contains B12 and H2O")
+
+
+@pytest.mark.parametrize(
+    ("answer", "records", "grounded"),
+    [
+        ("give .25 mg/kg q8h", "dose=0.5 to 1 mg/kg; interval_hours=12", False),  # leading dot, q8h
+        ("give x3 daily", "interval_hours=24", False),  # attached multiplier
+        ("give .5 mg/kg", "dose=0.5 to 1 mg/kg", True),  # .5 is the recorded 0.5
+        ("every 12h", "interval_hours=12", True),  # glued unit, recorded value
+        ("give 1/2 the dose", "dose=1 mg/kg", False),  # the 2 is not in the records
+        ("5,000 IU", "dose=5000 IU", False),  # thousands separator: rejected, never accepted
+        ("dose is 5-10 mg/kg", "dose=5 to 10 mg/kg", True),  # range with a hyphen
+    ],
+)
+def test_number_grounding_edge_cases(answer, records, grounded):
+    assert service.numbers_are_grounded(answer, records) is grounded
 
 
 def test_citation_pattern_matches_record_ids_only():

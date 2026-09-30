@@ -22,7 +22,7 @@
 ## API on Vercel
 Config is in `api/pyproject.toml` (`[tool.vercel] entrypoint`) and `api/vercel.json` (collectstatic at build, function excludes). Static/admin assets are served by WhiteNoise.
 1. Create a Vercel project from the repo with **Root Directory = `api`** (Python 3.12).
-2. Env vars: `DEBUG=false`, `SECRET_KEY`, `DATABASE_URL` (Neon pooled), `ALLOWED_HOSTS=<api-host>`, `CORS_ALLOWED_ORIGINS=https://<web-host>`, `CSRF_TRUSTED_ORIGINS=https://<web-host>`, `CACHE_URL=dbcache://django_cache`, `SHOW_DEVELOPMENT_DATA=false`.
+2. Env vars: `DEBUG=false`, `SECRET_KEY`, `DATABASE_URL` (Neon pooled), `ALLOWED_HOSTS=<api-host>`, `CORS_ALLOWED_ORIGINS=https://<web-host>`, `CSRF_TRUSTED_ORIGINS=https://<web-host>`, `CACHE_URL=dbcache://django_cache`, `SHOW_DEVELOPMENT_DATA=false`, `WEB_PROXY_SECRET=<random string, identical on the web project>`.
 3. One-off, from a machine with the same env: `python manage.py migrate`, `python manage.py createcachetable`, `python manage.py seed_reference`, `python manage.py createsuperuser`. Migrations are not run on deploy.
 4. On the web project set `API_URL=https://<api-host>`.
 - `requirements.txt` is runtime only; tests/lint use `requirements-dev.txt`.
@@ -31,7 +31,7 @@ Config is in `api/pyproject.toml` (`[tool.vercel] entrypoint`) and `api/vercel.j
 - Local test runs over Neon can collide with a leftover `test_<db>`; run tests with `DATABASE_URL=sqlite:///...` or a local Postgres.
 
 ## Web on Vercel
-Project Root Directory = `web`. Env vars: `API_URL` (server-side proxy target and data fetching), `NEXT_PUBLIC_API_URL` (only for the Django-admin link in the review panel), `NEXT_PUBLIC_SITE_URL` (canonical origin for sitemap/robots). Deploy the API first so the proxy target exists. `npm run build` was verified locally against a running API.
+Project Root Directory = `web`. Env vars: `API_URL` (server-side proxy target and data fetching), `WEB_PROXY_SECRET` (server-side only, identical to the API's; lets the API trust the client IP the web proxy forwards), `NEXT_PUBLIC_API_URL` (only for the Django-admin link in the review panel), `NEXT_PUBLIC_SITE_URL` (canonical origin for sitemap/robots). Deploy the API first so the proxy target exists. `npm run build` was verified locally against a running API.
 
 ## Optional AI assistant
 Set `ANTHROPIC_API_KEY` (and optionally `ASSISTANT_MODEL`) on the API project to switch on `/ask`. Without a key the page lists matching reviewed records and says the assistant is off. Each question costs API tokens; the per-user limit is 20 per hour (`REST_FRAMEWORK` rate `assistant`). Review `AssistantLog` in the Django admin regularly.
@@ -40,9 +40,9 @@ Set `ANTHROPIC_API_KEY` (and optionally `ASSISTANT_MODEL`) on the API project to
 Set `CRON_SECRET` on the API project; Vercel Cron (`api/vercel.json`) then calls `/api/v1/cron/link-check/` daily and `/api/v1/cron/feeds/` every 6 hours with that secret. Without it the endpoints refuse every call.
 
 ## Moving the Django admin
-Set `ADMIN_URL=your-path/` on the API project (must end with `/`) and `NEXT_PUBLIC_ADMIN_PATH=your-path/` on the web project so the review panel links to it. This only reduces probing; access is still protected by login and roles.
+Set `ADMIN_URL=your-path/` on the API project (must end with `/`). The review panel gets the path from the staff API, so it is never placed in the public JavaScript bundle. This only reduces probing; access is still protected by login and roles.
 
 ## Time limits (Vercel functions stop after 30 s)
 - Link checks probe at most 25 sources per run, 5 s per request, and stop starting new probes after 12 s; feed runs use the same budget. The rest is picked up by the next run (never-checked first, then least recently checked).
 - CSV imports stage a whole file with a fixed number of queries; approving is done 50 rows per click ("Approve the next 50 clean pending rows") so each request finishes in time.
-- Set `NUM_PROXIES` (see SECURITY.md) so per-IP throttling sees real client addresses.
+- Set the same random `WEB_PROXY_SECRET` on **both** projects (see SECURITY.md) so per-IP throttling sees real client addresses.

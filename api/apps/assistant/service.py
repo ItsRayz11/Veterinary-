@@ -33,9 +33,10 @@ found there.
 - Cite the record ids you used, like G1.
 - Reply with JSON only: {"answer": "<plain text, at most 150 words>", "citations": ["G1"]}."""
 
-# Digits with or without an attached unit ("500mg", "2.5mg/kg"); letters glued to the FRONT of a
-# number ("B12", "H2O") are not doses. Record ids such as G1 are removed before checking.
-NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
+# Every run of digits counts, wherever it sits: "500mg", "2.5mg/kg", ".25 mg/kg", "q8h", "x3".
+# Only record ids such as G1 are removed first. Strict on purpose: a legitimate "B12" simply has
+# to appear in the records too.
+NUMBER = re.compile(r"(?<!\d)(?:\d+(?:\.\d+)?|\.\d+)")
 CITATION = re.compile(r"\[?\bG\d+\b\]?")
 # Spelled-out numbers and fractions are checked too, so "ten mg/kg" cannot bypass the digit rule.
 # "one" is left out: it is too common in ordinary sentences ("one of the records").

@@ -110,16 +110,12 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticatedOrReadOnly"],
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "apps.core.throttling.AnonThrottle",
+        "apps.core.throttling.UserThrottle",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
     ],
-    # How many reverse proxies sit in front of the API (Vercel edge, the web app's /api rewrite...).
-    # Per-IP throttling reads the client address from X-Forwarded-For using this; wrong values
-    # make everyone share one address or let clients spoof theirs. Verify after the first deploy.
-    "NUM_PROXIES": env.int("NUM_PROXIES", default=None),
     "DEFAULT_THROTTLE_RATES": {
         "anon": "120/min",
         "user": "600/min",
@@ -150,6 +146,11 @@ CSRF_COOKIE_SAMESITE = "Lax"
 # JSON bodies are small; the largest is a 2 MB CSV import wrapped in JSON.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 200
+
+# Shared with the web app (same variable name there). When it matches the X-Web-Proxy-Secret
+# header, the API trusts X-Client-IP for per-IP throttling; without it every forwarding header is
+# ignored (see apps/core/throttling.py). Set it on both projects in production.
+WEB_PROXY_SECRET = env("WEB_PROXY_SECRET", default="")
 
 # Shared secret for scheduler-triggered tasks (/api/v1/cron/<task>/). Empty = endpoint disabled.
 CRON_SECRET = env("CRON_SECRET", default="")
