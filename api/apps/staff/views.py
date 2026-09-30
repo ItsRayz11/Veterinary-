@@ -7,6 +7,7 @@ from apps.accounts.models import Role
 from apps.accounts.permissions import HasRole, IsEditor, IsModerator
 from apps.core.models import AuditLog
 from apps.education.models import QuestionReport
+from apps.opportunities.models import Job, ListingStatus, Scholarship
 from apps.pricing import services as price_services
 from apps.pricing.models import PriceSubmission, SubmissionStatus
 
@@ -27,6 +28,8 @@ def summary(request):
                 status=SubmissionStatus.PENDING
             ).count(),
             "question_reports_open": QuestionReport.objects.filter(resolved=False).count(),
+            "listings_pending": Job.objects.filter(status=ListingStatus.PENDING).count()
+            + Scholarship.objects.filter(status=ListingStatus.PENDING).count(),
             "role": request.user.role,
             "can_approve_clinical": request.user.can_approve_clinical,
         }

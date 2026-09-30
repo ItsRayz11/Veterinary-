@@ -7,17 +7,19 @@ import { Alert } from "@/components/ui/primitives";
 import { apiFetch } from "@/lib/client-api";
 import { STAFF_ROLES, useUser } from "@/lib/use-user";
 import { ImportsTab } from "./imports-tab";
+import { ListingsTab } from "./listings-tab";
 import { AuditLogTab, PricesTab, QuestionReportsTab, ReviewQueueTab } from "./tabs";
 
 export interface Summary {
   review_queue: Record<string, number>;
   price_submissions_pending: number;
   question_reports_open: number;
+  listings_pending?: number;
   role: string;
   can_approve_clinical: boolean;
 }
 
-type TabKey = "queue" | "imports" | "prices" | "reports" | "audit";
+type TabKey = "queue" | "imports" | "listings" | "prices" | "reports" | "audit";
 
 export function AdminPanel() {
   const user = useUser();
@@ -53,6 +55,12 @@ export function AdminPanel() {
   const tabs: { key: TabKey; label: string; count?: number; show: boolean }[] = [
     { key: "queue", label: "Review queue", count: queueTotal, show: true },
     { key: "imports", label: "Imports", show: true },
+    {
+      key: "listings",
+      label: "Jobs & scholarships",
+      count: summary?.listings_pending,
+      show: isModerator,
+    },
     {
       key: "prices",
       label: "Price submissions",
@@ -115,6 +123,7 @@ export function AdminPanel() {
           <ReviewQueueTab counts={summary?.review_queue ?? {}} onChanged={refresh} />
         )}
         {tab === "imports" && <ImportsTab onChanged={refresh} />}
+        {tab === "listings" && isModerator && <ListingsTab onChanged={refresh} />}
         {tab === "prices" && isModerator && <PricesTab onChanged={refresh} />}
         {tab === "reports" && isModerator && <QuestionReportsTab onChanged={refresh} />}
         {tab === "audit" && user.role === "admin" && <AuditLogTab />}

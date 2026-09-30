@@ -110,6 +110,10 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Flashcards (Leitner boxes 1-5, server-scheduled, hand-computed tests), lessons (source + reviewer required to go public), book references (cited only), progress-over-time chart with per-subject accuracy and weak topics; admin + governed review; 8 tests. No content exists, so pages show honest empty states
 
 ## Phase 9: Jobs + Scholarships
+- [x] Jobs and scholarships (`apps/opportunities`, 7 tests): user/staff submissions, moderator approval (no self-approval, reason to reject, audit log), original apply link required (http/https only), automatic expiry (closing date or 90 days), search/filters, 5-pending cap per user, throttled submit/report, 3 distinct user reports send a live listing back to moderation
+- [x] Web: /jobs, /scholarships (+ detail, submit forms, report button), moderation tab in the review panel, sitemap entries; verified live end to end with fictional local data
+- [ ] Notifications/alerts for new listings (needs email provider decision)
+- [ ] Company-verified employer accounts (needs owner decision on verification process)
 ## Phase 10: Automation
 ## Phase 11: India
 ## Phase 12: AI Intelligence
