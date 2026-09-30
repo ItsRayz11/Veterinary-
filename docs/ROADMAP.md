@@ -101,7 +101,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Answer validation (option must belong to its question; users can only see their own exams)
 - [x] Bookmarks (toggle), question error reports, past-paper index (links to legal sources only, licence note required)
 - [x] Admin: options inline, governed publish actions, readiness check
-- [ ] Web UI: study hub, question practice, exam runner, results (not started)
+- [x] Web UI: study hub (filters, exam start, history), exam runner (one question at a time, navigator, unanswered warning), results (topic breakdown, weak topics, review with bookmark/report), past-paper index. Pages load; full exam flow covered by API tests only (no questions exist to click through)
 - [ ] Real question content and past-paper index entries (none exist; nothing invented)
 - [ ] Flashcards, notes/lessons, book references, progress-over-time charts
 
