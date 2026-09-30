@@ -17,11 +17,12 @@ const STATUSES = [
   ["archived", "Archived"],
 ] as const;
 
-const fmt = (iso: string) => new Date(iso).toLocaleString();
-const errText = (e: unknown) => (e instanceof ClientApiError ? e.message : "Something went wrong.");
+export const fmt = (iso: string) => new Date(iso).toLocaleString();
+export const errText = (e: unknown) =>
+  e instanceof ClientApiError ? e.message : "Something went wrong.";
 
 /** Loads a list endpoint; `reload` re-runs it. */
-function useList<T>(path: string) {
+export function useList<T>(path: string) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [n, setN] = useState(0);
@@ -38,7 +39,7 @@ function useList<T>(path: string) {
   return { rows, error, reload };
 }
 
-function ListShell<T>({
+export function ListShell<T>({
   list,
   empty,
   children,

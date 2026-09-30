@@ -85,6 +85,9 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - Known, deferred: fuzzy search loads all generic names on a miss (fine at small scale; replace with pg_trgm on Postgres); `docs/API.md` and `INGESTION.md` not written yet (`DEPLOYMENT.md`, `TESTING.md` now exist).
 
 ## Phase 6: Pakistan Data
+- [x] Reviewed ingestion pipeline (`apps/ingestion`, `docs/INGESTION.md`): CSV stage -> match (generic/company/product/registration, duplicates, errors) -> staff approve/reject -> unreviewed records linked to the Source; checksum + licence note required; audit log; admin + Imports tab in the review panel; 6 tests; verified live (imports stay hidden until reviewed)
+- [ ] Real Pakistan data: blocked on per-source terms/legal sign-off (checklist in `INGESTION.md` all unfilled); no fetcher enabled; nothing invented
+- [ ] Strength/pack/ingredient import (add via admin for now)
 ## Phase 7: Pricing
 - [x] PriceRecord: append-only, per pack x country x region x city x price type, currency, source (required unless user-submitted), confidence, verified_at; DB constraints
 - [x] Price history + current price selectors; public API `/products/<slug>/prices/`

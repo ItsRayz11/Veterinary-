@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/forms";
 import { Alert } from "@/components/ui/primitives";
 import { apiFetch } from "@/lib/client-api";
 import { STAFF_ROLES, useUser } from "@/lib/use-user";
+import { ImportsTab } from "./imports-tab";
 import { AuditLogTab, PricesTab, QuestionReportsTab, ReviewQueueTab } from "./tabs";
 
 export interface Summary {
@@ -16,7 +17,7 @@ export interface Summary {
   can_approve_clinical: boolean;
 }
 
-type TabKey = "queue" | "prices" | "reports" | "audit";
+type TabKey = "queue" | "imports" | "prices" | "reports" | "audit";
 
 export function AdminPanel() {
   const user = useUser();
@@ -51,6 +52,7 @@ export function AdminPanel() {
   const isModerator = user.role === "moderator" || user.role === "admin";
   const tabs: { key: TabKey; label: string; count?: number; show: boolean }[] = [
     { key: "queue", label: "Review queue", count: queueTotal, show: true },
+    { key: "imports", label: "Imports", show: true },
     {
       key: "prices",
       label: "Price submissions",
@@ -112,6 +114,7 @@ export function AdminPanel() {
         {tab === "queue" && (
           <ReviewQueueTab counts={summary?.review_queue ?? {}} onChanged={refresh} />
         )}
+        {tab === "imports" && <ImportsTab onChanged={refresh} />}
         {tab === "prices" && isModerator && <PricesTab onChanged={refresh} />}
         {tab === "reports" && isModerator && <QuestionReportsTab onChanged={refresh} />}
         {tab === "audit" && user.role === "admin" && <AuditLogTab />}

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.pricing",
     "apps.education",
     "apps.staff",
+    "apps.ingestion",
 ]
 
 MIDDLEWARE = [
