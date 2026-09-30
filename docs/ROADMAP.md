@@ -82,7 +82,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 
 ## Review log
 - Phases 1-5 post-commit review (graphify dependency graph + manual read): no import cycles; core abstractions are Generic/Product/ReviewStatus as intended. Found and fixed: (1) auth throttle was a silent no-op, (2) unreviewed registrations leaked into product pages and country lists. Both now covered by tests.
-- Known, deferred: fuzzy search loads all generic names on a miss (fine at small scale; replace with pg_trgm on Postgres); `docs/API.md`, `INGESTION.md`, `DEPLOYMENT.md`, `TESTING.md` not written yet.
+- Known, deferred: fuzzy search loads all generic names on a miss (fine at small scale; replace with pg_trgm on Postgres); `docs/API.md` and `INGESTION.md` not written yet (`DEPLOYMENT.md`, `TESTING.md` now exist).
 
 ## Phase 6: Pakistan Data
 ## Phase 7: Pricing
