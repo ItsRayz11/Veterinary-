@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { apiGet, type ProductDetail } from "@/lib/api";
+import { apiGet, type Prices, type ProductDetail } from "@/lib/api";
 import { SourcesList } from "@/components/sources-list";
 import { StatusLine } from "@/components/status-line";
 import { Breadcrumbs, DataTable, EmptyState, Section, td, th } from "@/components/ui/primitives";
@@ -19,6 +19,7 @@ export async function generateMetadata({
 export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
   const p = await apiGet<ProductDetail>(`/products/${slug}/`);
+  const prices = await apiGet<Prices>(`/products/${slug}/prices/`);
 
   return (
     <main className="space-y-6">
@@ -165,6 +166,49 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           <EmptyState title="Verified withdrawal information is currently unavailable.">
             Withdrawal periods are shown only when confirmed by a regulator or a veterinary
             reviewer, and are specific to country, species and commodity.
+          </EmptyState>
+        )}
+      </Section>
+
+      <Section id="prices" title="Prices">
+        {prices.current.length ? (
+          <>
+            <DataTable caption="Latest published price per pack">
+              <thead>
+                <tr>
+                  {["Pack", "Type", "Price", "Location", "Source", "Last checked"].map((h) => (
+                    <th key={h} scope="col" className={th}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {prices.current.map((r) => (
+                  <tr key={r.id}>
+                    <th scope="row" className={td}>
+                      {r.pack}
+                    </th>
+                    <td className={td}>{r.price_type.replace("_", " ")}</td>
+                    <td className={td}>
+                      {r.currency} {r.amount}
+                    </td>
+                    <td className={td}>
+                      {[r.city, r.region, r.country].filter(Boolean).join(", ")}
+                    </td>
+                    <td className={td}>
+                      {r.source ? r.source.title : "User submitted, moderated"}
+                    </td>
+                    <td className={td}>{r.last_verified?.slice(0, 10) ?? r.observed_on}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </DataTable>
+            <p className="mt-2 text-xs text-muted">{prices.note}</p>
+          </>
+        ) : (
+          <EmptyState title="No verified price information yet">
+            Prices are shown only with a source or after moderation.
           </EmptyState>
         )}
       </Section>

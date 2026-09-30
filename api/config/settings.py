@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.clinical",
     "apps.calculators",
     "apps.search",
+    "apps.pricing",
 ]
 
 MIDDLEWARE = [
@@ -100,7 +101,12 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": "120/min", "user": "600/min", "auth": "10/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/min",
+        "user": "600/min",
+        "auth": "10/min",
+        "submit": "20/hour",
+    },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "EXCEPTION_HANDLER": "apps.core.errors.api_exception_handler",

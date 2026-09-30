@@ -83,6 +83,14 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 
 ## Phase 6: Pakistan Data
 ## Phase 7: Pricing
+- [x] PriceRecord: append-only, per pack x country x region x city x price type, currency, source (required unless user-submitted), confidence, verified_at; DB constraints
+- [x] Price history + current price selectors; public API `/products/<slug>/prices/`
+- [x] User submissions (new price / report incorrect) via authenticated, throttled endpoint; never public until approved
+- [x] Moderation service: moderator/admin only, no self-approval, reason required to reject, audit log; accepted report unpublishes disputed price but keeps history
+- [x] Admin approve/reject actions; price table on product page with source, location, last-checked
+- [ ] Submission/report forms in the web UI (needs login/register screens)
+- [ ] Price charts + analytics (increase/decrease, region comparison)
+
 ## Phase 8: Education
 ## Phase 9: Jobs + Scholarships
 ## Phase 10: Automation

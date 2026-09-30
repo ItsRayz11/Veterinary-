@@ -137,3 +137,24 @@ export interface CompanyDetail {
   status: Status;
   products: Brand[];
 }
+
+export interface PriceRow {
+  id: number;
+  pack: string;
+  country: string;
+  region: string;
+  city: string;
+  currency: string;
+  price_type: string;
+  amount: string;
+  origin: string;
+  source: { title: string; url: string } | null;
+  observed_on: string;
+  last_verified: string | null;
+}
+
+export interface Prices {
+  current: PriceRow[];
+  history: PriceRow[];
+  note: string;
+}
