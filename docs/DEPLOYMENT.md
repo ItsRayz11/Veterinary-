@@ -11,10 +11,21 @@
 | Service | Where | Notes |
 |---|---|---|
 | Web (Next.js) | Vercel | env `API_URL` = public API origin |
-| API (Django) | always-on host (to decide) | env `DATABASE_URL`, `SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DEBUG=false` |
+| API (Django) | Vercel (second project, Root Directory `api`) | see "API on Vercel" below |
 | Workers / Redis | same host | Phase 10 |
 
 ## Production checklist (partial)
 - `DEBUG=false` (enables secure cookies, HTTPS redirect, HSTS), real `SECRET_KEY`
 - `SHOW_DEVELOPMENT_DATA=false`
 - Create a superuser and the reviewer accounts through the admin
+
+## API on Vercel
+Config is in `api/pyproject.toml` (`[tool.vercel] entrypoint`) and `api/vercel.json` (collectstatic at build, function excludes). Static/admin assets are served by WhiteNoise.
+1. Create a Vercel project from the repo with **Root Directory = `api`** (Python 3.12).
+2. Env vars: `DEBUG=false`, `SECRET_KEY`, `DATABASE_URL` (Neon pooled), `ALLOWED_HOSTS=<api-host>`, `CORS_ALLOWED_ORIGINS=https://<web-host>`, `CSRF_TRUSTED_ORIGINS=https://<web-host>`, `CACHE_URL=dbcache://django_cache`, `SHOW_DEVELOPMENT_DATA=false`.
+3. One-off, from a machine with the same env: `python manage.py migrate`, `python manage.py createcachetable`, `python manage.py seed_reference`, `python manage.py createsuperuser`. Migrations are not run on deploy.
+4. On the web project set `API_URL=https://<api-host>`.
+- `requirements.txt` is runtime only; tests/lint use `requirements-dev.txt`.
+- Throttling needs the shared DB cache (`CACHE_URL`); the default in-memory cache is per serverless instance and would not enforce limits.
+- Serverless limits: no background workers (Phase 10 needs a separate host or Vercel Cron), 30 s function cap.
+- Local test runs over Neon can collide with a leftover `test_<db>`; run tests with `DATABASE_URL=sqlite:///...` or a local Postgres.
