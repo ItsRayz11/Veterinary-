@@ -127,7 +127,7 @@ SHOW_DEVELOPMENT_DATA = env.bool("SHOW_DEVELOPMENT_DATA", default=DEBUG)
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"])
 # The web app proxies /api/v1 to this API, so state-changing requests carry the web origin.
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost:3000"])
 
 if not DEBUG:
     SESSION_COOKIE_SECURE = True

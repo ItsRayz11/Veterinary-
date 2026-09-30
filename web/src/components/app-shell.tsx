@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { AuthMenu } from "@/components/auth-menu";
 
 const NAV = [
   { href: "/", label: "Home" },
@@ -28,6 +29,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
+          <div className="ml-auto">
+            <AuthMenu />
+          </div>
         </div>
       </header>
       <div id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-4 sm:pb-8">

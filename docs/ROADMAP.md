@@ -29,7 +29,8 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Logging + uniform API error envelope + `/api/v1/health/`
 - [x] Design tokens (light/dark) + first component (StatusBadge)
 - [x] Base UI kit (part): alerts, breadcrumbs, data table, section nav, empty/error/not-found states, search UI, app shell with skip link + mobile bottom nav
-- [ ] Base UI kit (remaining): buttons, form controls, skeleton/loading states, modal
+- [x] Base UI kit (remaining): buttons, form controls, skeleton, modal (`ui/forms.tsx`, `ui/modal.tsx`)
+- [x] Login/register/account pages, header auth menu, CSRF-aware browser API client (verified through the Next proxy: register, session, /auth/me)
 - [x] Web -> API client (server `apiGet`, same-origin `/api/v1` rewrite for browser code)
 
 ## Phase 2: Core Pharmaceutical Database
@@ -89,7 +90,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] User submissions (new price / report incorrect) via authenticated, throttled endpoint; never public until approved
 - [x] Moderation service: moderator/admin only, no self-approval, reason required to reject, audit log; accepted report unpublishes disputed price but keeps history
 - [x] Admin approve/reject actions; price table on product page with source, location, last-checked
-- [ ] Submission/report forms in the web UI (needs login/register screens)
+- [ ] Submission/report forms in the web UI (login/register now exist)
 - [ ] Price charts + analytics (increase/decrease, region comparison)
 
 ## Phase 8: Education

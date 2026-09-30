@@ -1,0 +1,44 @@
+"use client";
+
+import Link from "next/link";
+import { Skeleton } from "@/components/ui/forms";
+import { Alert } from "@/components/ui/primitives";
+import { STAFF_ROLES, useUser } from "@/lib/use-user";
+
+export default function AccountPage() {
+  const user = useUser();
+  if (user === undefined) return <Skeleton className="h-24 w-full max-w-sm" />;
+  if (!user)
+    return (
+      <Alert tone="info">
+        <Link href="/login?next=/account" className="underline">
+          Sign in
+        </Link>{" "}
+        to view your account.
+      </Alert>
+    );
+  return (
+    <div className="max-w-sm space-y-3">
+      <h1 className="text-xl font-semibold">Account</h1>
+      <dl className="space-y-1 text-sm">
+        <div>
+          <dt className="inline text-muted">Username: </dt>
+          <dd className="inline">{user.username}</dd>
+        </div>
+        <div>
+          <dt className="inline text-muted">Email: </dt>
+          <dd className="inline">{user.email}</dd>
+        </div>
+        <div>
+          <dt className="inline text-muted">Role: </dt>
+          <dd className="inline">{user.role}</dd>
+        </div>
+      </dl>
+      {STAFF_ROLES.has(user.role) && (
+        <Link href="/admin-panel" className="text-primary underline">
+          Open review panel
+        </Link>
+      )}
+    </div>
+  );
+}
