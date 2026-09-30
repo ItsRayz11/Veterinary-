@@ -7,6 +7,12 @@ const TOOLS = [
     title: "Dose calculator",
     desc: "mg/kg to total mg and mL",
   },
+  {
+    href: "/calculators",
+    title: "All calculators",
+    desc: "Dilution, fluids, infusion, CRI, flock water dose, withdrawal date",
+  },
+  { href: "/study", title: "Study", desc: "Mock exams from reviewed questions" },
 ];
 
 export default function Home() {

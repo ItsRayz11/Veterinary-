@@ -5,7 +5,7 @@ import { AuthMenu } from "@/components/auth-menu";
 const NAV = [
   { href: "/", label: "Home" },
   { href: "/search", label: "Search" },
-  { href: "/calculators/dose-calculator", label: "Calculators" },
+  { href: "/calculators", label: "Calculators" },
   { href: "/study", label: "Study" },
 ];
 

@@ -75,7 +75,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Input validation, formula + steps exposed, max-dose warning (never clips), exact decimals
 - [x] API endpoint with function whitelist
 - [x] Dose calculator page (weight lb/kg, mg/mL or %, prefill link from calculator-ready doses only)
-- [ ] UI pages for the other calculators (dilution, fluids, drip, CRI, flock, withdrawal date)
+- [x] UI pages for the other calculators (dilution, dehydration, daily fluids, infusion, drip, CRI, flock water, withdrawal date): registry-driven, TS engine, hand-computed tests; no clinical defaults
 - [ ] Guided flow: pick species -> generic -> indication -> product strength (needs verified data, Phase 6)
 - [ ] Medication schedule / reminders (needs user accounts UI)
 
