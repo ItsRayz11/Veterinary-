@@ -29,3 +29,6 @@ Config is in `api/pyproject.toml` (`[tool.vercel] entrypoint`) and `api/vercel.j
 - Throttling needs the shared DB cache (`CACHE_URL`); the default in-memory cache is per serverless instance and would not enforce limits.
 - Serverless limits: no background workers (Phase 10 needs a separate host or Vercel Cron), 30 s function cap.
 - Local test runs over Neon can collide with a leftover `test_<db>`; run tests with `DATABASE_URL=sqlite:///...` or a local Postgres.
+
+## Web on Vercel
+Project Root Directory = `web`. Env vars: `API_URL` (server-side proxy target and data fetching), `NEXT_PUBLIC_API_URL` (only for the Django-admin link in the review panel), `NEXT_PUBLIC_SITE_URL` (canonical origin for sitemap/robots). Deploy the API first so the proxy target exists. `npm run build` was verified locally against a running API.

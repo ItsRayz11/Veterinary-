@@ -44,6 +44,7 @@ export async function apiSend<T = unknown>(
   method: string,
   path: string,
   body?: unknown,
+  retried = false,
 ): Promise<T> {
   const res = await fetch(`/api/v1${path}`, {
     method,
@@ -51,10 +52,16 @@ export async function apiSend<T = unknown>(
     headers: { "Content-Type": "application/json", "X-CSRFToken": await csrf() },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  // Django rotates the CSRF token on login/logout, so drop the cached one after any auth call.
+  if (path.startsWith("/auth/")) csrfToken = null;
   if (res.status === 204) return undefined as T;
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
-    if (res.status === 403) csrfToken = null; // stale token: refetch next time
+    const csrfFailure = res.status === 403 && JSON.stringify(data).includes("CSRF");
+    if (csrfFailure) {
+      csrfToken = null;
+      if (!retried) return apiSend<T>(method, path, body, true);
+    }
     throw toError(res.status, data);
   }
   return data as T;

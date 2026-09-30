@@ -80,7 +80,7 @@ def test_submission_requires_login_and_is_hidden_until_approved(setup):
     payload = {
         "kind": "new_price",
         "pack": setup["pack"].pk,
-        "country": setup["pk"].pk,
+        "country": "PK",
         "price_type": "retail",
         "amount": "555.00",
         "currency": "PKR",
@@ -95,7 +95,7 @@ def test_submission_requires_login_and_is_hidden_until_approved(setup):
 def test_invalid_submissions_rejected(setup):
     api = APIClient()
     api.force_authenticate(user("u2"))
-    base = {"pack": setup["pack"].pk, "country": setup["pk"].pk}
+    base = {"pack": setup["pack"].pk, "country": "PK"}
     assert (
         api.post(
             "/api/v1/prices/submissions/",

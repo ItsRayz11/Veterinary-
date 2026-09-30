@@ -141,6 +141,7 @@ export interface CompanyDetail {
 export interface PriceRow {
   id: number;
   pack: string;
+  pack_id: number;
   country: string;
   region: string;
   city: string;

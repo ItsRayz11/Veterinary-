@@ -3,6 +3,8 @@ import { apiGet } from "@/lib/api";
 import type { PastPaper } from "@/components/study/types";
 import { Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Past-paper index" };
 
 export default async function PastPapersPage() {

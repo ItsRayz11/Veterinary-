@@ -3,6 +3,8 @@ import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Countries",
   description: "Registered veterinary products by country.",

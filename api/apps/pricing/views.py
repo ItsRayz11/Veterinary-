@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
+from apps.countries.models import Country
 from apps.pharma.models import Product, ProductPack
 
 from . import selectors
@@ -49,6 +50,10 @@ def product_prices(request, slug):
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    country = serializers.SlugRelatedField(
+        slug_field="iso2", queryset=Country.objects.filter(is_active=True)
+    )
+
     class Meta:
         model = PriceSubmission
         fields = (

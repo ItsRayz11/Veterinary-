@@ -66,7 +66,8 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Review status + "development data" shown on every record; empty states say verified info is unavailable
 - [x] Species pages (`/species`, `/species/[slug]`: only generics with public doses), country landing pages (`/countries/[iso2]`: reviewed registrations only), drug-class browse (`/classes`); API `pharma/browse.py` with 4 tests
 - [ ] Typo tolerance on Postgres (pg_trgm) and brand-name fuzzy match; current fuzzy covers generics only
-- [ ] SEO: sitemap, robots, JSON-LD, OG images (Phase 14 audit)
+- [x] SEO (part): `robots.txt`, dynamic `sitemap.xml` (public records only, tolerant of API downtime), canonical URLs, API-backed index pages render on request so a build never needs the API
+- [ ] SEO (remaining): JSON-LD, OG images (Phase 14 audit)
 - [ ] Manual mobile/browser QA (only HTTP-level checks done so far)
 
 ## Phase 5: Calculators
@@ -90,7 +91,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] User submissions (new price / report incorrect) via authenticated, throttled endpoint; never public until approved
 - [x] Moderation service: moderator/admin only, no self-approval, reason required to reject, audit log; accepted report unpublishes disputed price but keeps history
 - [x] Admin approve/reject actions; price table on product page with source, location, last-checked
-- [ ] Submission/report forms in the web UI (login/register now exist)
+- [x] Submission/report forms on the product page (suggest price / report incorrect; goes to moderation; verified live: submission reaches staff queue, self-approval blocked). Fixed CSRF-token rotation after login in the browser client
 - [ ] Price charts + analytics (increase/decrease, region comparison)
 
 ## Phase 8: Education
