@@ -4,6 +4,7 @@ import { apiGet, type GenericDetail } from "@/lib/api";
 import { formatDoseRange, formatDuration, formatFrequency } from "@/lib/format";
 import { SourcesList } from "@/components/sources-list";
 import { StatusLine } from "@/components/status-line";
+import { UnverifiedNotice } from "@/components/unverified-notice";
 import {
   Alert,
   Breadcrumbs,
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: PageProps<"/drugs/[slug]">): 
     title: g.name,
     description: `${g.name}: species doses, safety notes, brands and sources.`,
     alternates: { canonical: `/drugs/${g.slug}` },
+    robots: { index: !g.status.is_unverified_import },
   };
 }
 
@@ -64,6 +66,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
         </p>
         <StatusLine status={g.status} />
       </header>
+      <UnverifiedNotice status={g.status} what="medicine" />
       <Alert tone="warn" title="Reference only">
         {g.disclaimer}
       </Alert>

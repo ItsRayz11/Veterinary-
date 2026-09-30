@@ -76,12 +76,12 @@ def test_approve_creates_only_unreviewed_records_with_source(env):
     row = batch.rows.get(row_number=1)
     services.approve_row(row, env["user"])
     product = Product.objects.get(brand_name="Zyra-Test")
-    assert product.review_status == "needs_verification" and not product.is_public
+    assert product.review_status == "imported_unverified" and not product.is_public
     assert product.generic.slug == "enrofloxacin"  # reused the existing generic
     company = Company.objects.get(name="Acme Vet Ltd")
-    assert company.review_status == "needs_verification"
+    assert company.review_status == "imported_unverified"
     reg = ProductRegistration.objects.get(registration_number="R-1")
-    assert reg.status == "registered" and reg.review_status == "needs_verification"
+    assert reg.status == "registered" and reg.review_status == "imported_unverified"
     for obj in (product, company, reg):
         assert sources_for(obj).filter(title=SOURCE["title"]).exists()
     assert Generic.objects.filter(normalized_name="enrofloxacin").count() == 1
@@ -126,7 +126,7 @@ def api_client(role):
     return c
 
 
-def test_import_api_permissions_and_flow(env):
+def test_import_api_permissions_and_flow(env, settings):
     payload = {"country": "PK", "source": SOURCE, "csv_text": CSV, "file_name": "x.csv"}
     assert APIClient().post("/api/v1/staff/imports/", payload, format="json").status_code in (
         401,
@@ -149,5 +149,8 @@ def test_import_api_permissions_and_flow(env):
     bad = editor.post(f"/api/v1/staff/imports/{batch_id}/rows/{first}/nope/", {}, format="json")
     assert bad.status_code == 400
     assert editor.get("/api/v1/staff/imports/").json()["results"][0]["id"] == batch_id
-    # the imported product is not public
+    # the imported product is listed only as "imported, not reviewed", and can be hidden entirely
+    shown = APIClient().get("/api/v1/products/zyra-test/")
+    assert shown.status_code == 200 and shown.json()["status"]["is_unverified_import"] is True
+    settings.SHOW_UNVERIFIED_IMPORTS = False
     assert APIClient().get("/api/v1/products/zyra-test/").status_code == 404

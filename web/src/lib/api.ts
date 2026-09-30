@@ -28,6 +28,7 @@ export interface Status {
   code: string;
   label: string;
   is_development_data: boolean;
+  is_unverified_import?: boolean;
   reviewed_at: string | null;
 }
 

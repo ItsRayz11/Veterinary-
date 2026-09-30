@@ -9,6 +9,7 @@ const MAP: Record<string, ReviewStatus> = {
   manufacturer_supplied: "manufacturer_supplied",
   source_found_pending_review: "pending_review",
   needs_verification: "needs_verification",
+  imported_unverified: "imported",
   deprecated: "deprecated",
 };
 
@@ -19,7 +20,7 @@ export function StatusLine({ status }: { status: Status }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <StatusBadge status={key} />
-      {!status.is_development_data && (
+      {!status.is_development_data && !status.is_unverified_import && (
         <span className="text-xs text-muted">Reviewed {formatDate(status.reviewed_at)}</span>
       )}
     </span>

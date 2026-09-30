@@ -45,6 +45,7 @@ class ReviewStatus(models.TextChoices):
 
     COMMUNITY_SUBMITTED = "community_submitted", "Community submitted"
     NEEDS_VERIFICATION = "needs_verification", "Needs verification"
+    IMPORTED_UNVERIFIED = "imported_unverified", "Imported, not reviewed"
     PENDING_REVIEW = "source_found_pending_review", "Source found, pending review"
     MANUFACTURER_SUPPLIED = "manufacturer_supplied", "Manufacturer supplied"
     OFFICIAL_REGULATORY = "official_regulatory", "Official regulatory source"
@@ -74,6 +75,20 @@ class PublishableQuerySet(models.QuerySet):
             q |= models.Q(is_development_data=True)
         return self.filter(q)
 
+    def listed(self):
+        """What catalogue pages show: `public()` plus, when SHOW_UNVERIFIED_IMPORTS is on, imported
+        records that nobody has reviewed yet. Only models that opt in (`lists_unverified_imports`)
+        are affected; clinical records (doses, interactions, notes) and the assistant use
+        `public()` and never see unreviewed data."""
+        q = models.Q(review_status__in=[s.value for s in PUBLIC_STATUSES])
+        if getattr(settings, "SHOW_DEVELOPMENT_DATA", False):
+            q |= models.Q(is_development_data=True)
+        if getattr(self.model, "lists_unverified_imports", False) and getattr(
+            settings, "SHOW_UNVERIFIED_IMPORTS", False
+        ):
+            q |= models.Q(review_status=ReviewStatus.IMPORTED_UNVERIFIED, is_development_data=False)
+        return self.filter(q)
+
 
 class PublishableModel(TimeStampedModel):
     """Mixin for anything shown publicly. Default is hidden until reviewed."""
@@ -93,6 +108,7 @@ class PublishableModel(TimeStampedModel):
     )
 
     objects = PublishableQuerySet.as_manager()
+    lists_unverified_imports = False  # catalogue models set True, see PublishableQuerySet.listed
 
     class Meta:
         abstract = True
@@ -105,6 +121,10 @@ class PublishableModel(TimeStampedModel):
                 name="%(app_label)s_%(class)s_no_signoff_on_dev_data",
             )
         ]
+
+    @property
+    def is_unverified_import(self) -> bool:
+        return self.review_status == ReviewStatus.IMPORTED_UNVERIFIED
 
     @property
     def is_public(self) -> bool:

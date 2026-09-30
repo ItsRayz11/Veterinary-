@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet, type Brand } from "@/lib/api";
-import { Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
+import { Alert, Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 interface CountryDetail {
   iso2: string;
@@ -33,12 +34,19 @@ export default async function CountryPage({ params }: PageProps<"/countries/[iso
       />
       <h1 className="text-2xl font-semibold">{c.name}</h1>
       {c.regulator && <p className="text-sm text-muted">Regulator: {c.regulator}</p>}
+      {c.products.some((p) => p.status.is_unverified_import) && (
+        <Alert tone="warn" title="Some entries are imported, not reviewed">
+          Entries marked &ldquo;Imported, not reviewed&rdquo; come from the regulator&apos;s public
+          lists of applications. They are not confirmed registrations and have not been checked by a
+          reviewer.
+        </Alert>
+      )}
       {c.products.length === 0 ? (
         <EmptyState title={`No reviewed registrations for ${c.name} yet.`}>
           Products appear here only when a reviewed registration exists for this country.
         </EmptyState>
       ) : (
-        <DataTable caption={`Products registered in ${c.name}`}>
+        <DataTable caption={`Products listed for ${c.name}`}>
           <thead>
             <tr>
               <th className={th}>Brand</th>
@@ -53,6 +61,11 @@ export default async function CountryPage({ params }: PageProps<"/countries/[iso
                   <Link className="text-primary underline" href={`/products/${p.slug}`}>
                     {p.brand_name}
                   </Link>
+                  {p.status.is_unverified_import && (
+                    <span className="ml-2 align-middle">
+                      <StatusBadge status="imported" />
+                    </span>
+                  )}
                 </td>
                 <td className={td}>
                   <Link className="text-primary underline" href={`/drugs/${p.generic}`}>

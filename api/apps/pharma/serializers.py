@@ -12,6 +12,7 @@ def _status(obj) -> dict:
         "code": obj.review_status,
         "label": ReviewStatus(obj.review_status).label,
         "is_development_data": obj.is_development_data,
+        "is_unverified_import": obj.review_status == ReviewStatus.IMPORTED_UNVERIFIED,
         "reviewed_at": obj.reviewed_at,
     }
 
@@ -157,10 +158,14 @@ class WithdrawalSerializer(serializers.ModelSerializer):
 
 class GenericListSerializer(serializers.ModelSerializer):
     drug_class = serializers.CharField(source="drug_class.name", default=None)
+    unverified = serializers.SerializerMethodField()
 
     class Meta:
         model = Generic
-        fields = ("name", "slug", "drug_class")
+        fields = ("name", "slug", "drug_class", "unverified")
+
+    def get_unverified(self, obj) -> bool:
+        return obj.review_status == ReviewStatus.IMPORTED_UNVERIFIED
 
 
 class GenericDetailSerializer(serializers.ModelSerializer):

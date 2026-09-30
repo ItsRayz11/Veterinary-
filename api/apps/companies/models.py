@@ -18,6 +18,8 @@ class Company(PublishableModel):
     description = models.TextField(blank=True)
     is_verified_profile = models.BooleanField(default=False)
 
+    lists_unverified_imports = True
+
     class Meta(PublishableModel.Meta):
         ordering = ["name"]
         constraints = [

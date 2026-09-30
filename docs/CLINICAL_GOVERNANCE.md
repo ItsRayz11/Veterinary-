@@ -34,3 +34,7 @@ Last reviewed date, review status badge, Sources section, and the disclaimer: re
 
 ## Change control
 Dose/withdrawal changes show old vs new, source, reviewer, date. Regulatory withdrawals/alerts can be fast-tracked but still require a source.
+
+## Imported, not reviewed (owner decision, 2026-09-30)
+Catalogue records created by an import (generics, companies, products from a public regulator list) carry the status `imported_unverified`. By the owner's decision they are **listed on the public site** (search, drug, product, company and country pages) with a visible "Imported, not reviewed" badge and notice, `noindex` on their pages, and no place in the sitemap. The switch is `SHOW_UNVERIFIED_IMPORTS`.
+Limits that do not change: this applies only to catalogue names, never to doses, withdrawal periods, interactions, clinical notes or prices; the assistant and the interaction checker use reviewed records only; an application is never shown as a registration; a reviewer can still promote a record (a public status needs a linked source, sign-off needs a veterinarian reviewer). Legal review of the source's terms is still outstanding (`DATA_SOURCES.md`, `INGESTION.md`).

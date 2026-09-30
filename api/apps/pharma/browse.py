@@ -1,12 +1,13 @@
 """Browse endpoints: species, drug classes and country landing pages (reviewed data only)."""
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.clinical.models import DoseRegimen
+from apps.core.models import ReviewStatus
 from apps.core.schema import untyped_schema
 from apps.countries.models import Country
 from apps.species.models import Species
@@ -31,10 +32,10 @@ def _descendant_ids(model, root) -> list[int]:
 def species_detail(request, slug):
     species = get_object_or_404(Species.objects.select_related("parent"), slug=slug)
     ids = _descendant_ids(Species, species)
-    doses = DoseRegimen.objects.public().filter(species_id__in=ids, product__isnull=True)
+    doses = DoseRegimen.objects.listed().filter(species_id__in=ids, product__isnull=True)
     dose_counts = dict(doses.values_list("generic").annotate(n=Count("pk")))
     generics = (
-        Generic.objects.public()
+        Generic.objects.listed()
         .filter(pk__in=dose_counts)
         .select_related("drug_class")
         .order_by("name")
@@ -60,7 +61,7 @@ def species_detail(request, slug):
 @permission_classes([AllowAny])
 def drug_class_list(request):
     direct = dict(
-        Generic.objects.public()
+        Generic.objects.listed()
         .exclude(drug_class__isnull=True)
         .values_list("drug_class")
         .annotate(n=Count("pk"))
@@ -101,7 +102,7 @@ def drug_class_detail(request, slug):
         ancestors.insert(0, {"slug": node.slug, "name": node.name})
         node = node.parent
     generics = (
-        Generic.objects.public()
+        Generic.objects.listed()
         .filter(drug_class_id__in=_descendant_ids(DrugClass, cls))
         .select_related("drug_class")
         .order_by("name")
@@ -122,10 +123,16 @@ def drug_class_detail(request, slug):
 @permission_classes([AllowAny])
 def country_detail(request, iso2):
     country = get_object_or_404(Country, iso2=iso2.upper(), is_active=True)
-    registered = ProductRegistration.objects.public().filter(country=country).values("product")
+    registered = ProductRegistration.objects.listed().filter(country=country).values("product")
     products = (
-        Product.objects.public()
-        .filter(pk__in=registered)
+        Product.objects.listed()
+        .filter(
+            Q(pk__in=registered)
+            | Q(
+                review_status=ReviewStatus.IMPORTED_UNVERIFIED,
+                manufacturer__country=country,
+            )
+        )
         .select_related("generic", "manufacturer__country")
         .prefetch_related(selectors.public_registrations())
         .order_by("generic__name", "brand_name")

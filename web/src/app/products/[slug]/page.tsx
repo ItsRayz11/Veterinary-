@@ -5,6 +5,7 @@ import { SourcesList } from "@/components/sources-list";
 import { PriceTrends } from "@/components/price-trends";
 import { PriceSubmitForm } from "@/components/price-submit-form";
 import { StatusLine } from "@/components/status-line";
+import { UnverifiedNotice } from "@/components/unverified-notice";
 import { Breadcrumbs, DataTable, EmptyState, Section, td, th } from "@/components/ui/primitives";
 
 export async function generateMetadata({
@@ -15,6 +16,7 @@ export async function generateMetadata({
   return {
     title: `${p.brand_name} (${p.generic_name})`,
     alternates: { canonical: `/products/${p.slug}` },
+    robots: { index: !p.status.is_unverified_import },
   };
 }
 
@@ -46,6 +48,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         </p>
         <StatusLine status={p.status} />
       </header>
+      <UnverifiedNotice status={p.status} what="product" />
 
       <Section id="composition" title="Composition and presentations">
         <div className="grid gap-4 sm:grid-cols-2">

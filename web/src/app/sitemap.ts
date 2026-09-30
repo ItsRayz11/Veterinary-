@@ -30,13 +30,13 @@ async function list<T>(path: string): Promise<T[]> {
   return out;
 }
 
-/** Only reviewed/public records are returned by these endpoints, so nothing unreviewed is listed. */
+/** Unreviewed imports are labelled `unverified` by the API and left out, so search engines only see reviewed pages. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [species, classes, countries, generics, lessons, jobs, scholarships] = await Promise.all([
     list<{ slug: string }>("/species/"),
     list<{ slug: string }>("/drug-classes/"),
     list<{ iso2: string }>("/countries/"),
-    list<{ slug: string }>("/generics/"),
+    list<{ slug: string; unverified?: boolean }>("/generics/"),
     list<{ slug: string }>("/study/lessons/"),
     list<{ id: number }>("/listings/jobs/"),
     list<{ id: number }>("/listings/scholarships/"),
@@ -63,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...jobs.map((j) => `/jobs/${j.id}`),
     "/scholarships",
     ...scholarships.map((j) => `/scholarships/${j.id}`),
-    ...generics.map((g) => `/drugs/${g.slug}`),
+    ...generics.filter((g) => !g.unverified).map((g) => `/drugs/${g.slug}`),
   ];
   return paths.map((p) => ({ url: `${SITE_URL}${p}` }));
 }

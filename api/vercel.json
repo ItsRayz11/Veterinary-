@@ -4,7 +4,7 @@
     { "path": "/api/v1/cron/link-check/", "schedule": "0 3 * * *" },
     { "path": "/api/v1/cron/feeds/", "schedule": "0 */6 * * *" }
   ],
-  "buildCommand": "python manage.py collectstatic --noinput",
+  "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then python manage.py migrate --noinput && python manage.py createcachetable; fi; python manage.py collectstatic --noinput",
   "functions": {
     "config/wsgi.py": {
       "maxDuration": 30,

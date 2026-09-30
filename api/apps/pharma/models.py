@@ -63,6 +63,8 @@ class Generic(PublishableModel):
 
     history = HistoricalRecords()
 
+    lists_unverified_imports = True
+
     class Meta(PublishableModel.Meta):
         ordering = ["name"]
 
@@ -124,6 +126,8 @@ class Product(PublishableModel):
     description = models.TextField(blank=True)
 
     history = HistoricalRecords()
+
+    lists_unverified_imports = True
 
     class Meta(PublishableModel.Meta):
         ordering = ["brand_name"]

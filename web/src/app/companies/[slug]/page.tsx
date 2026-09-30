@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet, type CompanyDetail } from "@/lib/api";
 import { StatusLine } from "@/components/status-line";
+import { UnverifiedNotice } from "@/components/unverified-notice";
 import { Breadcrumbs, DataTable, EmptyState, Section, td, th } from "@/components/ui/primitives";
 
 export async function generateMetadata({
@@ -9,7 +10,11 @@ export async function generateMetadata({
 }: PageProps<"/companies/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const c = await apiGet<CompanyDetail>(`/companies/${slug}/`);
-  return { title: c.name, alternates: { canonical: `/companies/${c.slug}` } };
+  return {
+    title: c.name,
+    alternates: { canonical: `/companies/${c.slug}` },
+    robots: { index: !c.status.is_unverified_import },
+  };
 }
 
 export default async function CompanyPage({ params }: PageProps<"/companies/[slug]">) {
@@ -45,6 +50,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
         {c.verified_profile && <p className="text-xs text-ok">Verified company profile</p>}
         {c.description && <p className="text-sm">{c.description}</p>}
       </header>
+      <UnverifiedNotice status={c.status} what="company" />
 
       <Section id="products" title={`Product catalogue (${c.products.length})`}>
         {c.products.length ? (

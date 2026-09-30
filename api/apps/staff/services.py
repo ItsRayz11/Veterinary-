@@ -11,6 +11,7 @@ from apps.sources.models import has_source, sources_for
 QUEUE_STATUSES = (
     ReviewStatus.COMMUNITY_SUBMITTED,
     ReviewStatus.NEEDS_VERIFICATION,
+    ReviewStatus.IMPORTED_UNVERIFIED,
     ReviewStatus.PENDING_REVIEW,
 )
 

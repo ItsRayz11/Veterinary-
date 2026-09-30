@@ -8,6 +8,7 @@ import { ClientApiError, apiFetch, apiSend } from "@/lib/client-api";
 
 const STATUSES = [
   ["needs_verification", "Needs verification"],
+  ["imported_unverified", "Imported, not reviewed"],
   ["source_found_pending_review", "Source found, pending review"],
   ["manufacturer_supplied", "Manufacturer supplied"],
   ["official_regulatory", "Official regulatory source"],

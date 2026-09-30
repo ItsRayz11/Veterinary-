@@ -135,7 +135,7 @@ def load(env, cleaned):
 def test_import_creates_unreviewed_products_with_strengths_and_packs_and_no_registration(env):
     load(env, drap.clean_vet_applications(APPLICATIONS))
     dora = Product.objects.get(brand_name="Doramall 1% Injection")
-    assert dora.review_status == "needs_verification" and not dora.is_public
+    assert dora.review_status == "imported_unverified" and not dora.is_public
     strength = ProductIngredient.objects.get(product=dora)
     assert (f"{strength.strength_value.normalize():f}", strength.strength_unit.code) == ("10", "mg")
     assert (strength.per_unit.code, f"{strength.per_value.normalize():f}") == ("mL", "1")

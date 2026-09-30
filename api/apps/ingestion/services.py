@@ -1,6 +1,6 @@
 """Product import pipeline: parse -> stage -> match -> staff approval -> unreviewed catalogue rows.
 
-Approving a row never makes anything public: created records start as `needs_verification`, keep a
+Approving a row never makes anything public: created records start as `imported_unverified`, keep a
 link to the import's Source, and only become public through the normal review workflow.
 """
 
@@ -379,7 +379,7 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
     generic_created = generic is None
     if generic is None:
         generic = Generic.objects.create(
-            name=row.generic_name, review_status=ReviewStatus.NEEDS_VERIFICATION
+            name=row.generic_name, review_status=ReviewStatus.IMPORTED_UNVERIFIED
         )
         _link(source, generic)
     company = row.matched_company
@@ -396,7 +396,7 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
                 if raw.get("manufacturer_address")
                 else ""
             ),
-            review_status=ReviewStatus.NEEDS_VERIFICATION,
+            review_status=ReviewStatus.IMPORTED_UNVERIFIED,
         )
         _link(source, company)
     try:
@@ -405,7 +405,7 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
                 brand_name=row.brand_name,
                 generic=generic,
                 manufacturer=company,
-                review_status=ReviewStatus.NEEDS_VERIFICATION,
+                review_status=ReviewStatus.IMPORTED_UNVERIFIED,
             )
     except IntegrityError as exc:
         raise ValidationError("This brand already exists for the company.") from exc
@@ -417,7 +417,7 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
             country=batch.country,
             registration_number=row.registration_number,
             status=row.registration_status or RegStatus.UNKNOWN,
-            review_status=ReviewStatus.NEEDS_VERIFICATION,
+            review_status=ReviewStatus.IMPORTED_UNVERIFIED,
         )
         _link(source, reg)
     row.matched_generic, row.matched_company, row.matched_product = generic, company, product

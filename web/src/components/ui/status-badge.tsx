@@ -6,6 +6,7 @@ export type ReviewStatus =
   | "manufacturer_supplied"
   | "pending_review"
   | "needs_verification"
+  | "imported"
   | "deprecated"
   | "development";
 
@@ -16,6 +17,7 @@ const STYLES: Record<ReviewStatus, { label: string; cls: string }> = {
   manufacturer_supplied: { label: "Manufacturer supplied", cls: "bg-info-bg text-info" },
   pending_review: { label: "Pending review", cls: "bg-warn-bg text-warn" },
   needs_verification: { label: "Needs verification", cls: "bg-warn-bg text-warn" },
+  imported: { label: "Imported, not reviewed", cls: "bg-warn-bg text-warn" },
   deprecated: { label: "Deprecated", cls: "bg-danger-bg text-danger" },
   development: { label: "Development data, not verified", cls: "bg-warn-bg text-warn" },
 };

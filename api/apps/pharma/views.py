@@ -33,7 +33,7 @@ class GenericList(ListAPIView):
     serializer_class = GenericListSerializer
 
     def get_queryset(self):
-        qs = Generic.objects.public().select_related("drug_class")
+        qs = Generic.objects.listed().select_related("drug_class")
         q = normalize_name(self.request.query_params.get("q", ""))
         if q:
             qs = qs.filter(normalized_name__contains=q)
@@ -45,7 +45,7 @@ class GenericList(ListAPIView):
 @permission_classes([AllowAny])
 def generic_detail(request, slug):
     generic = get_object_or_404(
-        Generic.objects.public()
+        Generic.objects.listed()
         .select_related("drug_class")
         .prefetch_related("synonyms", "ingredients"),
         slug=slug,
@@ -54,7 +54,7 @@ def generic_detail(request, slug):
     species = request.query_params.get("species") or None
 
     doses = list(
-        DoseRegimen.objects.public()
+        DoseRegimen.objects.listed()
         .filter(generic=generic, product__isnull=True)
         .select_related(
             "species", "indication", "route", "dose_unit", "max_single_dose_unit", "country"
@@ -63,7 +63,7 @@ def generic_detail(request, slug):
     )
     if species:
         doses = [d for d in doses if d.species.slug == species]
-    notes = list(ClinicalNote.objects.public().filter(generic=generic).select_related("species"))
+    notes = list(ClinicalNote.objects.listed().filter(generic=generic).select_related("species"))
     brands = selectors.brands_for_generic(generic, country)
 
     ctx = {"sources": sources_map(doses), "note_sources": sources_map(notes)}
@@ -87,7 +87,7 @@ def generic_detail(request, slug):
 @permission_classes([AllowAny])
 def product_detail(request, slug):
     product = get_object_or_404(
-        Product.objects.public()
+        Product.objects.listed()
         .select_related("generic", "manufacturer__country", "marketing_holder")
         .prefetch_related(
             "ingredients__ingredient",
@@ -100,7 +100,7 @@ def product_detail(request, slug):
         slug=slug,
     )
     withdrawals = (
-        WithdrawalPeriod.objects.public()
+        WithdrawalPeriod.objects.listed()
         .filter(product=product)
         .select_related("product", "country", "species", "commodity", "route")
     )
@@ -148,7 +148,7 @@ def product_detail(request, slug):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def company_detail(request, slug):
-    company = get_object_or_404(Company.objects.public().select_related("country"), slug=slug)
+    company = get_object_or_404(Company.objects.listed().select_related("country"), slug=slug)
     products = (
         selectors.products_for_company(company)
         .select_related("manufacturer__country")

@@ -24,9 +24,9 @@ def _rank(name: str, q: str) -> int:
 
 
 def _generics(q: str):
-    direct = list(Generic.objects.public().filter(normalized_name__contains=q))
+    direct = list(Generic.objects.listed().filter(normalized_name__contains=q))
     via_syn = list(
-        Generic.objects.public().filter(
+        Generic.objects.listed().filter(
             pk__in=GenericSynonym.objects.filter(normalized_synonym__contains=q).values("generic")
         )
     )
@@ -44,12 +44,12 @@ TRIGRAM_CUTOFF = 0.3
 def _trigram_generics(q: str):
     """Postgres: rank generics and synonyms by trigram similarity (uses the GIN indexes)."""
     by_name = (
-        Generic.objects.public()
+        Generic.objects.listed()
         .annotate(sim=TrigramSimilarity("normalized_name", q))
         .filter(sim__gte=TRIGRAM_CUTOFF)
     )
     by_syn = (
-        GenericSynonym.objects.filter(generic__in=Generic.objects.public())
+        GenericSynonym.objects.filter(generic__in=Generic.objects.listed())
         .annotate(sim=TrigramSimilarity("normalized_synonym", q))
         .filter(sim__gte=TRIGRAM_CUTOFF)
         .select_related("generic")
@@ -65,8 +65,8 @@ def _trigram_generics(q: str):
 def _fuzzy_generics(q: str):
     if connection.vendor == "postgresql":
         return _trigram_generics(q)
-    names = {g.normalized_name: g for g in Generic.objects.public()}
-    for syn in GenericSynonym.objects.filter(generic__in=Generic.objects.public()).select_related(
+    names = {g.normalized_name: g for g in Generic.objects.listed()}
+    for syn in GenericSynonym.objects.filter(generic__in=Generic.objects.listed()).select_related(
         "generic"
     ):
         names[syn.normalized_synonym] = syn.generic
@@ -87,13 +87,13 @@ def search(query: str) -> dict:
         return empty
     generics = _generics(q)
     products = list(
-        Product.objects.public()
+        Product.objects.listed()
         .filter(normalized_brand_name__contains=q)
         .select_related("generic", "manufacturer")
         .order_by("brand_name")[:LIMIT]
     )
     companies = list(
-        Company.objects.public().filter(normalized_name__contains=q).order_by("name")[:LIMIT]
+        Company.objects.listed().filter(normalized_name__contains=q).order_by("name")[:LIMIT]
     )
     did_you_mean = []
     if not (generics or products or companies):
