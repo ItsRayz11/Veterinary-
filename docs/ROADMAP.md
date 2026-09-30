@@ -64,7 +64,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Product page: composition/strengths, packs, country availability, withdrawal (strict), sources
 - [x] Company page: catalogue + generic portfolio; navigation both ways (generic -> brand -> company -> products)
 - [x] Review status + "development data" shown on every record; empty states say verified info is unavailable
-- [ ] Species pages (`/species/[slug]`), country landing pages, medicine categories (drug class browse)
+- [x] Species pages (`/species`, `/species/[slug]`: only generics with public doses), country landing pages (`/countries/[iso2]`: reviewed registrations only), drug-class browse (`/classes`); API `pharma/browse.py` with 4 tests
 - [ ] Typo tolerance on Postgres (pg_trgm) and brand-name fuzzy match; current fuzzy covers generics only
 - [ ] SEO: sitemap, robots, JSON-LD, OG images (Phase 14 audit)
 - [ ] Manual mobile/browser QA (only HTTP-level checks done so far)

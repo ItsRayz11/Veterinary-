@@ -15,6 +15,12 @@ const TOOLS = [
   { href: "/study", title: "Study", desc: "Mock exams from reviewed questions" },
 ];
 
+const BROWSE = [
+  { href: "/species", title: "Species" },
+  { href: "/classes", title: "Drug classes" },
+  { href: "/countries", title: "Countries" },
+];
+
 export default function Home() {
   return (
     <main className="mx-auto max-w-2xl space-y-8 pt-6">
@@ -26,6 +32,17 @@ export default function Home() {
           statement.
         </p>
       </div>
+      <nav aria-label="Browse" className="flex flex-wrap gap-2 text-sm">
+        {BROWSE.map((b) => (
+          <Link
+            key={b.href}
+            href={b.href}
+            className="rounded-full border border-border bg-surface px-3 py-2 hover:border-primary"
+          >
+            Browse by {b.title.toLowerCase()}
+          </Link>
+        ))}
+      </nav>
       <section aria-labelledby="tools-h">
         <h2 id="tools-h" className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">
           Clinical tools
