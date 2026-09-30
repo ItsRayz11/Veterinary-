@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/forms";
 import { Alert } from "@/components/ui/primitives";
 import { apiFetch } from "@/lib/client-api";
 import { STAFF_ROLES, useUser } from "@/lib/use-user";
+import { AutomationTab } from "./automation-tab";
 import { ImportsTab } from "./imports-tab";
 import { ListingsTab } from "./listings-tab";
 import { AuditLogTab, PricesTab, QuestionReportsTab, ReviewQueueTab } from "./tabs";
@@ -19,7 +20,7 @@ export interface Summary {
   can_approve_clinical: boolean;
 }
 
-type TabKey = "queue" | "imports" | "listings" | "prices" | "reports" | "audit";
+type TabKey = "queue" | "imports" | "listings" | "automation" | "prices" | "reports" | "audit";
 
 export function AdminPanel() {
   const user = useUser();
@@ -73,6 +74,7 @@ export function AdminPanel() {
       count: summary?.question_reports_open,
       show: isModerator,
     },
+    { key: "automation", label: "Automation", show: true },
     { key: "audit", label: "Audit log", show: user.role === "admin" },
   ];
   const refresh = () => setVersion((v) => v + 1);
@@ -126,6 +128,7 @@ export function AdminPanel() {
         {tab === "listings" && isModerator && <ListingsTab onChanged={refresh} />}
         {tab === "prices" && isModerator && <PricesTab onChanged={refresh} />}
         {tab === "reports" && isModerator && <QuestionReportsTab onChanged={refresh} />}
+        {tab === "automation" && <AutomationTab />}
         {tab === "audit" && user.role === "admin" && <AuditLogTab />}
       </div>
     </div>

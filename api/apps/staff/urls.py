@@ -12,4 +12,6 @@ urlpatterns = [
     path("staff/question-reports/", views.question_reports),
     path("staff/question-reports/<int:pk>/resolve/", views.resolve_question_report),
     path("staff/audit-log/", views.audit_log),
+    path("staff/automation/", views.automation_status),
+    path("staff/automation/run/<str:task>/", views.automation_run),
 ]

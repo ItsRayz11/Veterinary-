@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.staff",
     "apps.ingestion",
     "apps.opportunities",
+    "apps.automation",
 ]
 
 MIDDLEWARE = [
@@ -125,6 +126,9 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.errors.api_exception_handler",
 }
 SPECTACULAR_SETTINGS = {"TITLE": "Veterinary Intelligence Platform API", "VERSION": "0.1.0"}
+
+# Shared secret for scheduler-triggered tasks (/api/v1/cron/<task>/). Empty = endpoint disabled.
+CRON_SECRET = env("CRON_SECRET", default="")
 
 SHOW_DEVELOPMENT_DATA = env.bool("SHOW_DEVELOPMENT_DATA", default=DEBUG)
 

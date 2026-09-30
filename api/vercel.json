@@ -1,5 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/v1/cron/link-check/", "schedule": "0 3 * * *" },
+    { "path": "/api/v1/cron/feeds/", "schedule": "0 */6 * * *" }
+  ],
   "buildCommand": "python manage.py collectstatic --noinput",
   "functions": {
     "config/wsgi.py": {

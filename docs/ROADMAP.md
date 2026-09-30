@@ -115,6 +115,12 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [ ] Notifications/alerts for new listings (needs email provider decision)
 - [ ] Company-verified employer accounts (needs owner decision on verification process)
 ## Phase 10: Automation
+- [x] Hardened outbound HTTP (`automation/safe_http.py`): public http(s) hosts only, ports 80/443, every redirect re-validated, size/time caps, robots.txt honoured; SSRF cases tested (loopback, private, link-local, IPv6, file/ftp)
+- [x] Link-health checker for Source URLs (robots-aware, HEAD then GET, failures tracked, broken sources listed for staff); verified live against the network
+- [x] Feed ingestion (RSS/Atom via defusedxml, entity bombs rejected): feeds are staff-registered, disabled by default, need a licence note, re-check robots each run (auto-disable if refused), items become PENDING listings for moderation only, deduped by URL, unchanged feeds skipped
+- [x] Scheduler: `/api/v1/cron/<task>/` (Bearer `CRON_SECRET`, constant-time compare, disabled when unset), Vercel cron schedule in `api/vercel.json`, `manage.py run_task`, JobRun audit trail, admin "run now", Automation tab (20 + 1 tests)
+- [ ] No feed is registered yet (needs verified sources); Redis/worker queue deferred (not needed at this scale)
+- [ ] Known limit: DNS rebinding between validation and connect (documented; only staff-registered URLs are fetched)
 ## Phase 11: India
 ## Phase 12: AI Intelligence
 ## Phase 13: PWA + Performance

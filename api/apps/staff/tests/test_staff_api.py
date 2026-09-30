@@ -144,3 +144,16 @@ def test_question_reports_resolve_and_audit_log_is_admin_only(catalog):
     admin, _ = client_for(Role.ADMIN)
     log = admin.get("/api/v1/staff/audit-log/").json()["results"]
     assert any(a["action"] == "question_report_resolved" for a in log)
+
+
+def test_automation_status_and_manual_run_permissions(catalog):
+    editor, _ = client_for(Role.EDITOR)
+    data = editor.get("/api/v1/staff/automation/").json()
+    assert data["can_run"] is False and "link-check" in data["tasks"]
+    assert editor.post("/api/v1/staff/automation/run/feeds/", {}, format="json").status_code == 403
+    admin, _ = client_for(Role.ADMIN)
+    r = admin.post("/api/v1/staff/automation/run/feeds/", {}, format="json")
+    assert r.status_code == 200 and r.json()["status"] == "ok"
+    assert admin.post("/api/v1/staff/automation/run/nope/", {}, format="json").status_code == 404
+    assert AuditLog.objects.filter(action="automation_run_manually").exists()
+    assert admin.get("/api/v1/staff/automation/").json()["runs"][0]["task"] == "feeds"

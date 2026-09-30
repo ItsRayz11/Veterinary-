@@ -5,6 +5,8 @@ from rest_framework.response import Response
 
 from apps.accounts.models import Role
 from apps.accounts.permissions import HasRole, IsEditor, IsModerator
+from apps.automation import tasks as automation_tasks
+from apps.automation.models import Feed, JobRun, SourceHealth
 from apps.core.models import AuditLog
 from apps.education.models import QuestionReport
 from apps.opportunities.models import Job, ListingStatus, Scholarship
@@ -195,4 +197,72 @@ def audit_log(request):
                 for a in rows
             ]
         }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def automation_status(request):
+    runs = JobRun.objects.all()[:20]
+    broken = (
+        SourceHealth.objects.filter(ok=False)
+        .select_related("source")
+        .order_by("-consecutive_failures", "-checked_at")[:50]
+    )
+    return Response(
+        {
+            "can_run": request.user.is_superuser or request.user.role == Role.ADMIN,
+            "tasks": sorted(automation_tasks.TASKS),
+            "runs": [
+                {
+                    "id": r.pk,
+                    "task": r.task,
+                    "status": r.status,
+                    "summary": r.summary,
+                    "error": r.error,
+                    "at": r.created_at,
+                }
+                for r in runs
+            ],
+            "broken_sources": [
+                {
+                    "id": h.source_id,
+                    "title": h.source.title,
+                    "url": h.source.url,
+                    "error": h.error,
+                    "failures": h.consecutive_failures,
+                    "checked_at": h.checked_at,
+                }
+                for h in broken
+            ],
+            "feeds": [
+                {
+                    "id": f.pk,
+                    "name": f.name,
+                    "kind": f.kind,
+                    "enabled": f.enabled,
+                    "last_run_at": f.last_run_at,
+                    "last_result": f.last_result,
+                }
+                for f in Feed.objects.all()
+            ],
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminRole])
+def automation_run(request, task):
+    if task not in automation_tasks.TASKS:
+        return Response({"detail": "Unknown task."}, status=http.HTTP_404_NOT_FOUND)
+    run = automation_tasks.run_task(task)
+    AuditLog.objects.create(
+        actor=request.user,
+        action="automation_run_manually",
+        object_type=run._meta.label,
+        object_id=str(run.pk),
+        after={"task": task, "status": run.status},
+    )
+    return Response(
+        {"task": run.task, "status": run.status, "summary": run.summary, "error": run.error}
     )
