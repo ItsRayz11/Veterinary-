@@ -25,18 +25,24 @@ export const errText = (e: unknown) =>
 export function useList<T>(path: string) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [count, setCount] = useState<number | null>(null);
   const [n, setN] = useState(0);
   useEffect(() => {
     let live = true;
-    apiFetch<{ results: T[] }>(path)
-      .then((d) => live && (setRows(d?.results ?? []), setError(d ? null : "Not permitted.")))
+    apiFetch<{ results: T[]; count?: number }>(path)
+      .then((d) => {
+        if (!live) return;
+        setRows(d?.results ?? []);
+        setCount(d?.count ?? null);
+        setError(d ? null : "Not permitted.");
+      })
       .catch(() => live && setError("Could not load this list."));
     return () => {
       live = false;
     };
   }, [path, n]);
   const reload = useCallback(() => setN((v) => v + 1), []);
-  return { rows, error, reload };
+  return { rows, error, count, reload };
 }
 
 export function ListShell<T>({
@@ -65,6 +71,17 @@ interface QueueItem {
   has_source: boolean;
   updated_at: string;
 }
+interface Detail extends QueueItem {
+  fields: { field: string; value: string }[];
+  sources: {
+    title: string;
+    publisher: string;
+    url: string;
+    license_note: string;
+    source_type: string;
+  }[];
+}
+const PAGE_SIZE = 25;
 interface Version {
   date: string;
   by: string | null;
@@ -80,7 +97,15 @@ export function ReviewQueueTab({
   onChanged: () => void;
 }) {
   const [model, setModel] = useState("");
-  const list = useList<QueueItem>(`/staff/review-queue${model ? `?model=${model}` : ""}`);
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const params = new URLSearchParams({ page: String(page) });
+  if (model) params.set("model", model);
+  if (query) params.set("q", query);
+  const list = useList<QueueItem>(`/staff/review-queue?${params}`);
+  const pages = Math.max(1, Math.ceil((list.count ?? 0) / PAGE_SIZE));
+  const [detail, setDetail] = useState<Detail | null>(null);
   const [target, setTarget] = useState<QueueItem | null>(null);
   const [history, setHistory] = useState<{ label: string; versions: Version[] } | null>(null);
   const [status, setStatus] = useState<string>(STATUSES[1][0]);
@@ -108,6 +133,14 @@ export function ReviewQueueTab({
     }
   }
 
+  async function showDetail(item: QueueItem) {
+    try {
+      setDetail((await apiFetch<Detail>(`/staff/review-queue/${item.model}/${item.id}`)) ?? null);
+    } catch {
+      setError("Could not load this record.");
+    }
+  }
+
   async function showHistory(item: QueueItem) {
     try {
       const h = await apiFetch<{ label: string; versions: Version[] }>(
@@ -121,8 +154,44 @@ export function ReviewQueueTab({
 
   return (
     <div className="space-y-3">
+      {error && !target && <Alert tone="danger">{error}</Alert>}
+      <form
+        className="flex items-end gap-2"
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setPage(1);
+          setQuery(search.trim());
+        }}
+      >
+        <div className="flex-1">
+          <Field
+            id="queue-search"
+            label="Search the queue"
+            hint="Name, brand, title or registration number"
+          >
+            <TextInput
+              id="queue-search"
+              type="search"
+              value={search}
+              maxLength={100}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </Field>
+        </div>
+        <Button type="submit" variant="secondary">
+          Search
+        </Button>
+      </form>
       <Field id="model-filter" label="Record type">
-        <Select id="model-filter" value={model} onChange={(e) => setModel(e.target.value)}>
+        <Select
+          id="model-filter"
+          value={model}
+          onChange={(e) => {
+            setModel(e.target.value);
+            setPage(1);
+          }}
+        >
           <option value="">All types</option>
           {Object.entries(counts).map(([k, n]) => (
             <option key={k} value={k}>
@@ -158,6 +227,9 @@ export function ReviewQueueTab({
                   <td className={td}>{r.review_status.replaceAll("_", " ")}</td>
                   <td className={td}>{r.has_source ? "Linked" : "None"}</td>
                   <td className={`${td} space-x-3 whitespace-nowrap`}>
+                    <button className="text-primary underline" onClick={() => showDetail(r)}>
+                      Review
+                    </button>
                     <button className="text-primary underline" onClick={() => setTarget(r)}>
                       Change status
                     </button>
@@ -171,6 +243,78 @@ export function ReviewQueueTab({
           </DataTable>
         )}
       </ListShell>
+
+      {list.count !== null && list.count > 0 && (
+        <nav aria-label="Queue pages" className="flex items-center justify-between text-sm">
+          <span className="text-muted" aria-live="polite">
+            {list.count} record{list.count === 1 ? "" : "s"} · page {page} of {pages}
+          </span>
+          <span className="flex gap-2">
+            <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              Previous
+            </Button>
+            <Button variant="secondary" disabled={page >= pages} onClick={() => setPage(page + 1)}>
+              Next
+            </Button>
+          </span>
+        </nav>
+      )}
+
+      <Modal
+        open={!!detail}
+        title={`Review: ${detail?.label ?? ""}`}
+        onClose={() => setDetail(null)}
+      >
+        <div className="max-h-[60vh] space-y-3 overflow-y-auto text-sm">
+          <dl className="grid grid-cols-[minmax(6rem,10rem)_1fr] gap-x-3 gap-y-1">
+            {detail?.fields.map((f) => (
+              <div key={f.field} className="contents">
+                <dt className="text-muted">{f.field}</dt>
+                <dd className="break-words">{f.value || "(empty)"}</dd>
+              </div>
+            ))}
+          </dl>
+          <h3 className="font-semibold">Sources</h3>
+          {detail?.sources.length === 0 && (
+            <p className="text-muted">
+              No source linked. A record cannot be made public without one.
+            </p>
+          )}
+          {detail?.sources.map((s, i) => (
+            <div key={i} className="rounded border border-border p-2">
+              <p className="font-medium">{s.title}</p>
+              <p className="text-xs text-muted">
+                {[s.publisher, s.source_type.replaceAll("_", " ")].filter(Boolean).join(" · ")}
+              </p>
+              {s.license_note && <p className="text-xs">{s.license_note}</p>}
+              {/^https?:\/\//.test(s.url) && (
+                <a
+                  href={s.url}
+                  className="break-all text-xs text-primary underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {s.url}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setDetail(null)}>
+            Close
+          </Button>
+          <Button
+            onClick={() => {
+              const item = detail;
+              setDetail(null);
+              if (item) setTarget(item);
+            }}
+          >
+            Change status
+          </Button>
+        </div>
+      </Modal>
 
       <Modal
         open={!!target}

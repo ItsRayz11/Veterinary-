@@ -47,19 +47,26 @@ def summary(request):
 @permission_classes([IsEditor])
 def review_queue(request):
     model_key = request.query_params.get("model", "")
-    models = services.publishable_models()
-    if model_key and model_key not in models:
+    if model_key and model_key not in services.publishable_models():
         return Response({"detail": "Unknown model."}, status=http.HTTP_400_BAD_REQUEST)
     default = ",".join(s.value for s in services.QUEUE_STATUSES)
     statuses = (request.query_params.get("status") or default).split(",")
-    items = []
-    for key, m in models.items():
-        if model_key and key != model_key:
-            continue
-        for obj in m.objects.filter(review_status__in=statuses).order_by("-updated_at")[:50]:
-            items.append(services.serialize_record(key, obj))
-    items.sort(key=lambda i: i["updated_at"], reverse=True)
-    return Response({"results": items[:100]})
+    try:
+        page = int(request.query_params.get("page", "1"))
+    except ValueError:
+        page = 1
+    q = request.query_params.get("q", "").strip()[:100]
+    return Response(services.queue_page(model_key, statuses, q, min(page, 1000)))
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def record_detail(request, model_key, pk):
+    data = services.record_detail(model_key, pk)
+    if data is None:
+        return Response({"detail": "Record not found."}, status=http.HTTP_404_NOT_FOUND)
+    return Response(data)
 
 
 @untyped_schema

@@ -164,3 +164,54 @@ def test_summary_gives_staff_the_configured_admin_path(catalog, settings):
     editor, _ = client_for(Role.EDITOR)
     assert editor.get("/api/v1/staff/summary/").json()["admin_url"] == "/private-path/"
     assert APIClient().get("/api/v1/staff/summary/").status_code in (401, 403)  # never public
+
+
+def test_queue_search_and_paging(catalog):
+    c, _ = client_for(Role.EDITOR)
+    everything = c.get("/api/v1/staff/review-queue/").json()
+    assert everything["count"] >= 7 and everything["page"] == 1
+    hit = c.get("/api/v1/staff/review-queue/?q=enrofloxacin").json()
+    assert hit["count"] >= 1
+    assert all("nro" in r["label"].lower() or r["model"] for r in hit["results"])
+    assert c.get("/api/v1/staff/review-queue/?q=zzz-no-such-thing").json()["results"] == []
+    # Paging: a page past the end is empty, never an error; junk page numbers fall back to 1.
+    assert c.get("/api/v1/staff/review-queue/?page=999").json()["results"] == []
+    assert c.get("/api/v1/staff/review-queue/?page=abc").json()["page"] == 1
+    # Filtering to one model only returns that model.
+    only = c.get("/api/v1/staff/review-queue/?model=pharma.generic").json()["results"]
+    assert only and {r["model"] for r in only} == {"pharma.generic"}
+
+
+def test_queue_pages_do_not_overlap(catalog, settings):
+    from apps.staff import services
+
+    services.PAGE_SIZE = 3
+    try:
+        c, _ = client_for(Role.EDITOR)
+        p1 = c.get("/api/v1/staff/review-queue/?page=1").json()["results"]
+        p2 = c.get("/api/v1/staff/review-queue/?page=2").json()["results"]
+        keys = {(r["model"], r["id"]) for r in p1} & {(r["model"], r["id"]) for r in p2}
+        assert len(p1) == 3 and p2 and not keys
+    finally:
+        services.PAGE_SIZE = 25
+
+
+def test_record_detail_shows_fields_and_sources(catalog):
+    generic = Generic.objects.filter(is_development_data=True).first()
+    src = Source.objects.create(
+        source_type="other", title="Label", url="https://example.org", license_note="n"
+    )
+    from django.contrib.contenttypes.models import ContentType
+
+    SourceLink.objects.create(
+        source=src, content_type=ContentType.objects.get_for_model(generic), object_id=generic.pk
+    )
+    c, _ = client_for(Role.EDITOR)
+    d = c.get(f"/api/v1/staff/review-queue/pharma.generic/{generic.pk}/").json()
+    assert d["label"] and any(f["field"] == "Name" for f in d["fields"])
+    assert d["sources"][0]["title"] == "Label"
+    assert c.get("/api/v1/staff/review-queue/pharma.generic/999999/").status_code == 404
+    assert c.get("/api/v1/staff/review-queue/nope.model/1/").status_code == 404
+    assert APIClient().get(
+        f"/api/v1/staff/review-queue/pharma.generic/{generic.pk}/"
+    ).status_code in (401, 403)

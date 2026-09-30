@@ -2,10 +2,11 @@
 
 from django.apps import apps as django_apps
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Q
 
 from apps.core.models import PublishableModel, ReviewStatus
 from apps.core.review import set_review_status
-from apps.sources.models import has_source
+from apps.sources.models import has_source, sources_for
 
 QUEUE_STATUSES = (
     ReviewStatus.COMMUNITY_SUBMITTED,
@@ -93,3 +94,71 @@ def history_diff(obj) -> list[dict]:
             }
         )
     return out
+
+
+PAGE_SIZE = 25
+_NAME_FIELDS = ("name", "brand_name", "title", "stem", "registration_number", "alias", "synonym")
+
+
+def _search_filter(model, q: str) -> Q:
+    names = {f.name for f in model._meta.concrete_fields}
+    cond = Q()
+    for field in _NAME_FIELDS:
+        if field in names:
+            cond |= Q(**{f"{field}__icontains": q})
+    return cond
+
+
+def queue_page(model_key: str, statuses: list[str], q: str, page: int) -> dict:
+    """One page of the review queue, newest first, optionally one model and a text search."""
+    models = publishable_models()
+    page = max(page, 1)
+    total, items = 0, []
+    for key, m in models.items():
+        if model_key and key != model_key:
+            continue
+        qs = m.objects.filter(review_status__in=statuses)
+        if q:
+            cond = _search_filter(m, q)
+            if not cond:
+                continue
+            qs = qs.filter(cond)
+        total += qs.count()
+        # Enough rows from each model to fill this page after merging.
+        for obj in qs.order_by("-updated_at", "-pk")[: page * PAGE_SIZE]:
+            items.append(serialize_record(key, obj))
+    items.sort(key=lambda i: (i["updated_at"], i["id"]), reverse=True)
+    start = (page - 1) * PAGE_SIZE
+    return {
+        "results": items[start : start + PAGE_SIZE],
+        "count": total,
+        "page": page,
+        "page_size": PAGE_SIZE,
+    }
+
+
+def record_detail(model_key: str, pk: int) -> dict | None:
+    """What a reviewer needs to judge a record: its fields and where its data came from."""
+    obj = get_record(model_key, pk)
+    if obj is None:
+        return None
+    fields = []
+    for f in obj._meta.concrete_fields:
+        if f.name in {"id", "created_at", "updated_at"} or f.name.startswith("normalized_"):
+            continue
+        value = getattr(obj, f.name, None)
+        if f.is_relation:
+            value = str(value) if value is not None else ""
+        text = "" if value is None else str(value)
+        fields.append({"field": f.verbose_name.capitalize(), "value": text[:500]})
+    sources = [
+        {
+            "title": s.title,
+            "publisher": s.publisher,
+            "url": s.url,
+            "license_note": s.license_note,
+            "source_type": s.source_type,
+        }
+        for s in sources_for(obj)[:10]
+    ]
+    return {**serialize_record(model_key, obj), "fields": fields, "sources": sources}

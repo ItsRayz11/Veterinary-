@@ -7,6 +7,7 @@ urlpatterns = [
     path("staff/review-queue/", views.review_queue),
     path("staff/review-queue/<str:model_key>/<int:pk>/status/", views.set_status),
     path("staff/review-queue/<str:model_key>/<int:pk>/history/", views.record_history),
+    path("staff/review-queue/<str:model_key>/<int:pk>/", views.record_detail),
     path("staff/price-submissions/", views.price_submissions),
     path("staff/price-submissions/<int:pk>/<str:decision>/", views.moderate_submission),
     path("staff/question-reports/", views.question_reports),
