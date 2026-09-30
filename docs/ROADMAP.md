@@ -20,7 +20,8 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 ## Phase 1: Engineering Foundation
 - [x] Move Next.js scaffold to `web/`
 - [x] Django project in `api/` (Python 3.12 venv, settings from env, custom User model with roles)
-- [ ] Postgres: Neon project + `DATABASE_URL`, pg_trgm; currently SQLite fallback only (no Docker on this machine)
+- [x] Postgres: Neon (Postgres 18) connected via `DATABASE_URL`; all 29 migrations applied, reference data seeded
+- [ ] pg_trgm/FTS search on Postgres; CI Postgres service container (see DEPLOYMENT.md)
 - [x] Auth endpoints (session-based register/login/logout/me, throttled, no self-assigned privileged roles) + role permission classes
 - [x] Admin foundation: Django admin, user role admin, immutable AuditLog
 - [ ] CI: `.github/workflows/ci.yml` written but never run (no GitHub remote yet)
