@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 /** Native <dialog>: focus trap, Escape to close and backdrop come from the browser. */
 export function Modal({
@@ -15,6 +15,7 @@ export function Modal({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -25,10 +26,10 @@ export function Modal({
     <dialog
       ref={ref}
       onClose={onClose}
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
       className="m-auto w-[min(32rem,92vw)] rounded-md border border-border bg-surface p-4 text-text backdrop:bg-black/50"
     >
-      <h2 id="modal-title" className="mb-2 text-base font-semibold">
+      <h2 id={titleId} className="mb-2 text-base font-semibold">
         {title}
       </h2>
       {children}

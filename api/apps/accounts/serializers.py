@@ -14,6 +14,10 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+# Accounts the platform itself uses; nobody may register them (case-insensitive).
+RESERVED_USERNAMES = frozenset({"feed-bot"})
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     role = serializers.ChoiceField(choices=SELF_SERVE_ROLES, default=Role.REGISTERED)
@@ -21,6 +25,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("username", "email", "password", "role")
+
+    def validate_username(self, value):
+        if value.strip().lower() in RESERVED_USERNAMES:
+            raise serializers.ValidationError("This username is reserved.")
+        return value
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():

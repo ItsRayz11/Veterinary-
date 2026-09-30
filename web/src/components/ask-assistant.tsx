@@ -8,7 +8,8 @@ import { ClientApiError, apiSend } from "@/lib/client-api";
 import { useUser } from "@/lib/use-user";
 
 interface Answer {
-  status: "answered" | "no_reviewed_data" | "unverified" | "unavailable" | "error";
+  status:
+    "answered" | "no_reviewed_data" | "unverified" | "unavailable" | "error" | "too_many_drugs";
   answer: string;
   citations: string[];
   sources: { tag: string; name: string; slug: string }[];
@@ -96,6 +97,11 @@ export function AskAssistant() {
           <Alert tone="warn" title="The answer could not be verified">
             The generated answer did not pass the checks (it must cite the records and use only
             numbers found in them), so it is not shown. Read the records directly:
+          </Alert>
+        )}
+        {result?.status === "too_many_drugs" && (
+          <Alert tone="warn" title="Please ask about fewer drugs">
+            {result.detail} Answering from only some of them could look complete when it is not.
           </Alert>
         )}
         {result?.status === "unavailable" && (

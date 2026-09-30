@@ -57,11 +57,14 @@ def batches(request):
     country = Country.objects.filter(iso2=str(request.data.get("country", "")).upper()).first()
     if country is None:
         return Response({"detail": "Choose a country."}, status=http.HTTP_400_BAD_REQUEST)
+    source = request.data.get("source")
+    if not isinstance(source, dict):
+        source = {}  # a non-object counts as missing, and is reported as such
     try:
         batch = services.stage_batch(
             user=request.user,
             country=country,
-            source_data=request.data.get("source") or {},
+            source_data=source,
             csv_text=str(request.data.get("csv_text", "")),
             file_name=str(request.data.get("file_name", "")),
         )

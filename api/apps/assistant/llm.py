@@ -16,12 +16,14 @@ class LLM(Protocol):
     def complete(self, system: str, user: str) -> str: ...
 
 
+# One attempt, 20 s: the API function is stopped at 30 s, and a retry on top of a slow first
+# attempt would be killed before the failure could be logged and shown.
 class AnthropicLLM:
     def __init__(self, api_key: str, model: str):
         import anthropic
 
         self._anthropic = anthropic
-        self._client = anthropic.Anthropic(api_key=api_key, timeout=30.0, max_retries=1)
+        self._client = anthropic.Anthropic(api_key=api_key, timeout=20.0, max_retries=0)
         self.model = model
 
     def complete(self, system: str, user: str) -> str:

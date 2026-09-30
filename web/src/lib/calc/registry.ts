@@ -210,7 +210,7 @@ export const CALCULATORS: CalcDef[] = [
         hint: "Days x 24",
       },
     ],
-    outputs: [{ key: "withdrawal_hours", label: "Withdrawal period", unit: "h", places: 0 }],
+    outputs: [{ key: "withdrawal_hours", label: "Withdrawal period", unit: "h", places: 2 }],
     run: (v) => {
       const when = new Date(v.last_treatment);
       if (Number.isNaN(when.getTime()))

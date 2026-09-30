@@ -97,6 +97,17 @@ A high-effort code review of everything since the last push, plus a manual pass,
 **Second review round** (after the fixes above) found and I fixed: the number check still skipped `.25 mg/kg`, `q8h`, `x3` (every digit run now counts); the fetch layer let `ValueError`/`HTTPException` escape and had no per-probe deadline (all failures are `FetchError`, 8 s per source, one bad source or feed no longer aborts or starves a run); an open redirect via `/\evil.com` in the login `next` parameter (URL-parser based `safeNext`, 20 cases); the interaction checker could show a stale failure or spin forever on 403; the service worker served a 5xx instead of a saved copy; the admin path was baked into the public bundle (now delivered to staff by the API); drug-class list counts ignored sub-classes; assistant retrieval scanned every drug and brand per question (now indexed lookups, fixed query count).
 - Real-browser end-to-end runs: calculators, offline, login/logout, admin panel, CSP (all passing).
 
+**Third review round** (findings were lower severity than the first two; nothing safety-critical):
+- The assistant's model call could take up to ~60 s (30 s timeout + retry) against a 30 s function limit: now one 20 s attempt. Feed fetches had no overall deadline: now 10 s per feed.
+- A visitor could register the `feed-bot` username and be treated as the automation account: the name is reserved (case-insensitive) and the bot account is forced to an unusable password even if it pre-exists.
+- A question naming more than 3 drugs was silently answered from the first 3: it is now refused with a clear message (new `too_many_drugs` status).
+- Malformed bodies caused 500s (JSON arrays/strings, a non-object `source`, a CSV cell over the parser limit): JSON bodies must be objects (one central parser) and CSV errors are 400s.
+- Feed links longer than the column were truncated so de-duplication never matched: such items are dropped.
+- Price submissions, listing submissions and listing reports shared one throttle bucket: separate scopes.
+- Dialog title ids were duplicated when two modals exist (wrong accessible names): unique ids. The service-worker registration pulled the whole calculation engine into every page's JavaScript: measured 0 of 9 home-page chunks contain it now.
+- The withdrawal calculator displayed 36.5 h as "37 h" while using 36.5 h: shown with 2 decimals.
+Verification after all three rounds: 262 API tests (CI-equivalent environment, `.env` hidden), 121 web tests, deploy check clean, three real-browser suites (login/admin/logout, import upload + chunked approval, PWA/offline with the server stopped) all passing. Each round found fewer and less severe problems; further review has diminishing returns compared with real usage, a first CI run on Postgres, and a penetration test (see SECURITY.md).
+
 ## Phase 6: Pakistan Data
 - [x] Reviewed ingestion pipeline (`apps/ingestion`, `docs/INGESTION.md`): CSV stage -> match (generic/company/product/registration, duplicates, errors) -> staff approve/reject -> unreviewed records linked to the Source; checksum + licence note required; audit log; admin + Imports tab in the review panel; 6 tests; verified live (imports stay hidden until reviewed)
 - [ ] Real Pakistan data: blocked on per-source terms/legal sign-off (checklist in `INGESTION.md` all unfilled); no fetcher enabled; nothing invented

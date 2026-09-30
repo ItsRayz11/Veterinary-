@@ -57,10 +57,13 @@ def parse_csv(text: str) -> list[dict]:
     if missing:
         raise ValidationError(f"Missing required column(s): {', '.join(missing)}.")
     rows = []
-    for raw in reader:
-        rows.append({mapping[k]: (v or "").strip() for k, v in raw.items() if k in mapping})
-        if len(rows) > MAX_ROWS:
-            raise ValidationError(f"More than {MAX_ROWS} rows; split the file.")
+    try:
+        for raw in reader:
+            rows.append({mapping[k]: (v or "").strip() for k, v in raw.items() if k in mapping})
+            if len(rows) > MAX_ROWS:
+                raise ValidationError(f"More than {MAX_ROWS} rows; split the file.")
+    except csv.Error as exc:
+        raise ValidationError(f"The file is not valid CSV: {exc}") from exc
     if not rows:
         raise ValidationError("The file has a header but no rows.")
     return rows

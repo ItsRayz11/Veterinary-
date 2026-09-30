@@ -8,6 +8,7 @@ class AnswerStatus(models.TextChoices):
     ANSWERED = "answered", "Answered from reviewed records"
     NO_DATA = "no_reviewed_data", "No reviewed records matched"
     UNVERIFIED = "unverified", "Answer failed verification (not shown)"
+    TOO_MANY = "too_many_drugs", "Question names too many drugs"
     UNAVAILABLE = "unavailable", "Assistant not configured"
     ERROR = "error", "Model call failed"
 

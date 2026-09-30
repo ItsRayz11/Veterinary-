@@ -113,6 +113,11 @@ REST_FRAMEWORK = {
         "apps.core.throttling.AnonThrottle",
         "apps.core.throttling.UserThrottle",
     ],
+    "DEFAULT_PARSER_CLASSES": [
+        "apps.core.parsers.ObjectJSONParser",
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
+    ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -122,6 +127,8 @@ REST_FRAMEWORK = {
         "auth": "10/min",
         "submit": "20/hour",
         "assistant": "20/hour",
+        "submit_listing": "20/hour",
+        "report": "30/hour",
     },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,

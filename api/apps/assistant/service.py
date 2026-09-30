@@ -13,7 +13,7 @@ from decimal import Decimal, InvalidOperation
 
 from .llm import LLM, LLMError, get_llm
 from .models import AnswerStatus, AssistantLog
-from .retrieval import Context, build_context, find_generics
+from .retrieval import MAX_GENERICS, Context, build_context, find_generics
 
 MIN_LEN, MAX_LEN = 5, 500
 
@@ -98,7 +98,9 @@ def ask(user, question: str, llm: LLM | None = None) -> dict:
     question = " ".join(question.split())
     if not (MIN_LEN <= len(question) <= MAX_LEN):
         raise ValueError(f"Ask a question between {MIN_LEN} and {MAX_LEN} characters.")
-    contexts = build_context(find_generics(question))
+    named = find_generics(question, limit=MAX_GENERICS + 1)
+    too_many = len(named) > MAX_GENERICS
+    contexts = build_context(named[:MAX_GENERICS])
     retrieved = [c.generic.slug for c in contexts]
 
     def finish(status, answer="", citations=(), detail="", model=""):
@@ -120,6 +122,12 @@ def ask(user, question: str, llm: LLM | None = None) -> dict:
             "detail": detail,
         }
 
+    if too_many:
+        # Answering about a subset would look complete; ask for fewer drugs instead.
+        return finish(
+            AnswerStatus.TOO_MANY,
+            detail=f"Ask about up to {MAX_GENERICS} drugs at a time; this question names more.",
+        )
     if not contexts:
         return finish(AnswerStatus.NO_DATA)
     llm = llm if llm is not None else get_llm()

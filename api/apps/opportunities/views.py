@@ -18,7 +18,11 @@ from .models import Job, Listing, ListingStatus, Scholarship
 
 
 class SubmitThrottle(UserThrottle):
-    scope = "submit"
+    scope = "submit_listing"
+
+
+class ReportThrottle(UserThrottle):
+    scope = "report"
 
 
 def _kind(kind: str):
@@ -153,7 +157,7 @@ def submit(request, kind):
 @untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-@throttle_classes([SubmitThrottle])
+@throttle_classes([ReportThrottle])
 def report(request, kind, pk):
     item = get_object_or_404(_kind(kind).objects.public(), pk=pk)
     try:

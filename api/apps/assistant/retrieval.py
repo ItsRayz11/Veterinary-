@@ -42,7 +42,7 @@ def _candidates(question_norm: str) -> list[str]:
     )
 
 
-def find_generics(question: str) -> list[Generic]:
+def find_generics(question: str, limit: int = MAX_GENERICS) -> list[Generic]:
     """Reviewed generics named in the question, via generic name, synonym or brand name.
 
     Whole-word matching done as indexed IN lookups on the word runs of the question, so the cost
@@ -63,7 +63,7 @@ def find_generics(question: str) -> list[Generic]:
         .select_related("generic")
     ):
         hits.setdefault(product.generic_id, product.generic)
-    return sorted(hits.values(), key=lambda g: g.name)[:MAX_GENERICS]
+    return sorted(hits.values(), key=lambda g: g.name)[:limit]
 
 
 def _label(obj) -> str:

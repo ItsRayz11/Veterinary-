@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { CALCULATORS } from "@/lib/calc/registry";
+import { CALCULATOR_SLUGS } from "@/lib/calc/slugs";
 
 /** Registers the service worker in production and asks it to keep the calculators offline. */
 export function ServiceWorkerRegister() {
@@ -16,7 +16,7 @@ export function ServiceWorkerRegister() {
         reg.active?.postMessage({
           type: "PRECACHE",
           urls: ["/calculators", "/calculators/dose-calculator"].concat(
-            CALCULATORS.map((c) => `/calculators/${c.slug}`),
+            CALCULATOR_SLUGS.map((slug) => `/calculators/${slug}`),
           ),
         });
       })

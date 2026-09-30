@@ -1,11 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { CALCULATORS, bySlug } from "./registry";
+import { CALCULATOR_SLUGS } from "./slugs";
 
 const run = (slug: string, v: Record<string, string>) => bySlug(slug)!.run(v).values;
 
 describe("calculator registry (hand-computed)", () => {
   it("has unique slugs and every output key is produced", () => {
     expect(new Set(CALCULATORS.map((c) => c.slug)).size).toBe(CALCULATORS.length);
+  });
+
+  it("the light slug list used for offline precaching matches the registry exactly", () => {
+    expect([...CALCULATOR_SLUGS].sort()).toEqual(CALCULATORS.map((c) => c.slug).sort());
+  });
+
+  it("withdrawal: the period shown is the period used (36.5 h is not shown as 37 h)", () => {
+    const def = bySlug("withdrawal-date")!;
+    const out = def.outputs.find((o) => o.key === "withdrawal_hours")!;
+    const value = def.run({ last_treatment: "2026-01-01T00:00:00Z", withdrawal_hours: "36.5" })
+      .values.withdrawal_hours;
+    expect(value.toDecimalPlaces(out.places ?? 2).toString()).toBe("36.5");
   });
 
   it("dilution: 10 -> 2 in 100 mL needs 20 mL stock + 80 mL diluent", () => {

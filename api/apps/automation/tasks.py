@@ -26,6 +26,8 @@ PROBE_TIMEOUT = 5
 PROBE_DEADLINE = 8  # all requests for ONE source (robots, HEAD, GET, redirects) together
 STALE_RUN_MINUTES = 15
 FEED_MAX_ITEMS = 30
+FEED_DEADLINE = 10  # robots.txt + the feed itself, redirects included, per feed
+MAX_URL = 1000  # matches Listing.apply_url
 BOT_USERNAME = "feed-bot"
 
 
@@ -38,7 +40,9 @@ def bot_user():
     user, created = User.objects.get_or_create(
         username=BOT_USERNAME, defaults={"role": "registered"}
     )
-    if created:
+    # Even if someone registered this name before it was reserved, the account is neutralised:
+    # no usable password, so it cannot sign in and post as the bot.
+    if created or user.has_usable_password():
         user.set_unusable_password()
         user.save(update_fields=["password"])
     return user
@@ -144,7 +148,7 @@ def parse_feed(body: bytes) -> list[dict]:
             elif cname in ("title", "description", "summary") and cname not in fields:
                 fields[cname] = _tag(child.text or "")
         title, link = fields.get("title", ""), fields.get("link", "")
-        if title and link.lower().startswith(("http://", "https://")):
+        if title and link.lower().startswith(("http://", "https://")) and len(link) <= MAX_URL:
             items.append(
                 {
                     "title": title[:200],
@@ -181,13 +185,14 @@ def run_feed(feed: Feed) -> dict:
     except Exception as exc:
         result["skipped"] = "; ".join(getattr(exc, "messages", [str(exc)]))
         return finish(result["skipped"])
-    if not safe_http.allowed_by_robots(feed.url):
+    deadline = time.monotonic() + FEED_DEADLINE
+    if not safe_http.allowed_by_robots(feed.url, deadline=deadline):
         feed.enabled, feed.robots_confirmed_at = False, None
         result["skipped"] = "robots.txt does not allow automated access; feed disabled"
         return finish(result["skipped"])
     feed.robots_confirmed_at = timezone.now()
     try:
-        status, body, _ = safe_http.fetch(feed.url)
+        status, body, _ = safe_http.fetch(feed.url, deadline=deadline)
         if status != 200:
             raise safe_http.FetchError(f"HTTP {status}")
         checksum = hashlib.sha256(body).hexdigest()
@@ -214,7 +219,7 @@ def run_feed(feed: Feed) -> dict:
             organization=feed.organization,
             country=feed.default_country,
             description=(item["summary"] or item["title"])[:3000],
-            apply_url=item["link"][:1000],
+            apply_url=item["link"],
             submitted_by=bot,
             **extra,
         )
