@@ -1,0 +1,23 @@
+{
+  "_note": "Hand-computed expected values. Both api (Python) and web (TypeScript) engines must reproduce these. Keys are snake_case in both implementations.",
+  "cases": [
+    { "name": "10% = 100 mg/mL", "fn": "percent_to_mg_per_ml", "input": { "percent": "10" }, "expected": { "mg_per_ml": "100" } },
+    { "name": "250 mg at 100 mg/mL", "fn": "mg_to_ml", "input": { "dose_mg": "250", "concentration_mg_per_ml": "100" }, "expected": { "volume_ml": "2.5" } },
+    { "name": "2.5 mL at 100 mg/mL", "fn": "ml_to_mg", "input": { "volume_ml": "2.5", "concentration_mg_per_ml": "100" }, "expected": { "dose_mg": "250" } },
+    { "name": "400 kg x 5 mg/kg at 100 mg/mL", "fn": "dose_calc", "input": { "weight": "400", "dose_mg_per_kg": "5", "concentration_mg_per_ml": "100" }, "expected": { "weight_kg": "400", "total_mg": "2000", "volume_ml": "20" } },
+    { "name": "lb input converts to 100 kg", "fn": "dose_calc", "input": { "weight": "220.462262185", "weight_unit": "lb", "dose_mg_per_kg": "10", "concentration_mg_per_ml": "50" }, "expected": { "weight_kg": "100", "total_mg": "1000", "volume_ml": "20" } },
+    { "name": "dilution 100 to 10 in 50 mL", "fn": "dilution", "input": { "stock_conc": "100", "target_conc": "10", "final_volume_ml": "50" }, "expected": { "stock_volume_ml": "5", "diluent_ml": "45" } },
+    { "name": "8% dehydration of 20 kg", "fn": "dehydration_deficit", "input": { "weight": "20", "dehydration_percent": "8" }, "expected": { "deficit_ml": "1600" } },
+    { "name": "10 kg at 50 mL/kg/day", "fn": "daily_fluid_need", "input": { "weight": "10", "ml_per_kg_per_day": "50" }, "expected": { "ml_per_day": "500" } },
+    { "name": "1000 mL over 8 h", "fn": "infusion_rate", "input": { "volume_ml": "1000", "hours": "8" }, "expected": { "ml_per_hour": "125" } },
+    { "name": "480 mL over 4 h at 15 gtt/mL", "fn": "drip_rate", "input": { "volume_ml": "480", "hours": "4", "drops_per_ml": "15" }, "expected": { "drops_per_min": "30", "seconds_per_drop": "2" } },
+    { "name": "CRI 5 mcg/kg/min, 20 kg, 10 mg/mL", "fn": "cri_rate", "input": { "weight": "20", "dose_mcg_per_kg_min": "5", "concentration_mg_per_ml": "10" }, "expected": { "mcg_per_hour": "6000", "ml_per_hour": "0.6" } },
+    { "name": "flock drinking water", "fn": "drinking_water_dose", "input": { "birds": "1000", "avg_weight_kg": "2", "dose_mg_per_kg": "10", "water_litres_per_day": "400", "product_mg_per_g": "500" }, "expected": { "total_mg_per_day": "20000", "mg_per_litre": "50", "product_g_per_day": "40" } },
+    { "name": "zero weight rejected", "fn": "dose_calc", "input": { "weight": "0", "dose_mg_per_kg": "5", "concentration_mg_per_ml": "100" }, "error": true },
+    { "name": "negative dose rejected", "fn": "dose_calc", "input": { "weight": "10", "dose_mg_per_kg": "-1", "concentration_mg_per_ml": "100" }, "error": true },
+    { "name": "implausible weight rejected", "fn": "dose_calc", "input": { "weight": "3000", "dose_mg_per_kg": "1", "concentration_mg_per_ml": "100" }, "error": true },
+    { "name": "target above stock rejected", "fn": "dilution", "input": { "stock_conc": "10", "target_conc": "20", "final_volume_ml": "50" }, "error": true },
+    { "name": "percent above 100 rejected", "fn": "percent_to_mg_per_ml", "input": { "percent": "101" }, "error": true },
+    { "name": "non-numeric rejected", "fn": "mg_to_ml", "input": { "dose_mg": "abc", "concentration_mg_per_ml": "1" }, "error": true }
+  ]
+}

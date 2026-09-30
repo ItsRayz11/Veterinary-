@@ -65,16 +65,15 @@ class ClinicalRecord(PublishableModel):
         abstract = True
 
 
-class DoseQuerySet(PublishableQuerySet):
-    # Statuses whose doses may feed the calculator or be shown as a dose recommendation.
-    CALC_STATUSES = (
-        ReviewStatus.VERIFIED,
-        ReviewStatus.EXPERT_REVIEWED,
-        ReviewStatus.OFFICIAL_REGULATORY,
-    )
+# Statuses whose doses may feed the calculator or be shown as a dose recommendation.
+CALCULATOR_STATUSES = frozenset(
+    {ReviewStatus.VERIFIED, ReviewStatus.EXPERT_REVIEWED, ReviewStatus.OFFICIAL_REGULATORY}
+)
 
+
+class DoseQuerySet(PublishableQuerySet):
     def calculator_ready(self):
-        return self.filter(review_status__in=[s.value for s in self.CALC_STATUSES])
+        return self.filter(review_status__in=[s.value for s in CALCULATOR_STATUSES])
 
 
 class DoseRegimen(ClinicalRecord):
@@ -149,6 +148,10 @@ class DoseRegimen(ClinicalRecord):
 
     def __str__(self):
         return f"{self.generic} / {self.species} / {self.route}: {self.dose_min}-{self.dose_max}"
+
+    @property
+    def is_calculator_ready(self) -> bool:
+        return self.review_status in CALCULATOR_STATUSES
 
     def clean(self):
         if self.dose_unit_id and self.dose_unit.dimension != Dimension.DOSE_RATE:
