@@ -34,7 +34,7 @@ function toError(status: number, body: unknown): ClientApiError {
     }
   }
   const envMsg = (b?.error as { message?: string } | undefined)?.message;
-  if (envMsg && status !== 400) message = envMsg;
+  if (envMsg && envMsg !== "Request failed") message = envMsg;
   else if (fields.non_field_errors || fields.detail)
     message = fields.non_field_errors ?? fields.detail;
   return new ClientApiError(message, status, fields);

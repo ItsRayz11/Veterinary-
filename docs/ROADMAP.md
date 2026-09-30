@@ -54,7 +54,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Verification workflow (`apps.core.review.set_review_status`): source required, only vet reviewer/admin can sign off, no self-approval, dev data never signed off, audit entry per change
 - [x] Admin: status read-only in forms, changes via governed bulk actions; history via simple-history
 - [x] Calculator gate: `DoseRegimen.objects.calculator_ready()` (verified / expert reviewed / official only)
-- [ ] Reviewer UI with old-vs-new diff view (history data exists; UI in Phase 10 review queue)
+- [x] Reviewer UI with old-vs-new diff view: staff review panel `/admin-panel` (review queue with governed status change + history diff, price moderation, question reports, admin audit log); API `apps.staff` (8 tests). Roles enforced server-side.
 - [ ] Public references section per page (needs Phase 4 API)
 
 ## Phase 4: Drug Encyclopedia UI
