@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.clinical.models import DoseRegimen
+from apps.core.schema import untyped_schema
 from apps.countries.models import Country
 from apps.species.models import Species
 
@@ -24,6 +25,7 @@ def _descendant_ids(model, root) -> list[int]:
     return ids
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def species_detail(request, slug):
@@ -53,6 +55,7 @@ def species_detail(request, slug):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def drug_class_list(request):
@@ -76,6 +79,7 @@ def drug_class_list(request):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def drug_class_detail(request, slug):
@@ -101,6 +105,7 @@ def drug_class_detail(request, slug):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def country_detail(request, iso2):

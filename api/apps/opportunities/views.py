@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
 from apps.accounts.permissions import IsModerator
+from apps.core.schema import untyped_schema
 from apps.countries.models import Country
 
 from . import services
@@ -103,6 +104,7 @@ class ScholarshipSerializer(ListingSerializer):
 SERIALIZERS = {"jobs": JobSerializer, "scholarships": ScholarshipSerializer}
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def listings(request, kind):
@@ -124,6 +126,7 @@ def listings(request, kind):
     return Response([_public(i, kind) for i in qs])
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def listing_detail(request, kind, pk):
@@ -131,6 +134,7 @@ def listing_detail(request, kind, pk):
     return Response(_public(item, kind))
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @throttle_classes([SubmitThrottle])
@@ -146,6 +150,7 @@ def submit(request, kind):
     return Response({"id": item.pk, "status": item.status}, status=status.HTTP_201_CREATED)
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @throttle_classes([SubmitThrottle])
@@ -171,6 +176,7 @@ def _staff_row(item: Listing, kind: str) -> dict:
     }
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsModerator])
 def staff_listings(request):
@@ -183,6 +189,7 @@ def staff_listings(request):
     return Response({"results": rows})
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsModerator])
 def staff_decide(request, kind, pk, decision):

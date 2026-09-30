@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from apps.clinical.models import ClinicalNote, DoseRegimen, WithdrawalPeriod
 from apps.companies.models import Company
+from apps.core.schema import untyped_schema
 from apps.core.text import normalize_name
 from apps.countries.models import Country
 from apps.sources.models import sources_for
@@ -39,6 +40,7 @@ class GenericList(ListAPIView):
         return qs
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def generic_detail(request, slug):
@@ -80,6 +82,7 @@ def generic_detail(request, slug):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def product_detail(request, slug):
@@ -141,6 +144,7 @@ def product_detail(request, slug):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def company_detail(request, slug):
@@ -171,6 +175,7 @@ def company_detail(request, slug):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def countries(request):
@@ -183,6 +188,7 @@ def countries(request):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def species_list(request):

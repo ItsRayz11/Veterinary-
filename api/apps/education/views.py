@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.schema import untyped_schema
 from apps.pharma.serializers import source_payload
 from apps.sources.models import sources_for
 
@@ -44,6 +45,7 @@ def _question_payload(q: Question, reveal: bool) -> dict:
     return data
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def subjects(request):
@@ -59,6 +61,7 @@ def subjects(request):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def questions(request):
@@ -66,6 +69,7 @@ def questions(request):
     return Response([_question_payload(q, reveal=False) for q in qs[:50]])
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def past_papers(request):
@@ -90,6 +94,7 @@ def past_papers(request):
     )
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_exam(request):
@@ -101,6 +106,7 @@ def create_exam(request):
     return Response({"id": attempt.pk, "total": attempt.answers.count()}, status=201)
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def exam_detail(request, pk):
@@ -120,6 +126,7 @@ def exam_detail(request, pk):
     )
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def submit_exam(request, pk):
@@ -134,6 +141,7 @@ def submit_exam(request, pk):
         raise ValidationError({"exam": exc.messages[0]}) from exc
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def bookmark(request, pk):
@@ -144,6 +152,7 @@ def bookmark(request, pk):
     return Response({"bookmarked": created})
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def report_question(request, pk):
@@ -155,6 +164,7 @@ def report_question(request, pk):
     return Response(status=201)
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def history(request):
@@ -177,6 +187,7 @@ def _flashcard_payload(c) -> dict:
     }
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def flashcards(request):
@@ -188,6 +199,7 @@ def flashcards(request):
     return Response([_flashcard_payload(c) for c in qs[:100]])
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def flashcards_due(request):
@@ -195,6 +207,7 @@ def flashcards_due(request):
     return Response([_flashcard_payload(c) for c in cards])
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def flashcard_review(request, pk):
@@ -206,6 +219,7 @@ def flashcard_review(request, pk):
     return Response({"box": p.box, "due_on": p.due_on})
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def lessons(request):
@@ -225,6 +239,7 @@ def lessons(request):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def lesson_detail(request, slug):
@@ -245,6 +260,7 @@ def lesson_detail(request, slug):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def books(request):
@@ -265,6 +281,7 @@ def books(request):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def progress(request):

@@ -3,6 +3,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.core.schema import untyped_schema
+
 from . import engine
 
 # Whitelist: only these pure functions are callable through the API.
@@ -24,6 +26,7 @@ CALCULATORS = {
 }
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def run(request, name):

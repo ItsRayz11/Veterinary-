@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
+from apps.core.schema import untyped_schema
 from apps.countries.models import Country
 from apps.pharma.models import Product, ProductPack
 
@@ -35,6 +36,7 @@ def _record(r: PriceRecord) -> dict:
     }
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def product_prices(request, slug):
@@ -87,6 +89,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
         return attrs
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @throttle_classes([SubmitThrottle])
@@ -98,6 +101,7 @@ def submit(request):
     return Response({"id": sub.pk, "status": sub.status}, status=status.HTTP_201_CREATED)
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def pack_choices(request, slug):

@@ -133,6 +133,20 @@ SPECTACULAR_SETTINGS = {"TITLE": "Veterinary Intelligence Platform API", "VERSIO
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="claude-opus-5-5")
 
+# The Django admin lives at /<ADMIN_URL>. A non-default path only reduces automated probing; the
+# real protection is authentication and roles. Must end with "/".
+ADMIN_URL = env("ADMIN_URL", default="admin/")
+
+# The web app reads the CSRF token from /auth/csrf, never from the cookie, so JavaScript has no
+# reason to see the cookie.
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+# JSON bodies are small; the largest is a 2 MB CSV import wrapped in JSON.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 200
+
 # Shared secret for scheduler-triggered tasks (/api/v1/cron/<task>/). Empty = endpoint disabled.
 CRON_SECRET = env("CRON_SECRET", default="")
 
@@ -148,6 +162,18 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
     SECURE_HSTS_SECONDS = 31536000
+    # Subdomain-wide HSTS and preload are hard to undo, so they are an explicit owner decision
+    # (docs/SECURITY.md) rather than a default.
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+    SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
+    SILENCED_SYSTEM_CHECKS = [
+        c
+        for c, on in (
+            ("security.W005", SECURE_HSTS_INCLUDE_SUBDOMAINS),
+            ("security.W021", SECURE_HSTS_PRELOAD),
+        )
+        if not on
+    ]
 
 LOGGING = {
     "version": 1,

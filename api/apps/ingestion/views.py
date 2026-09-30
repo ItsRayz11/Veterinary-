@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from apps.accounts.permissions import IsEditor
+from apps.core.schema import untyped_schema
 from apps.countries.models import Country
 
 from . import services
@@ -46,6 +47,7 @@ def _row(r: StagedRecord) -> dict:
     }
 
 
+@untyped_schema
 @api_view(["GET", "POST"])
 @permission_classes([IsEditor])
 def batches(request):
@@ -68,6 +70,7 @@ def batches(request):
     return Response(_batch(batch), status=http.HTTP_201_CREATED)
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsEditor])
 def batch_detail(request, pk):
@@ -79,6 +82,7 @@ def batch_detail(request, pk):
     return Response({**_batch(batch), "rows": [_row(r) for r in rows[:200]]})
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsEditor])
 def resolve_row(request, pk, row_pk, decision):
@@ -100,6 +104,7 @@ def resolve_row(request, pk, row_pk, decision):
     return Response(_row(row))
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsEditor])
 def approve_all_clean(request, pk):

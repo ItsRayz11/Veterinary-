@@ -140,5 +140,12 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [ ] Web push notifications (needs VAPID keys + subscription store + an email/notification decision); background sync
 - [ ] API-level HTTP caching headers/CDN rules and image optimisation (no images yet)
 ## Phase 14: Production Hardening
+- [x] Audits run and recorded: `pip-audit` and `npm audit` clean; secrets scan of working tree + full git history clean (no keys, tokens or connection strings; `.env` never tracked); `manage.py check --deploy` clean (2 HSTS advisories deliberately silenced, owner decision); OpenAPI schema warning-free with 63 unique operations (`--fail-on-warn` test)
+- [x] Django: HttpOnly CSRF cookie (client fetches the token from the body), SameSite Lax, request size limits, configurable `ADMIN_URL`, HSTS opt-ins via env; 8 hardening tests
+- [x] Web: CSP (no remote scripts, `frame-ancestors 'none'`), nosniff, frame deny, referrer/permissions/COOP, HSTS; verified in a production build and in real Chrome (0 CSP violations, pages hydrate)
+- [x] Accessibility (automated part): WCAG AA contrast test of every text/background token pair in light and dark themes (fails when a token is broken, checked by mutation); tables have captions, forms have labels, skip link, focus and aria-live regions exist from earlier phases
+- [x] Real-browser end-to-end check (`web/scripts/browser-check.mjs`, 13 checks): calculators compute under the CSP, service worker precaches, calculators work with the server truly stopped, private pages never cached
+- [x] Docs: `SECURITY.md` (controls, gaps, owner decisions), `RUNBOOK.md` (first deploy, backups/restore, rotation, incidents), `API.md`, `TESTING.md`; CI runs the deploy check
+- [ ] Not done, needs owner decisions or a test environment: staff two-factor auth, per-account lockout, error monitoring/log drain, WAF, Postgres search (`pg_trgm`, needs a Postgres test DB), first green CI run and Postgres job, penetration test, full manual screen-reader/mobile QA, HSTS preload
 
 (Phases 2-14 get task-level checklists when they start, per the continuity rule. Scope per phase is defined in `PRODUCT_SPEC.md`.)

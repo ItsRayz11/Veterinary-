@@ -18,6 +18,12 @@ jobs:
       - run: ruff check . && ruff format --check .
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py check
+      - name: Production-like deploy check (must be clean)
+        run: python manage.py check --deploy
+        env:
+          DEBUG: "false"
+          SECRET_KEY: ci-only-not-a-secret-but-long-enough-to-pass-the-deploy-check-0123456789
+          ALLOWED_HOSTS: api.example.com
       - run: pytest -q
 
   # Same suite on Postgres (what production uses). Informational until it has been seen green;

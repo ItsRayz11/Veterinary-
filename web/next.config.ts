@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
+import { securityHeaders } from "./src/lib/security-headers";
 
 const API_URL = process.env.API_URL ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   async headers() {
     return [
+      { source: "/:path*", headers: securityHeaders(process.env.NODE_ENV === "production") },
       // The worker must always be revalidated so updates reach users promptly.
       {
         source: "/sw.js",

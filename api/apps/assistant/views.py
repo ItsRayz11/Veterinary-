@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
+from apps.core.schema import untyped_schema
+
 from . import interactions, service
 
 DISCLAIMER = (
@@ -17,6 +19,7 @@ class AssistantThrottle(UserRateThrottle):
     scope = "assistant"
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def interaction_check(request):
@@ -26,6 +29,7 @@ def interaction_check(request):
     return Response(interactions.check(slugs))
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @throttle_classes([AssistantThrottle])

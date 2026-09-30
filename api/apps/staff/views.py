@@ -8,6 +8,7 @@ from apps.accounts.permissions import HasRole, IsEditor, IsModerator
 from apps.automation import tasks as automation_tasks
 from apps.automation.models import Feed, JobRun, SourceHealth
 from apps.core.models import AuditLog
+from apps.core.schema import untyped_schema
 from apps.education.models import QuestionReport
 from apps.opportunities.models import Job, ListingStatus, Scholarship
 from apps.pricing import services as price_services
@@ -20,6 +21,7 @@ class IsAdminRole(HasRole):
     roles = frozenset({Role.ADMIN})
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsEditor])
 def summary(request):
@@ -38,6 +40,7 @@ def summary(request):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsEditor])
 def review_queue(request):
@@ -57,6 +60,7 @@ def review_queue(request):
     return Response({"results": items[:100]})
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsEditor])
 def set_status(request, model_key, pk):
@@ -72,6 +76,7 @@ def set_status(request, model_key, pk):
     return Response(services.serialize_record(model_key, obj))
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsEditor])
 def record_history(request, model_key, pk):
@@ -101,6 +106,7 @@ def _serialize_submission(s: PriceSubmission) -> dict:
     }
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsModerator])
 def price_submissions(request):
@@ -112,6 +118,7 @@ def price_submissions(request):
     return Response({"results": [_serialize_submission(s) for s in qs]})
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsModerator])
 def moderate_submission(request, pk, decision):
@@ -138,6 +145,7 @@ def moderate_submission(request, pk, decision):
     return Response(_serialize_submission(sub))
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsModerator])
 def question_reports(request):
@@ -159,6 +167,7 @@ def question_reports(request):
     )
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsModerator])
 def resolve_question_report(request, pk):
@@ -179,6 +188,7 @@ def resolve_question_report(request, pk):
     return Response({"id": r.pk, "resolved": True})
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsAdminRole])
 def audit_log(request):
@@ -200,6 +210,7 @@ def audit_log(request):
     )
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsEditor])
 def automation_status(request):
@@ -250,6 +261,7 @@ def automation_status(request):
     )
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAdminRole])
 def automation_run(request, task):

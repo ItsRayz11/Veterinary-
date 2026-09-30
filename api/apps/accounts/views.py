@@ -6,6 +6,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 
+from apps.core.schema import untyped_schema
+
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
 
@@ -18,12 +20,14 @@ class AuthThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def csrf(request):
     return Response({"csrfToken": get_token(request)})
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([AuthThrottle])
@@ -35,6 +39,7 @@ def register(request):
     return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @throttle_classes([AuthThrottle])
@@ -45,6 +50,7 @@ def login_view(request):
     return Response(UserSerializer(s.validated_data["user"]).data)
 
 
+@untyped_schema
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
@@ -52,6 +58,7 @@ def logout_view(request):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
