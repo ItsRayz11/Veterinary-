@@ -7,6 +7,7 @@ import { Button, Field, Select, Skeleton } from "@/components/ui/forms";
 import { Alert, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
 import { ClientApiError, apiFetch, apiSend } from "@/lib/client-api";
 import { useUser } from "@/lib/use-user";
+import { Progress } from "./progress";
 import type { ExamQuestion, HistoryRow, Subject } from "./types";
 
 const SIZES = [20, 50, 100];
@@ -174,6 +175,8 @@ export function StudyHub() {
         </section>
       )}
 
+      {user && <Progress />}
+
       {history.length > 0 && (
         <section aria-labelledby="hist-h" className="space-y-2">
           <h2 id="hist-h" className="font-semibold">
@@ -206,11 +209,18 @@ export function StudyHub() {
         </section>
       )}
 
-      <p className="text-sm">
-        <Link className="text-primary underline" href="/study/past-papers">
-          Past-paper index
-        </Link>
-      </p>
+      <nav aria-label="Study tools" className="flex flex-wrap gap-4 text-sm">
+        {[
+          ["/study/flashcards", "Flashcards"],
+          ["/study/lessons", "Lessons"],
+          ["/study/books", "Book references"],
+          ["/study/past-papers", "Past-paper index"],
+        ].map(([href, label]) => (
+          <Link key={href} className="text-primary underline" href={href}>
+            {label}
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

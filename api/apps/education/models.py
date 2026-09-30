@@ -180,3 +180,77 @@ class QuestionReport(TimeStampedModel):
 
     class Meta:
         ordering = ["resolved", "-created_at"]
+
+
+class Flashcard(PublishableModel):
+    """Front/back study card. Public only after review with a linked source."""
+
+    topic = models.ForeignKey(Topic, on_delete=models.PROTECT, related_name="flashcards")
+    front = models.CharField(max_length=500)
+    back = models.TextField()
+
+    class Meta(PublishableModel.Meta):
+        ordering = ["topic__subject__name", "topic__name", "id"]
+
+    def __str__(self):
+        return self.front[:60]
+
+
+class FlashcardProgress(TimeStampedModel):
+    """Leitner box per user and card. Scheduling is deterministic (see study_tools)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="flashcard_progress"
+    )
+    card = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name="progress")
+    box = models.PositiveSmallIntegerField(default=1)
+    due_on = models.DateField()
+    times_correct = models.PositiveIntegerField(default=0)
+    times_wrong = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "card"], name="uniq_progress_per_card"),
+            models.CheckConstraint(
+                condition=models.Q(box__gte=1) & models.Q(box__lte=5), name="flashcard_box_1_5"
+            ),
+        ]
+
+
+class Lesson(PublishableModel):
+    """Short study note. Original text or a summary written by editors, with sources linked."""
+
+    topic = models.ForeignKey(Topic, on_delete=models.PROTECT, related_name="lessons")
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, editable=False)
+    body = models.TextField(help_text="Plain text; blank lines separate paragraphs.")
+
+    class Meta(PublishableModel.Meta):
+        ordering = ["topic__subject__name", "topic__name", "title"]
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug(Lesson, self.title, self)
+        super().save(*args, **kwargs)
+
+
+class BookReference(TimeStampedModel):
+    """A recommended book, cited only (never its text)."""
+
+    title = models.CharField(max_length=300)
+    authors = models.CharField(max_length=300, blank=True)
+    edition = models.CharField(max_length=60, blank=True)
+    isbn = models.CharField(max_length=20, blank=True)
+    subject = models.ForeignKey(Subject, null=True, blank=True, on_delete=models.SET_NULL)
+    url = models.URLField(blank=True, help_text="Publisher or library page, not a pirated copy")
+    note = models.CharField(max_length=300, blank=True)
+    is_published = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["title"]
+
+    def __str__(self):
+        return self.title

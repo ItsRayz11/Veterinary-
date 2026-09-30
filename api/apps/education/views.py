@@ -1,12 +1,26 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from . import services
-from .models import Bookmark, ExamAttempt, PastPaper, Question, QuestionReport, Subject
+from apps.pharma.serializers import source_payload
+from apps.sources.models import sources_for
+
+from . import services, study_tools
+from .models import (
+    Bookmark,
+    BookReference,
+    ExamAttempt,
+    Flashcard,
+    Lesson,
+    PastPaper,
+    Question,
+    QuestionReport,
+    Subject,
+)
 
 FILTER_KEYS = ("subject", "topic", "university", "exam", "country", "year", "difficulty")
 
@@ -151,3 +165,107 @@ def history(request):
             for a in rows
         ]
     )
+
+
+def _flashcard_payload(c) -> dict:
+    return {
+        "id": c.pk,
+        "front": c.front,
+        "back": c.back,
+        "topic": c.topic.name,
+        "subject": c.topic.subject.slug,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def flashcards(request):
+    qs = Flashcard.objects.public().select_related("topic__subject")
+    if request.query_params.get("subject"):
+        qs = qs.filter(topic__subject__slug=request.query_params["subject"])
+    if request.query_params.get("topic"):
+        qs = qs.filter(topic__slug=request.query_params["topic"])
+    return Response([_flashcard_payload(c) for c in qs[:100]])
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def flashcards_due(request):
+    cards = study_tools.due_cards(request.user, timezone.localdate())
+    return Response([_flashcard_payload(c) for c in cards])
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def flashcard_review(request, pk):
+    card = get_object_or_404(Flashcard.objects.public(), pk=pk)
+    correct = request.data.get("correct")
+    if not isinstance(correct, bool):
+        raise ValidationError({"correct": "Send true or false."})
+    p = study_tools.record_review(request.user, card, correct, timezone.localdate())
+    return Response({"box": p.box, "due_on": p.due_on})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def lessons(request):
+    qs = Lesson.objects.public().select_related("topic__subject")
+    if request.query_params.get("subject"):
+        qs = qs.filter(topic__subject__slug=request.query_params["subject"])
+    return Response(
+        [
+            {
+                "slug": x.slug,
+                "title": x.title,
+                "topic": x.topic.name,
+                "subject": x.topic.subject.name,
+            }
+            for x in qs
+        ]
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def lesson_detail(request, slug):
+    lesson = get_object_or_404(Lesson.objects.public().select_related("topic__subject"), slug=slug)
+    return Response(
+        {
+            "slug": lesson.slug,
+            "title": lesson.title,
+            "topic": lesson.topic.name,
+            "subject": lesson.topic.subject.name,
+            "body": lesson.body,
+            "sources": source_payload([(s, "") for s in sources_for(lesson)]),
+            "status": {
+                "code": lesson.review_status,
+                "is_development_data": lesson.is_development_data,
+            },
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def books(request):
+    qs = BookReference.objects.filter(is_published=True).select_related("subject")
+    return Response(
+        [
+            {
+                "title": b.title,
+                "authors": b.authors,
+                "edition": b.edition,
+                "isbn": b.isbn,
+                "subject": b.subject.name if b.subject else None,
+                "url": b.url,
+                "note": b.note,
+            }
+            for b in qs
+        ]
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def progress(request):
+    return Response(study_tools.progress_summary(request.user))

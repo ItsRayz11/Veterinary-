@@ -47,3 +47,22 @@ admin.site.register(
     models.Topic, list_display=("name", "subject", "generic"), search_fields=("name",)
 )
 admin.site.register(models.PastPaper, list_display=("university", "course", "year", "is_published"))
+
+
+@admin.register(models.Flashcard)
+class FlashcardAdmin(ReviewActionsMixin, admin.ModelAdmin):
+    list_display = ("front", "topic", "review_status", "is_development_data")
+    list_filter = ("review_status", "topic__subject", "is_development_data")
+    search_fields = ("front", "back")
+
+
+@admin.register(models.Lesson)
+class LessonAdmin(ReviewActionsMixin, admin.ModelAdmin):
+    list_display = ("title", "topic", "review_status", "is_development_data")
+    list_filter = ("review_status", "topic__subject", "is_development_data")
+    search_fields = ("title", "body")
+
+
+admin.site.register(
+    models.BookReference, list_display=("title", "authors", "edition", "is_published")
+)

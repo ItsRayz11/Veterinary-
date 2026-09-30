@@ -12,4 +12,11 @@ urlpatterns = [
     path("study/exams/history/", views.history),
     path("study/exams/<int:pk>/", views.exam_detail),
     path("study/exams/<int:pk>/submit/", views.submit_exam),
+    path("study/flashcards/", views.flashcards),
+    path("study/flashcards/due/", views.flashcards_due),
+    path("study/flashcards/<int:pk>/review/", views.flashcard_review),
+    path("study/lessons/", views.lessons),
+    path("study/lessons/<slug:slug>/", views.lesson_detail),
+    path("study/books/", views.books),
+    path("study/progress/", views.progress),
 ]

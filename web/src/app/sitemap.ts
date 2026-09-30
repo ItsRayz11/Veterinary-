@@ -32,11 +32,12 @@ async function list<T>(path: string): Promise<T[]> {
 
 /** Only reviewed/public records are returned by these endpoints, so nothing unreviewed is listed. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [species, classes, countries, generics] = await Promise.all([
+  const [species, classes, countries, generics, lessons] = await Promise.all([
     list<{ slug: string }>("/species/"),
     list<{ slug: string }>("/drug-classes/"),
     list<{ iso2: string }>("/countries/"),
     list<{ slug: string }>("/generics/"),
+    list<{ slug: string }>("/study/lessons/"),
   ]);
   const paths = [
     "/",
@@ -52,6 +53,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...countries.map((c) => `/countries/${c.iso2}`),
     "/study",
     "/study/past-papers",
+    "/study/lessons",
+    ...lessons.map((l) => `/study/lessons/${l.slug}`),
+    "/study/books",
     ...generics.map((g) => `/drugs/${g.slug}`),
   ];
   return paths.map((p) => ({ url: `${SITE_URL}${p}` }));

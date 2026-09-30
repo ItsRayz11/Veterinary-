@@ -107,7 +107,7 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Admin: options inline, governed publish actions, readiness check
 - [x] Web UI: study hub (filters, exam start, history), exam runner (one question at a time, navigator, unanswered warning), results (topic breakdown, weak topics, review with bookmark/report), past-paper index. Pages load; full exam flow covered by API tests only (no questions exist to click through)
 - [ ] Real question content and past-paper index entries (none exist; nothing invented)
-- [ ] Flashcards, notes/lessons, book references, progress-over-time charts
+- [x] Flashcards (Leitner boxes 1-5, server-scheduled, hand-computed tests), lessons (source + reviewer required to go public), book references (cited only), progress-over-time chart with per-subject accuracy and weak topics; admin + governed review; 8 tests. No content exists, so pages show honest empty states
 
 ## Phase 9: Jobs + Scholarships
 ## Phase 10: Automation
