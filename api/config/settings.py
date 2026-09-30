@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.companies",
     "apps.sources",
     "apps.pharma",
+    "apps.clinical",
 ]
 
 MIDDLEWARE = [

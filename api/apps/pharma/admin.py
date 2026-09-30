@@ -1,6 +1,8 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
+from apps.core.admin_mixins import ReviewActionsMixin
+
 from . import models
 
 
@@ -23,10 +25,11 @@ class RegistrationInline(admin.TabularInline):
     model = models.ProductRegistration
     extra = 0
     fields = ("country", "registration_number", "status", "review_status")
+    readonly_fields = ("review_status",)
 
 
 @admin.register(models.Generic)
-class GenericAdmin(SimpleHistoryAdmin):
+class GenericAdmin(ReviewActionsMixin, SimpleHistoryAdmin):
     list_display = ("name", "drug_class", "review_status", "is_development_data")
     list_filter = ("review_status", "is_development_data", "drug_class")
     search_fields = ("name", "normalized_name", "synonyms__synonym")
@@ -35,7 +38,7 @@ class GenericAdmin(SimpleHistoryAdmin):
 
 
 @admin.register(models.Product)
-class ProductAdmin(SimpleHistoryAdmin):
+class ProductAdmin(ReviewActionsMixin, SimpleHistoryAdmin):
     list_display = ("brand_name", "generic", "manufacturer", "review_status", "is_development_data")
     list_filter = ("review_status", "is_development_data", "manufacturer__country")
     search_fields = ("brand_name", "normalized_brand_name", "generic__name")
@@ -45,7 +48,7 @@ class ProductAdmin(SimpleHistoryAdmin):
 
 
 @admin.register(models.ProductRegistration)
-class RegistrationAdmin(SimpleHistoryAdmin):
+class RegistrationAdmin(ReviewActionsMixin, SimpleHistoryAdmin):
     list_display = ("product", "country", "registration_number", "status", "review_status")
     list_filter = ("country", "status", "review_status")
     search_fields = ("registration_number", "product__brand_name")

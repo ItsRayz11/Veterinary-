@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from apps.core.admin_mixins import ReviewActionsMixin
+
 from .models import Company, CompanyAlias
 
 
@@ -9,7 +11,7 @@ class AliasInline(admin.TabularInline):
 
 
 @admin.register(Company)
-class CompanyAdmin(admin.ModelAdmin):
+class CompanyAdmin(ReviewActionsMixin, admin.ModelAdmin):
     list_display = (
         "name",
         "country",

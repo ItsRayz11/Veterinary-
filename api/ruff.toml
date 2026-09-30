@@ -4,3 +4,6 @@ exclude = [".venv", "migrations"]
 
 [lint]
 select = ["E", "F", "I", "B", "UP", "DJ"]
+
+[lint.per-file-ignores]
+"**/tests/*" = ["E501"]

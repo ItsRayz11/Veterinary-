@@ -43,7 +43,16 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Tests (19 passing): relationships, duplicates, constraints, idempotent seed, unit conversion, query count
 
 ## Phase 3: Clinical Knowledge
-- [ ] Sources, indications, dosing, routes, contraindications, interactions, adverse effects, withdrawal, verification, versioning
+- [x] Sources + SourceLink (any row -> many sources, with page/locator)
+- [x] Indication, Route, Commodity lookups
+- [x] DoseRegimen: structured (min/max, dose-rate unit, interval, duration, max dose), DB check constraints
+- [x] WithdrawalPeriod: product x country x species x commodity x route, unique, stricter public rule (regulatory/verified only)
+- [x] ClinicalNote (contraindication, precaution, adverse effect, toxicity, warning) and ordered-pair Interaction
+- [x] Verification workflow (`apps.core.review.set_review_status`): source required, only vet reviewer/admin can sign off, no self-approval, dev data never signed off, audit entry per change
+- [x] Admin: status read-only in forms, changes via governed bulk actions; history via simple-history
+- [x] Calculator gate: `DoseRegimen.objects.calculator_ready()` (verified / expert reviewed / official only)
+- [ ] Reviewer UI with old-vs-new diff view (history data exists; UI in Phase 10 review queue)
+- [ ] Public references section per page (needs Phase 4 API)
 
 ## Phase 4: Drug Encyclopedia UI
 ## Phase 5: Calculators
