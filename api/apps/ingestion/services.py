@@ -176,6 +176,25 @@ class Matcher:
         return number in self._numbers
 
 
+STAGED_TEXT_FIELDS = (
+    "brand_name",
+    "generic_name",
+    "manufacturer_name",
+    "registration_number",
+    "registration_status",
+)
+
+
+def _too_long_fields(row: StagedRecord) -> list[tuple[str, int]]:
+    """(field, max_length) for every staged text field that would not fit its column."""
+    out = []
+    for name in STAGED_TEXT_FIELDS:
+        limit = StagedRecord._meta.get_field(name).max_length
+        if len(getattr(row, name)) > limit:
+            out.append((name, limit))
+    return out
+
+
 def _match(row: StagedRecord, country, matcher: Matcher | None = None) -> None:
     """Fill match fields and flag duplicates/errors on a staged row.
 
@@ -259,12 +278,24 @@ def stage_batch(
             batch=batch,
             row_number=i,
             raw=raw,
-            brand_name=raw.get("brand_name", "")[:200],
-            generic_name=raw.get("generic_name", "")[:200],
-            manufacturer_name=raw.get("manufacturer", "")[:200],
-            registration_number=raw.get("registration_number", "")[:100],
-            registration_status=raw.get("registration_status", "").lower()[:16],
+            brand_name=raw.get("brand_name", ""),
+            generic_name=raw.get("generic_name", ""),
+            manufacturer_name=raw.get("manufacturer", ""),
+            registration_number=raw.get("registration_number", ""),
+            registration_status=raw.get("registration_status", "").lower(),
         )
+        too_long = _too_long_fields(row)
+        if too_long:
+            # Never truncate a clinical name or identifier: keep the full text in `raw`, leave the
+            # column empty, and flag the row. The message names the field, never the value.
+            for field, _limit in too_long:
+                setattr(row, field, "")
+            row.status = RowStatus.ERROR
+            row.message = "Value too long for: " + ", ".join(
+                f"{field} (max {limit})" for field, limit in too_long
+            )
+            staged.append(row)
+            continue
         _match(row, country, matcher)
         staged.append(row)
     StagedRecord.objects.bulk_create(staged)

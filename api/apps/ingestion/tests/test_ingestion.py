@@ -154,3 +154,21 @@ def test_import_api_permissions_and_flow(env, settings):
     assert shown.status_code == 200 and shown.json()["status"]["is_unverified_import"] is True
     settings.SHOW_UNVERIFIED_IMPORTS = False
     assert APIClient().get("/api/v1/products/zyra-test/").status_code == 404
+
+
+def test_overlong_values_are_flagged_not_truncated(env):
+    long_brand = "B" * 250
+    text = (
+        "Brand,Generic,Company,Reg No,Registration Status\n"
+        f"{long_brand},Enrofloxacin,Acme Vet Ltd,R-9,registered\n"
+        "Fine-Test,Enrofloxacin,Acme Vet Ltd,R-10,registered\n"
+    )
+    batch = stage(env, text)
+    bad, ok = batch.rows.order_by("row_number")
+    assert bad.status == RowStatus.ERROR and bad.brand_name == ""
+    assert "brand_name (max 200)" in bad.message and long_brand not in bad.message
+    assert bad.raw["brand_name"] == long_brand  # original value preserved, untruncated
+    assert ok.status == RowStatus.PENDING
+    services.approve_clean(batch, env["user"])
+    assert not Product.objects.filter(brand_name__startswith="BBBB").exists()
+    assert Product.objects.filter(brand_name="Fine-Test").exists()

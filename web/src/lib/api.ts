@@ -12,14 +12,41 @@ export class ApiError extends Error {
   }
 }
 
+const TIMEOUT_MS = 10_000;
+
+/**
+ * A 404 is a genuine "no such record" only when the Django API itself answered: DRF replies with
+ * JSON and the response carries no `x-vercel-error`. A platform 404 (no deployment behind
+ * API_URL, wrong host or prefix) is a plain-text/HTML page, which means the service is down or
+ * misconfigured, not that the visitor asked for something missing.
+ */
+function isApiNotFound(res: Response): boolean {
+  return (
+    !res.headers.has("x-vercel-error") &&
+    (res.headers.get("content-type") ?? "").includes("application/json")
+  );
+}
+
 export async function apiGet<T>(path: string, revalidate = 60): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/api/v1${path}`, { next: { revalidate } });
+    res = await fetch(`${API_URL}/api/v1${path}`, {
+      next: { revalidate },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
   } catch {
     throw new ApiError("The data service is currently unreachable.", 503);
   }
-  if (res.status === 404) notFound();
+  if (res.status === 404) {
+    if (isApiNotFound(res)) notFound();
+    throw new ApiError("The data service is currently unreachable.", 503);
+  }
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    throw new ApiError("The data service is currently unreachable.", 503);
+  }
+  if (res.status >= 500) {
+    throw new ApiError("The data service returned an unexpected error.", 502);
+  }
   if (!res.ok) throw new ApiError(`Data service returned ${res.status}.`, res.status);
   return (await res.json()) as T;
 }
