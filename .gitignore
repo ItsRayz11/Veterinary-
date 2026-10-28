@@ -21,3 +21,6 @@ graphify-out/
 
 # local run logs
 *.log
+
+.vercel
+.env*

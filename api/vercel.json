@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     { "path": "/api/v1/cron/link-check/", "schedule": "0 3 * * *" },
-    { "path": "/api/v1/cron/feeds/", "schedule": "0 */6 * * *" }
+    { "path": "/api/v1/cron/feeds/", "schedule": "0 4 * * *" }
   ],
   "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then python manage.py migrate --noinput && python manage.py createcachetable; fi; python manage.py collectstatic --noinput",
   "functions": {
