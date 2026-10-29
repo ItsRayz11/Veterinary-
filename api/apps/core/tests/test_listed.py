@@ -103,3 +103,13 @@ def test_country_page_lists_unverified_imports_of_that_country_only(imported):
     row = next(x for x in pk["products"] if x["slug"] == p.slug)
     assert row["status"]["is_unverified_import"] is True and row["countries"] == []
     assert all(x["slug"] != p.slug for x in api.get("/api/v1/countries/IN/").json()["products"])
+
+
+def test_product_page_endpoints_all_resolve_imported_products(imported):
+    """The product page calls detail, prices and packs; each must accept a listed import."""
+    *_, p = imported
+    client = APIClient()
+    for suffix in ("", "prices/", "packs/"):
+        res = client.get(f"/api/v1/products/{p.slug}/{suffix}")
+        assert res.status_code == 200, suffix
+    assert client.get(f"/api/v1/products/{p.slug}/prices/").json()["current"] == []

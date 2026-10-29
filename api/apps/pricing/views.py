@@ -40,7 +40,7 @@ def _record(r: PriceRecord) -> dict:
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def product_prices(request, slug):
-    product = get_object_or_404(Product.objects.public(), slug=slug)
+    product = get_object_or_404(Product.objects.listed(), slug=slug)
     records = list(selectors.price_history(product, request.query_params.get("country")))
     return Response(
         {
@@ -106,7 +106,7 @@ def submit(request):
 @permission_classes([AllowAny])
 def pack_choices(request, slug):
     """Packs of a product for the submission form."""
-    product = get_object_or_404(Product.objects.public(), slug=slug)
+    product = get_object_or_404(Product.objects.listed(), slug=slug)
     packs = ProductPack.objects.filter(product=product).select_related(
         "dosage_form", "pack_size_unit"
     )
