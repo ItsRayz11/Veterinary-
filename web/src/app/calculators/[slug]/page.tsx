@@ -36,7 +36,7 @@ export default async function CalculatorPage({ params }: PageProps<"/calculators
           { label: def.title },
         ]}
       />
-      <h1 className="text-2xl font-semibold">{def.title}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{def.title}</h1>
       <p className="text-sm text-muted">{def.description}</p>
       <Alert tone="warn" title="Decision support only">
         The calculator does arithmetic on the values you enter. It does not choose a drug, dose or

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
+import { Breadcrumbs, EmptyState, PageHeader, Tile } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
 
@@ -22,20 +21,17 @@ export default async function CountriesIndex() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Countries" }]} />
-      <h1 className="text-2xl font-semibold">Countries</h1>
+      <PageHeader
+        title="Countries"
+        lead="Catalogue records by country. Imported entries are labelled until reviewed."
+      />
       {rows.length === 0 ? (
         <EmptyState title="No countries available." />
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2">
           {rows.map((c) => (
             <li key={c.iso2}>
-              <Link
-                href={`/countries/${c.iso2}`}
-                className="block rounded-md border border-border bg-surface p-3 hover:border-primary"
-              >
-                <span className="font-medium">{c.name}</span>
-                <span className="block text-sm text-muted">Prices in {c.currency}</span>
-              </Link>
+              <Tile href={`/countries/${c.iso2}`} title={c.name} desc={`Prices in ${c.currency}`} />
             </li>
           ))}
         </ul>

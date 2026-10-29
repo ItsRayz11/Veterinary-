@@ -74,7 +74,7 @@ export function StudyHub() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold">Study</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Study</h1>
         <p className="text-sm text-muted">
           Timed-free mock exams built from reviewed questions. Answers stay hidden until you submit.
         </p>
@@ -84,10 +84,7 @@ export function StudyHub() {
       {error && <Alert tone="danger">{error}</Alert>}
 
       {subjects && (
-        <section
-          aria-labelledby="exam-h"
-          className="space-y-3 rounded-md border border-border bg-surface p-4"
-        >
+        <section aria-labelledby="exam-h" className="space-y-3 card p-4">
           <h2 id="exam-h" className="font-semibold">
             Start a mock exam
           </h2>

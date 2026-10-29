@@ -67,7 +67,7 @@ export function GenericCalculator({ slug }: { slug: string }) {
         )}
         {outcome.kind === "error" && <Alert tone="danger">{outcome.message}</Alert>}
         {outcome.kind === "ok" && (
-          <div className="space-y-3 rounded-md border border-border bg-surface p-4">
+          <div className="space-y-3 card p-4">
             {outcome.r.warnings.map((w) => (
               <Alert key={w} tone="warn" title="Check before administering">
                 {w}

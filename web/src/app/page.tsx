@@ -1,16 +1,28 @@
 import Link from "next/link";
 import { SearchBox } from "@/components/search-box";
+import { Tile } from "@/components/ui/primitives";
+import { apiGet } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
+
+interface SpeciesRow {
+  slug: string;
+  name: string;
+  parent: string | null;
+}
+
+interface CountryRow {
+  iso2: string;
+  name: string;
+  currency: string;
+}
 
 const TOOLS = [
   {
     href: "/calculators/dose-calculator",
     title: "Dose calculator",
     desc: "mg/kg to total mg and mL",
-  },
-  {
-    href: "/calculators",
-    title: "All calculators",
-    desc: "Dilution, fluids, infusion, CRI, flock water dose, withdrawal date",
+    wide: true,
   },
   { href: "/interactions", title: "Interaction checker", desc: "Reviewed drug-drug interactions" },
   {
@@ -18,51 +30,116 @@ const TOOLS = [
     title: "Ask the reference",
     desc: "Answers only from reviewed records, with citations",
   },
+  {
+    href: "/calculators",
+    title: "All calculators",
+    desc: "Dilution, fluids, infusion, CRI, flock water dose, withdrawal date",
+    full: true,
+  },
+];
+
+const LEARN = [
   { href: "/study", title: "Study", desc: "Mock exams from reviewed questions" },
+  { href: "/jobs", title: "Jobs", desc: "Moderated veterinary job listings" },
+  { href: "/scholarships", title: "Scholarships", desc: "Moderated scholarship listings" },
 ];
 
-const BROWSE = [
-  { href: "/species", title: "Species" },
-  { href: "/classes", title: "Drug classes" },
-  { href: "/countries", title: "Countries" },
-];
+/** A homepage block must never take the page down when the data service is unavailable. */
+async function safeGet<T>(path: string): Promise<T[]> {
+  try {
+    return await apiGet<T[]>(path);
+  } catch {
+    return [];
+  }
+}
 
-export default function Home() {
+function SectionHeading({ id, children }: { id: string; children: string }) {
   return (
-    <div className="mx-auto max-w-2xl space-y-8 pt-6">
-      <div className="space-y-3">
-        <h1 className="text-xl font-semibold">Veterinary drug reference</h1>
-        <SearchBox />
-        <p className="text-sm text-muted">
+    <h2 id={id} className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">
+      {children}
+    </h2>
+  );
+}
+
+export default async function Home() {
+  const [species, countries] = await Promise.all([
+    safeGet<SpeciesRow>("/species/"),
+    safeGet<CountryRow>("/countries/"),
+  ]);
+  const topSpecies = species.filter((s) => !s.parent);
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-10 pt-4">
+      <section className="glass space-y-4 rounded-[var(--radius-xl)] p-5 sm:p-10">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          Veterinary drug reference
+        </h1>
+        <p className="max-w-2xl text-sm text-muted sm:text-base">
           Generics, brands and manufacturers, with sources and review status on every clinical
           statement.
         </p>
-      </div>
-      <nav aria-label="Browse" className="flex flex-wrap gap-2 text-sm">
-        {BROWSE.map((b) => (
-          <Link
-            key={b.href}
-            href={b.href}
-            className="rounded-full border border-border bg-surface px-3 py-2 hover:border-primary"
-          >
-            Browse by {b.title.toLowerCase()}
-          </Link>
-        ))}
-      </nav>
+        <div className="max-w-2xl">
+          <SearchBox />
+        </div>
+        <p className="text-xs text-muted">
+          Records marked as imported have not been clinically reviewed. Only reviewed statements
+          carry a verified label.
+        </p>
+      </section>
+
+      {topSpecies.length > 0 && (
+        <section aria-labelledby="species-h">
+          <SectionHeading id="species-h">Browse by species</SectionHeading>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {topSpecies.map((s) => (
+              <li key={s.slug}>
+                <Tile href={`/species/${s.slug}`} title={s.name} />
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm">
+            <Link href="/classes" className="text-primary underline">
+              Browse by drug class
+            </Link>
+          </p>
+        </section>
+      )}
+
       <section aria-labelledby="tools-h">
-        <h2 id="tools-h" className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">
-          Clinical tools
-        </h2>
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <SectionHeading id="tools-h">Clinical tools</SectionHeading>
+        <ul className="bento">
           {TOOLS.map((t) => (
+            <li key={t.href} className={t.full ? "bento-full" : t.wide ? "bento-wide" : ""}>
+              <Tile href={t.href} title={t.title} desc={t.desc} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {countries.length > 0 && (
+        <section aria-labelledby="countries-h">
+          <SectionHeading id="countries-h">Country catalogues</SectionHeading>
+          <ul className="flex flex-wrap gap-3 text-sm">
+            {countries.map((c) => (
+              <li key={c.iso2}>
+                <Link
+                  href={`/countries/${c.iso2}`}
+                  className="neo inline-block rounded-full px-4 py-2"
+                >
+                  {c.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section aria-labelledby="learn-h">
+        <SectionHeading id="learn-h">Study and careers</SectionHeading>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {LEARN.map((t) => (
             <li key={t.href}>
-              <Link
-                href={t.href}
-                className="block rounded-md border border-border bg-surface p-3 hover:border-primary"
-              >
-                <span className="font-medium">{t.title}</span>
-                <span className="block text-sm text-muted">{t.desc}</span>
-              </Link>
+              <Tile href={t.href} title={t.title} desc={t.desc} />
             </li>
           ))}
         </ul>

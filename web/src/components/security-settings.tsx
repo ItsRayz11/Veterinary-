@@ -81,10 +81,7 @@ export function SecuritySettings() {
   if (!status) return error ? <Alert tone="danger">{error}</Alert> : null;
 
   return (
-    <section
-      aria-labelledby="mfa-h"
-      className="space-y-3 rounded-md border border-border bg-surface p-4"
-    >
+    <section aria-labelledby="mfa-h" className="space-y-3 card p-4">
       <h2 id="mfa-h" className="font-semibold">
         Two-factor authentication
       </h2>

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Breadcrumbs } from "@/components/ui/primitives";
+import { Breadcrumbs, PageHeader, Tile } from "@/components/ui/primitives";
 import { CALCULATORS } from "@/lib/calc/registry";
 
 export const metadata: Metadata = {
@@ -26,17 +25,14 @@ export default function CalculatorsIndex() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Calculators" }]} />
-      <h1 className="text-2xl font-semibold">Calculators</h1>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {ALL.map((c) => (
-          <li key={c.href}>
-            <Link
-              href={c.href}
-              className="block h-full rounded-md border border-border bg-surface p-3 hover:border-primary"
-            >
-              <span className="font-medium">{c.title}</span>
-              <span className="block text-sm text-muted">{c.desc}</span>
-            </Link>
+      <PageHeader
+        title="Calculators"
+        lead="Deterministic calculations. Check every result against the product label."
+      />
+      <ul className="bento">
+        {ALL.map((c, i) => (
+          <li key={c.href} className={i === 0 ? "bento-wide" : ""}>
+            <Tile href={c.href} title={c.title} desc={c.desc} />
           </li>
         ))}
       </ul>

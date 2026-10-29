@@ -16,7 +16,7 @@ interface Props {
   presetLabel?: string;
 }
 
-const input = "h-11 w-full rounded-md border border-border bg-surface px-3 text-base";
+const input = "neo-inset h-11 w-full rounded-lg border border-border px-3 text-base";
 
 export function DoseCalculator({ presetDose = "", presetDoseMax = "", presetLabel = "" }: Props) {
   const [weight, setWeight] = useState("");
@@ -71,7 +71,7 @@ export function DoseCalculator({ presetDose = "", presetDoseMax = "", presetLabe
             />
             <select
               aria-label="Weight unit"
-              className="h-11 rounded-md border border-border bg-surface px-2"
+              className="neo-inset h-11 rounded-lg border border-border px-2"
               value={unit}
               onChange={(e) => setUnit(e.target.value as "kg" | "lb")}
             >
@@ -106,7 +106,7 @@ export function DoseCalculator({ presetDose = "", presetDoseMax = "", presetLabe
             />
             <select
               aria-label="Concentration unit"
-              className="h-11 rounded-md border border-border bg-surface px-2"
+              className="neo-inset h-11 rounded-lg border border-border px-2"
               value={concMode}
               onChange={(e) => setConcMode(e.target.value as "mgml" | "percent")}
             >
@@ -145,7 +145,7 @@ export function DoseCalculator({ presetDose = "", presetDoseMax = "", presetLabe
 
 function Result({ r }: { r: CalcResult }) {
   return (
-    <div className="space-y-3 rounded-md border border-border bg-surface p-4">
+    <div className="space-y-3 card p-4">
       {r.warnings.map((w) => (
         <Alert key={w} tone="warn" title="Check before administering">
           {w}

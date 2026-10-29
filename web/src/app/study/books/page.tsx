@@ -24,14 +24,14 @@ export default async function BooksPage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Books" }]} />
-      <h1 className="text-xl font-semibold">Book references</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Book references</h1>
       <p className="text-sm text-muted">Titles are cited only; we do not host book text.</p>
       {books.length === 0 ? (
         <EmptyState title="No book references yet." />
       ) : (
         <ul className="space-y-2">
           {books.map((b) => (
-            <li key={b.title} className="rounded-md border border-border bg-surface p-3 text-sm">
+            <li key={b.title} className="card p-3 text-sm">
               <p className="font-medium">
                 {b.url ? (
                   <a

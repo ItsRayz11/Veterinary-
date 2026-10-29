@@ -24,7 +24,7 @@ export default function AccountPage() {
     );
   return (
     <div className="max-w-md space-y-4">
-      <h1 className="text-xl font-semibold">Account</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Account</h1>
       <dl className="space-y-1 text-sm">
         <div>
           <dt className="inline text-muted">Username: </dt>

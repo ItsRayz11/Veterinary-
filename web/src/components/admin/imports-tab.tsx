@@ -149,7 +149,7 @@ function ImportForm({ onStaged }: { onStaged: (id: number) => void }) {
   }
 
   return (
-    <details className="rounded-md border border-border bg-surface p-4">
+    <details className="card p-4">
       <summary className="cursor-pointer font-semibold">Import a product list (CSV)</summary>
       <form onSubmit={submit} className="mt-3 space-y-3" noValidate>
         <p className="text-sm text-muted">

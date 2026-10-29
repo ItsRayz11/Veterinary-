@@ -35,7 +35,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         ]}
       />
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">{p.brand_name}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{p.brand_name}</h1>
         <p className="text-sm text-muted">
           <Link href={`/drugs/${p.generic}`} className="underline">
             {p.generic_name}

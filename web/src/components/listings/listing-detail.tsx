@@ -25,7 +25,7 @@ export function ListingDetail({ kind, item }: { kind: Kind; item: Listing }) {
           { label: item.title },
         ]}
       />
-      <h1 className="text-2xl font-semibold">{item.title}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
       <p className="text-sm text-muted">{item.organization}</p>
       <dl className="grid grid-cols-2 gap-2 text-sm">
         {facts

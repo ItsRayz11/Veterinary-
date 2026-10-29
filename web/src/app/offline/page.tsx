@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Offline", robots: { index: false } }
 export default function OfflinePage() {
   return (
     <div className="mx-auto max-w-md space-y-3 pt-8">
-      <h1 className="text-xl font-semibold">You are offline</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">You are offline</h1>
       <p className="text-sm text-muted">
         This page is not saved on your device. Pages you opened before, and the calculators, still
         work without a connection. Reference data, prices, study content and your account need a

@@ -92,7 +92,7 @@ function Runner({ exam, onSubmitted }: { exam: ExamDetail; onSubmitted: () => vo
         {q.options.map((o) => (
           <label
             key={o.id}
-            className="flex min-h-11 cursor-pointer items-start gap-2 rounded-md border border-border bg-surface p-3 has-[:checked]:border-primary"
+            className="flex min-h-11 cursor-pointer items-start gap-2 card p-3 has-[:checked]:border-primary"
           >
             <input
               type="radio"
@@ -164,7 +164,7 @@ function Results({ exam }: { exam: ExamDetail }) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-xl font-semibold">Results</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Results</h1>
         <p className="text-2xl font-semibold">
           {score}/{total}{" "}
           <span className="text-base text-muted">({Math.round((100 * score) / total)}%)</span>
@@ -236,7 +236,7 @@ function ReviewCard({ q, n }: { q: ExamQuestion; n: number }) {
   }
 
   return (
-    <article className="space-y-2 rounded-md border border-border bg-surface p-3 text-sm">
+    <article className="space-y-2 card p-3 text-sm">
       <p className="font-medium">
         {n}. {q.stem}{" "}
         <span className={q.is_correct ? "text-ok" : "text-danger"}>

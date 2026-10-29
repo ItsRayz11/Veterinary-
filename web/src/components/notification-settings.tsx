@@ -75,10 +75,7 @@ export function NotificationSettings() {
   if (state === "loading" || state === "unsupported" || state === "off-server") return null;
 
   return (
-    <section
-      aria-labelledby="notify-heading"
-      className="space-y-2 rounded-md border border-border p-4"
-    >
+    <section aria-labelledby="notify-heading" className="space-y-2 card p-4">
       <h2 id="notify-heading" className="text-lg font-semibold">
         Notifications
       </h2>

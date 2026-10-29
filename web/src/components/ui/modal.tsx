@@ -27,7 +27,7 @@ export function Modal({
       ref={ref}
       onClose={onClose}
       aria-labelledby={titleId}
-      className="m-auto w-[min(32rem,92vw)] rounded-md border border-border bg-surface p-4 text-text backdrop:bg-black/50"
+      className="m-auto w-[min(32rem,92vw)] card p-4 text-text backdrop:bg-black/50"
     >
       <h2 id={titleId} className="mb-2 text-base font-semibold">
         {title}

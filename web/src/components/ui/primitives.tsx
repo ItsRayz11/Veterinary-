@@ -62,7 +62,7 @@ export function Section({
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-28">
-      <h2 id={`${id}-h`} className="mb-2 text-base font-semibold">
+      <h2 id={`${id}-h`} className="mb-3 text-lg font-semibold tracking-tight">
         {title}
       </h2>
       {children}
@@ -73,8 +73,8 @@ export function Section({
 /** Horizontally scrollable table wrapper with a required caption for screen readers. */
 export function DataTable({ caption, children }: { caption: string; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-surface">
-      <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
+    <div className="card max-h-[70vh] overflow-auto">
+      <table className="data-table w-full min-w-[32rem] border-collapse text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         {children}
       </table>
@@ -82,12 +82,13 @@ export function DataTable({ caption, children }: { caption: string; children: Re
   );
 }
 
-export const th = "border-b border-border bg-surface-2 px-3 py-2 font-medium text-muted";
+export const th =
+  "sticky top-0 z-[1] border-b border-border bg-surface-2 px-3 py-2.5 font-medium text-muted";
 export const td = "border-b border-border px-3 py-2 align-top";
 
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="rounded-md border border-dashed border-border p-4 text-sm">
+    <div className="rounded-lg border border-dashed border-border bg-surface/60 p-5 text-sm">
       <p className="font-medium">{title}</p>
       {children && <p className="mt-1 text-muted">{children}</p>}
     </div>
@@ -98,7 +99,7 @@ export function SectionNav({ items }: { items: { id: string; label: string }[] }
   return (
     <nav
       aria-label="On this page"
-      className="sticky top-14 z-10 -mx-4 overflow-x-auto border-b border-border bg-bg px-4"
+      className="glass sticky top-14 z-10 -mx-4 overflow-x-auto px-4 sm:rounded-lg"
     >
       <ul className="flex gap-4 whitespace-nowrap py-2 text-sm">
         {items.map((i) => (
@@ -110,5 +111,34 @@ export function SectionNav({ items }: { items: { id: string; label: string }[] }
         ))}
       </ul>
     </nav>
+  );
+}
+
+/** Consistent page title block: breadcrumbs sit above it, an optional lead below. */
+export function PageHeader({
+  title,
+  lead,
+  children,
+}: {
+  title: string;
+  lead?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <header className="space-y-2">
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+      {lead && <div className="max-w-2xl text-sm text-muted">{lead}</div>}
+      {children}
+    </header>
+  );
+}
+
+/** A tile for bento grids and link lists. Pass `href` to make the whole tile a link. */
+export function Tile({ href, title, desc }: { href: string; title: string; desc?: string }) {
+  return (
+    <Link href={href} className="card card-link block p-4">
+      <span className="font-medium">{title}</span>
+      {desc && <span className="mt-1 block text-sm text-muted">{desc}</span>}
+    </Link>
   );
 }

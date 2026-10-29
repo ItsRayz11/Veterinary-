@@ -66,7 +66,7 @@ export function SubmitForm({ kind }: { kind: Kind }) {
   const fe = error?.fields ?? {};
   return (
     <form onSubmit={submit} className="mx-auto max-w-xl space-y-3" noValidate>
-      <h1 className="text-xl font-semibold">Post a {L.singular}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Post a {L.singular}</h1>
       <p className="text-sm text-muted">
         Post only real opportunities you can link to. Listings are moderated and expire at the
         closing date (or after 90 days).
@@ -145,7 +145,7 @@ export function SubmitForm({ kind }: { kind: Kind }) {
           maxLength={3000}
           rows={6}
           aria-invalid={!!fe.description}
-          className="w-full rounded-md border border-border bg-surface p-3 text-sm"
+          className="w-full card p-3 text-sm"
         />
       </Field>
       <Field id="apply_url" label="Link to the original posting" error={fe.apply_url}>

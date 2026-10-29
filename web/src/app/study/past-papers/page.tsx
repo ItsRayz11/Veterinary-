@@ -12,7 +12,7 @@ export default async function PastPapersPage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Past papers" }]} />
-      <h1 className="text-xl font-semibold">Past-paper index</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Past-paper index</h1>
       <p className="text-sm text-muted">
         Links to papers hosted by their legal owners. We do not copy or host exam papers.
       </p>

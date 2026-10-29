@@ -3,7 +3,7 @@
 /* Design tokens. Clinical, restrained palette: teal primary, neutral slate surfaces.
    Semantic status colours are reserved for verification/safety meaning, not decoration. */
 :root {
-  --bg: #f7f8fa;
+  --bg: #f2f7f7;
   --surface: #ffffff;
   --surface-2: #f0f2f5;
   --border: #d9dee5;
@@ -12,6 +12,16 @@
   --primary: #0b6e6e;
   --primary-fg: #ffffff;
   --focus: #1a73e8;
+
+  /* Depth tokens (not contrast-tested: text never sits on these alone, always on a surface). */
+  --glass: rgba(255, 255, 255, 0.68);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px rgba(11, 52, 55, 0.1);
+  --neo-light: rgba(255, 255, 255, 0.95);
+  --neo-dark: rgba(11, 52, 55, 0.14);
+  --card-shadow: 0 1px 2px rgba(11, 52, 55, 0.06), 0 4px 16px rgba(11, 52, 55, 0.06);
+  --glow-a: rgba(70, 185, 142, 0.22);
+  --glow-b: rgba(8, 126, 121, 0.16);
 
   --ok: #1b7a3d;
   --ok-bg: #e5f4ea;
@@ -34,6 +44,14 @@
     --primary: #45b3b3;
     --primary-fg: #06201f;
     --focus: #7cb3ff;
+    --glass: rgba(21, 29, 35, 0.66);
+    --glass-border: rgba(255, 255, 255, 0.09);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --neo-light: rgba(255, 255, 255, 0.05);
+    --neo-dark: rgba(0, 0, 0, 0.55);
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+    --glow-a: rgba(70, 185, 142, 0.12);
+    --glow-b: rgba(69, 179, 179, 0.1);
     --ok: #6fd08f;
     --ok-bg: #14301f;
     --warn: #f0c060;
@@ -66,12 +84,118 @@
   --font-mono: var(--font-geist-mono);
   --radius-sm: 4px;
   --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
 }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(60rem 28rem at 8% -6%, var(--glow-a), transparent 70%),
+    radial-gradient(48rem 26rem at 96% 4%, var(--glow-b), transparent 70%), var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Design language. Glass: navigation and featured panels only. Neumorphism: small interactive
+   controls only. Tables, doses, warnings and results stay on flat, opaque surfaces so clinical
+   text is always read against a solid background. */
+@layer components {
+  .glass {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+  }
+  .card-link {
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+  .card-link:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+  }
+  .neo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow:
+      5px 5px 12px var(--neo-dark),
+      -5px -5px 12px var(--neo-light);
+    transition:
+      box-shadow 140ms ease,
+      transform 140ms ease;
+  }
+  .neo:hover:not(:disabled) {
+    box-shadow:
+      7px 7px 16px var(--neo-dark),
+      -7px -7px 16px var(--neo-light);
+  }
+  .neo:active:not(:disabled) {
+    box-shadow:
+      inset 3px 3px 7px var(--neo-dark),
+      inset -3px -3px 7px var(--neo-light);
+  }
+  .neo-inset {
+    background: var(--surface-2);
+    box-shadow:
+      inset 2px 2px 5px var(--neo-dark),
+      inset -2px -2px 5px var(--neo-light);
+  }
+  .bento {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 48rem) {
+    .bento {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .bento-wide {
+      grid-column: span 2;
+    }
+    .bento-full {
+      grid-column: 1 / -1;
+    }
+  }
+  .bento > li {
+    display: flex;
+  }
+  .bento > li > * {
+    width: 100%;
+  }
+  .data-table tbody tr:nth-child(even) {
+    background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+  }
+  .data-table tbody tr:hover {
+    background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-link,
+  .neo {
+    transition: none;
+  }
+  .card-link:hover {
+    transform: none;
+  }
 }
 
 :focus-visible {

@@ -42,7 +42,7 @@ export function ErrorsTab() {
         {(rows) => (
           <ul className="space-y-2">
             {rows.map((r) => (
-              <li key={r.id} className="rounded-md border border-border bg-surface p-3 text-sm">
+              <li key={r.id} className="card p-3 text-sm">
                 <p className="font-medium">{r.message}</p>
                 <p className="text-xs text-muted">
                   {r.count} time{r.count === 1 ? "" : "s"} · {r.path || "unknown page"} · last{" "}

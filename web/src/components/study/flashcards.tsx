@@ -85,10 +85,7 @@ export function Flashcards() {
       <p className="text-sm text-muted">
         Card {i + 1} of {cards.length} · {card.topic}
       </p>
-      <div
-        className="min-h-40 rounded-md border border-border bg-surface p-5 text-lg"
-        aria-live="polite"
-      >
+      <div className="min-h-40 card p-5 text-lg" aria-live="polite">
         {flipped ? card.back : card.front}
       </div>
       {saveError && <Alert tone="danger">{saveError}</Alert>}

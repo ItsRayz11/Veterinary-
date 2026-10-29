@@ -46,7 +46,7 @@ export function PriceTrends({ analytics }: { analytics: Prices["analytics"] }) {
         {series.map((s, i) => {
           const where = [s.city, s.region, s.country].filter(Boolean).join(", ");
           return (
-            <li key={i} className="rounded-md border border-border bg-surface p-3 text-sm">
+            <li key={i} className="card p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-medium">

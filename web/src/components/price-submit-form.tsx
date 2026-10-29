@@ -101,11 +101,7 @@ export function PriceSubmitForm({ slug, current }: { slug: string; current: Pric
   const fe = error?.fields ?? {};
   const targets = current.filter((r) => String(r.pack_id) === pack);
   return (
-    <form
-      onSubmit={submit}
-      className="space-y-3 rounded-md border border-border bg-surface p-4"
-      noValidate
-    >
+    <form onSubmit={submit} className="space-y-3 card p-4" noValidate>
       <h3 className="font-semibold">Suggest or report a price</h3>
       {error && Object.keys(fe).length === 0 && <Alert tone="danger">{error.message}</Alert>}
       <fieldset className="flex gap-4 text-sm">

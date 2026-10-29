@@ -66,7 +66,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   if (needsCode) {
     return (
       <form onSubmit={submit} className="mx-auto max-w-sm space-y-4" noValidate>
-        <h1 className="text-xl font-semibold">Two-factor code</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Two-factor code</h1>
         <p className="text-sm text-muted">
           Enter the 6-digit code from your authenticator app, or one of your recovery codes.
         </p>
@@ -90,7 +90,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <form onSubmit={submit} className="mx-auto max-w-sm space-y-4" noValidate>
-      <h1 className="text-xl font-semibold">{register ? "Create an account" : "Sign in"}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        {register ? "Create an account" : "Sign in"}
+      </h1>
       {error && fieldKeys.length === 0 && <Alert tone="danger">{error.message}</Alert>}
       <Field id="username" label="Username" error={fe.username}>
         <TextInput

@@ -34,7 +34,7 @@ export default async function LessonPage({ params }: PageProps<"/study/lessons/[
           { label: l.title },
         ]}
       />
-      <h1 className="text-2xl font-semibold">{l.title}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{l.title}</h1>
       <p className="text-sm text-muted">
         {l.subject} · {l.topic}
       </p>

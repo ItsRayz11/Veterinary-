@@ -31,7 +31,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Search</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Search</h1>
       <SearchBox autoFocus />
       {failed && (
         <Alert tone="danger">Search is unavailable right now. Please try again shortly.</Alert>
@@ -89,7 +89,7 @@ function Group({
   return (
     <section>
       <h2 className="text-sm font-medium uppercase tracking-wide text-muted">{title}</h2>
-      <ul className="mt-1 divide-y divide-border rounded-md border border-border bg-surface">
+      <ul className="mt-1 card divide-y divide-border">
         {items.map((i) => (
           <li key={i.href}>
             <Link href={i.href} className="block px-3 py-2 hover:bg-surface-2">

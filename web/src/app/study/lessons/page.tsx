@@ -24,7 +24,7 @@ export default async function LessonsPage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Lessons" }]} />
-      <h1 className="text-xl font-semibold">Lessons</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Lessons</h1>
       {rows.length === 0 ? (
         <EmptyState title="No reviewed lessons yet.">
           Lessons are published only after editors add sources and a reviewer approves them.

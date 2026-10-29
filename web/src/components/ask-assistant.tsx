@@ -75,7 +75,7 @@ export function AskAssistant() {
       {error && <Alert tone="danger">{error}</Alert>}
       <div aria-live="polite" className="space-y-3">
         {result?.status === "answered" && (
-          <div className="space-y-2 rounded-md border border-border bg-surface p-4">
+          <div className="space-y-2 card p-4">
             <p className="whitespace-pre-line">{result.answer}</p>
             <p className="text-xs text-muted">
               Based on:{" "}

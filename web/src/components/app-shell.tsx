@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AuthMenu } from "@/components/auth-menu";
+import { NavLinks } from "@/components/nav-links";
 
 const NAV = [
   { href: "/", label: "Home" },
@@ -20,17 +21,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 border-b border-border bg-surface">
+      <header className="glass sticky top-0 z-30 border-x-0 border-t-0">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-6 px-4">
-          <Link href="/" className="font-semibold text-primary">
+          <Link href="/" className="text-lg font-semibold tracking-tight text-primary">
             VetRef
           </Link>
-          <nav aria-label="Primary" className="hidden gap-4 text-sm sm:flex">
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="text-muted hover:text-text">
-                {n.label}
-              </Link>
-            ))}
+          <nav aria-label="Primary" className="hidden gap-1 text-sm sm:flex">
+            <NavLinks items={NAV} variant="top" />
           </nav>
           <div className="ml-auto">
             <AuthMenu />
@@ -46,13 +43,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       </footer>
       <nav
         aria-label="Mobile"
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-surface sm:hidden"
+        className="glass fixed inset-x-0 bottom-0 z-30 flex border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] sm:hidden"
       >
-        {NAV.map((n) => (
-          <Link key={n.href} href={n.href} className="flex-1 py-3 text-center text-sm">
-            {n.label}
-          </Link>
-        ))}
+        <NavLinks items={NAV.filter((n) => n.href !== "/")} variant="bottom" />
       </nav>
     </>
   );

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { apiGet, type CompanyDetail } from "@/lib/api";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
-import { Breadcrumbs, DataTable, EmptyState, Section, td, th } from "@/components/ui/primitives";
+import { ProductTable } from "@/components/product-table";
+import { Breadcrumbs, EmptyState, Section } from "@/components/ui/primitives";
 
 export async function generateMetadata({
   params,
@@ -28,7 +29,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
         items={[{ label: "Home", href: "/" }, { label: "Companies" }, { label: c.name }]}
       />
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">{c.name}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c.name}</h1>
         <p className="text-sm text-muted">
           {c.country}
           {c.roles.length > 0 && ` · ${c.roles.join(", ")}`}
@@ -54,34 +55,12 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
 
       <Section id="products" title={`Product catalogue (${c.products.length})`}>
         {c.products.length ? (
-          <DataTable caption={`Products from ${c.name}`}>
-            <thead>
-              <tr>
-                {["Brand", "Generic", "Countries"].map((h) => (
-                  <th key={h} scope="col" className={th}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {c.products.map((p) => (
-                <tr key={p.slug}>
-                  <th scope="row" className={td}>
-                    <Link href={`/products/${p.slug}`} className="text-primary underline">
-                      {p.brand_name}
-                    </Link>
-                  </th>
-                  <td className={td}>
-                    <Link href={`/drugs/${p.generic}`} className="underline">
-                      {p.generic_name}
-                    </Link>
-                  </td>
-                  <td className={td}>{p.countries.join(", ") || "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
+          <ProductTable
+            products={c.products}
+            caption={`Products from ${c.name}`}
+            showManufacturer={false}
+            showCountries
+          />
         ) : (
           <EmptyState title="No products listed" />
         )}

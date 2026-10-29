@@ -57,7 +57,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
     <div className="space-y-6">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Drugs" }, { label: g.name }]} />
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">{g.name}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{g.name}</h1>
         <p className="text-sm text-muted">
           {[g.drug_class, g.ingredients.length > 1 ? g.ingredients.join(" + ") : null]
             .filter(Boolean)

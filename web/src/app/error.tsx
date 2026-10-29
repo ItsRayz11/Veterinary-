@@ -16,11 +16,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
           ? "The data service is currently unreachable. Nothing has been lost; please try again shortly."
           : "This page could not be loaded."}
       </Alert>
-      <button
-        type="button"
-        onClick={reset}
-        className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
-      >
+      <button type="button" onClick={reset} className="neo rounded-lg px-3 py-2 text-sm">
         Try again
       </button>
     </div>

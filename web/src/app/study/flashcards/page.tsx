@@ -8,7 +8,7 @@ export default function FlashcardsPage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Flashcards" }]} />
-      <h1 className="text-xl font-semibold">Flashcards</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Flashcards</h1>
       <Flashcards />
     </div>
   );

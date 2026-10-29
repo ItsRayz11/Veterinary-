@@ -6,8 +6,9 @@ import type {
 } from "react";
 
 const VARIANT = {
-  primary: "bg-primary text-primary-fg hover:opacity-90",
-  secondary: "border border-border bg-surface hover:bg-surface-2",
+  primary:
+    "bg-primary text-primary-fg shadow-sm hover:opacity-90 active:translate-y-px active:shadow-none",
+  secondary: "neo text-text",
   danger: "bg-danger text-primary-fg hover:opacity-90",
 } as const;
 
@@ -27,7 +28,7 @@ export function Button({
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex min-h-11 items-center justify-center rounded-md px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 ${VARIANT[variant]} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 ${VARIANT[variant]} ${className}`}
     >
       {loading ? "Please wait…" : children}
     </button>
@@ -35,7 +36,7 @@ export function Button({
 }
 
 const CONTROL =
-  "min-h-11 w-full rounded-md border border-border bg-surface px-3 text-sm aria-[invalid=true]:border-danger";
+  "neo-inset min-h-11 w-full rounded-lg border border-border px-3 text-sm focus:border-primary aria-[invalid=true]:border-danger";
 
 export function Field({
   id,

@@ -105,7 +105,7 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Review panel</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Review panel</h1>
       <p className="text-sm text-muted">
         Signed in as {user.username} ({user.role}).{" "}
         {summary && !summary.can_approve_clinical && (

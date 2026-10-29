@@ -19,7 +19,7 @@ export default async function Page({ searchParams }: PageProps<"/calculators/dos
       <Breadcrumbs
         items={[{ label: "Home", href: "/" }, { label: "Calculators" }, { label: "Dose" }]}
       />
-      <h1 className="text-2xl font-semibold">Dose calculator</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dose calculator</h1>
       <Alert tone="warn" title="Decision support only">
         The calculator does simple arithmetic on the values you enter. It does not choose a drug or
         dose. Confirm every dose against the source and the product label.

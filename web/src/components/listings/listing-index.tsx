@@ -15,7 +15,7 @@ export function ListingIndex({ kind, items }: { kind: Kind; items: Listing[] }) 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{L.plural}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{L.plural}</h1>
         <Link className="text-primary underline" href={L.newPath}>
           Post a {L.singular}
         </Link>
@@ -32,10 +32,7 @@ export function ListingIndex({ kind, items }: { kind: Kind; items: Listing[] }) 
         <ul className="space-y-2">
           {items.map((l) => (
             <li key={l.id}>
-              <Link
-                href={`/${kind}/${l.id}`}
-                className="block rounded-md border border-border bg-surface p-3 hover:border-primary"
-              >
+              <Link href={`/${kind}/${l.id}`} className="block card card-link p-4">
                 <span className="font-medium">{l.title}</span>
                 <span className="block text-sm text-muted">{meta(l)}</span>
                 {l.closes_on && (

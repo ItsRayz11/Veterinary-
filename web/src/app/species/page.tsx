@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
+import { Breadcrumbs, EmptyState, PageHeader } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
 
@@ -23,22 +23,28 @@ export default async function SpeciesIndex() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Species" }]} />
-      <h1 className="text-2xl font-semibold">Species</h1>
+      <PageHeader
+        title="Species"
+        lead="Reviewed references and catalogue records by animal group."
+      />
       {rows.length === 0 ? (
         <EmptyState title="No species available." />
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-3 sm:grid-cols-2">
           {top.map((s) => (
-            <li key={s.slug}>
+            <li key={s.slug} className="card p-4">
               <Link className="font-medium text-primary underline" href={`/species/${s.slug}`}>
                 {s.name}
               </Link>
-              <ul className="ml-4 flex flex-wrap gap-x-4 text-sm">
+              <ul className="mt-2 flex flex-wrap gap-2 text-sm">
                 {rows
                   .filter((c) => c.parent === s.slug)
                   .map((c) => (
                     <li key={c.slug}>
-                      <Link className="text-primary underline" href={`/species/${c.slug}`}>
+                      <Link
+                        className="neo inline-block rounded-full px-3 py-1 text-primary"
+                        href={`/species/${c.slug}`}
+                      >
                         {c.name}
                       </Link>
                     </li>

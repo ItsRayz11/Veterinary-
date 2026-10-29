@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
+import { Breadcrumbs, EmptyState, PageHeader } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +41,7 @@ export default async function ClassesIndex() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Drug classes" }]} />
-      <h1 className="text-2xl font-semibold">Drug classes</h1>
+      <PageHeader title="Drug classes" />
       {rows.length === 0 ? (
         <EmptyState title="No drug classes available yet." />
       ) : (

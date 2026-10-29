@@ -64,13 +64,13 @@ export function SearchBox({ autoFocus = false }: { autoFocus?: boolean }) {
           placeholder="Search medicines, brands, companies…"
           aria-controls={listId}
           autoComplete="off"
-          className="h-11 w-full rounded-md border border-border bg-surface px-3 text-base"
+          className="neo-inset h-11 w-full rounded-lg border border-border px-3 text-base"
         />
       </form>
       <div id={listId} aria-live="polite">
         {error && <p className="mt-1 text-sm text-danger">Search is unavailable right now.</p>}
         {results && (
-          <div className="absolute left-0 right-0 z-20 mt-1 max-h-[70vh] overflow-y-auto rounded-md border border-border bg-surface p-2 shadow-lg">
+          <div className="absolute left-0 right-0 z-20 mt-1 max-h-[70vh] overflow-y-auto card p-2 shadow-lg">
             {empty && (
               <p className="p-2 text-sm text-muted">
                 No results.
