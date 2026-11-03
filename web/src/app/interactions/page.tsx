@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/ui/visual";
 import type { Metadata } from "next";
 import { InteractionChecker } from "@/components/interaction-checker";
 import { Alert, Breadcrumbs } from "@/components/ui/primitives";
@@ -12,7 +13,7 @@ export default function InteractionsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Interactions" }]} />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Interaction checker</h1>
+      <PageTitle category="interactions">Interaction checker</PageTitle>
       <Alert tone="warn" title="Only reviewed interactions are listed">
         No result does not mean a combination is safe. Check the product labels and a current
         reference.

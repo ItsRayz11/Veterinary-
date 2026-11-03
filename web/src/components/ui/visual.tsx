@@ -3,8 +3,43 @@ import { ArrowRight, FileText, Landmark, Coins, Pill } from "lucide-react";
 import type { ReactNode } from "react";
 import { CalcArt } from "./calc-art";
 import { Flag, flagAccent } from "./flag";
-import { IconChip, type CategoryName, type Tone } from "./icons";
+import { CategoryIcon, IconChip, type CategoryName, type Tone } from "./icons";
 import type { LucideIcon } from "lucide-react";
+
+/** Page `h1` with a category icon chip, matching the detail-page headers. */
+export function PageTitle({ category, children }: { category: CategoryName; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <IconChip category={category} size="lg" />
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{children}</h1>
+    </div>
+  );
+}
+
+/** Compact row of links to tools or indexes that apply to the page. Only generic, always-valid links. */
+export function RelatedResources({
+  items,
+}: {
+  items: { href: string; label: string; category: CategoryName }[];
+}) {
+  return (
+    <nav aria-label="Related resources">
+      <ul className="flex flex-wrap gap-2">
+        {items.map((i) => (
+          <li key={i.href}>
+            <Link
+              href={i.href}
+              className="neo inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm"
+            >
+              <CategoryIcon category={i.category} size={15} className="text-primary" />
+              {i.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
 
 /** Section title with an optional category glyph and a trailing action link. */
 export function SectionHeader({

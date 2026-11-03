@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Brand } from "@/lib/api";
+import { CategoryIcon } from "@/components/ui/icons";
 import { td, th } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
 
@@ -97,6 +98,11 @@ export function ProductTable({
             {rows.map((p) => (
               <tr key={p.slug}>
                 <td className={td}>
+                  <CategoryIcon
+                    category="medicines"
+                    size={14}
+                    className="mr-1.5 inline-block align-[-2px] text-muted"
+                  />
                   <Link className="text-primary underline" href={`/products/${p.slug}`}>
                     {p.brand_name}
                   </Link>

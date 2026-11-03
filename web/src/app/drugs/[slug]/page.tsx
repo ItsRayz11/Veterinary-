@@ -8,7 +8,7 @@ import { SourcesList } from "@/components/sources-list";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
 import { IconChip } from "@/components/ui/icons";
-import { MetadataBadge } from "@/components/ui/visual";
+import { MetadataBadge, RelatedResources } from "@/components/ui/visual";
 import {
   Alert,
   Breadcrumbs,
@@ -91,6 +91,17 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
         </p>
         <StatusLine status={g.status} />
       </header>
+      <RelatedResources
+        items={[
+          {
+            href: "/calculators/dose-calculator",
+            label: "Dose calculator",
+            category: "calculators",
+          },
+          { href: "/interactions", label: "Interaction checker", category: "interactions" },
+          { href: "/classes", label: "Drug classes", category: "classes" },
+        ]}
+      />
       <UnverifiedNotice status={g.status} what="medicine" />
       <Alert tone="warn" title="Reference only">
         {g.disclaimer}

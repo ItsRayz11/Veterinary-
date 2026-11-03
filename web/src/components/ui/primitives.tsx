@@ -1,3 +1,4 @@
+import { FileSearch } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { IconChip, type CategoryName } from "@/components/ui/icons";
@@ -110,9 +111,17 @@ export const td = "border-b border-border px-3 py-2 align-top";
 
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed border-border bg-surface/60 p-5 text-sm">
-      <p className="font-medium">{title}</p>
-      {children && <p className="mt-1 text-muted">{children}</p>}
+    <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/60 p-5 text-sm">
+      <FileSearch
+        size={22}
+        strokeWidth={1.5}
+        aria-hidden="true"
+        className="mt-0.5 shrink-0 text-muted"
+      />
+      <div>
+        <p className="font-medium">{title}</p>
+        {children && <p className="mt-1 text-muted">{children}</p>}
+      </div>
     </div>
   );
 }

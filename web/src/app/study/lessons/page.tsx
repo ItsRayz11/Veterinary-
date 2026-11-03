@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/ui/visual";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
@@ -24,7 +25,7 @@ export default async function LessonsPage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Lessons" }]} />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Lessons</h1>
+      <PageTitle category="lessons">Lessons</PageTitle>
       {rows.length === 0 ? (
         <EmptyState title="No reviewed lessons yet.">
           Lessons are published only after editors add sources and a reviewer approves them.

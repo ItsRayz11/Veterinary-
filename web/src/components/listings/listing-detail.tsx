@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Building2 } from "lucide-react";
 import { Alert, Breadcrumbs } from "@/components/ui/primitives";
+import { PageTitle } from "@/components/ui/visual";
 import { FUNDING, JOB_TYPES, LABELS, LEVELS, label, type Kind, type Listing } from "@/lib/listings";
 import { ReportButton } from "./report-button";
 
@@ -25,9 +27,12 @@ export function ListingDetail({ kind, item }: { kind: Kind; item: Listing }) {
           { label: item.title },
         ]}
       />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
-      <p className="text-sm text-muted">{item.organization}</p>
-      <dl className="grid grid-cols-2 gap-2 text-sm">
+      <PageTitle category={kind === "jobs" ? "jobs" : "scholarships"}>{item.title}</PageTitle>
+      <p className="flex items-center gap-1.5 text-sm text-muted">
+        <Building2 size={16} aria-hidden="true" />
+        {item.organization}
+      </p>
+      <dl className="card grid grid-cols-2 gap-3 p-4 text-sm">
         {facts
           .filter(([, v]) => v)
           .map(([k, v]) => (

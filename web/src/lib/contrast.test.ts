@@ -43,6 +43,11 @@ const PAIRS: [string, string][] = [
   ["danger", "surface"],
   ["ok", "surface"],
   ["warn", "surface"],
+  // Semantic accent chips and badges render text and icons in the tone colour on its tint.
+  ...["teal", "blue", "green", "violet", "amber", "red"].flatMap((t): [string, string][] => [
+    [`tone-${t}`, `tone-${t}-bg`],
+    [`tone-${t}`, "surface"],
+  ]),
 ];
 
 describe.each([

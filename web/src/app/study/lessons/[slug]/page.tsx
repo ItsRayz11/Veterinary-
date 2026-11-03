@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/ui/visual";
 import type { Metadata } from "next";
 import { apiGet, type SourceRef, type Status } from "@/lib/api";
 import { SourcesList } from "@/components/sources-list";
@@ -34,7 +35,7 @@ export default async function LessonPage({ params }: PageProps<"/study/lessons/[
           { label: l.title },
         ]}
       />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{l.title}</h1>
+      <PageTitle category="lessons">{l.title}</PageTitle>
       <p className="text-sm text-muted">
         {l.subject} · {l.topic}
       </p>

@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/ui/visual";
 import type { Metadata } from "next";
 import { apiGet } from "@/lib/api";
 import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
@@ -24,7 +25,7 @@ export default async function BooksPage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Study", href: "/study" }, { label: "Books" }]} />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Book references</h1>
+      <PageTitle category="study">Book references</PageTitle>
       <p className="text-sm text-muted">Titles are cited only; we do not host book text.</p>
       {books.length === 0 ? (
         <EmptyState title="No book references yet." />
