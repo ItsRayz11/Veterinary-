@@ -120,7 +120,8 @@ export function AutomationTab() {
         <p className="text-sm text-muted">
           Checked daily for reachability and changes (robots.txt honoured). Imports run from the
           command line or scheduled workflow once an admin confirms the publisher&apos;s terms in
-          the Django admin; imported records always start unreviewed and are never treated as verified.
+          the Django admin; imported records always start unreviewed and are never treated as
+          verified.
         </p>
         <DataTable caption="External data sources">
           <thead>
