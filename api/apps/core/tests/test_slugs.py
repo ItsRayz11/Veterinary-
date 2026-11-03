@@ -34,7 +34,8 @@ def test_suffix_never_pushes_a_slug_over_the_limit(db):
 def test_products_and_topics_respect_their_limits_too(db):
     assert Product._meta.get_field("slug").max_length >= len(unique_slug(Product, LONG * 2))
     subject = Subject.objects.create(name="Pharmacology")
-    topic = Topic.objects.create(subject=subject, name=LONG * 3)
+    name = (LONG * 3)[: Topic._meta.get_field("name").max_length]  # Postgres enforces it
+    topic = Topic.objects.create(subject=subject, name=name)
     assert len(topic.slug) <= Topic._meta.get_field("slug").max_length
 
 

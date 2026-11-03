@@ -15,6 +15,7 @@ from apps.opportunities.models import Job, Scholarship
 from apps.sources.models import Source
 
 from . import safe_http
+from .datasources import check_data_sources
 from .models import Feed, FeedKind, JobRun, RunStatus, SourceHealth
 
 # Vercel stops a function after 30 s (api/vercel.json). Each probe is capped at PROBE_TIMEOUT and
@@ -249,7 +250,11 @@ def run_all_feeds(budget_seconds: float = LINK_CHECK_BUDGET, clock=time.monotoni
 
 # ---------- runner ----------
 
-TASKS = {"link-check": check_source_links, "feeds": run_all_feeds}
+TASKS = {
+    "link-check": check_source_links,
+    "feeds": run_all_feeds,
+    "data-sources": check_data_sources,
+}
 
 
 def run_task(name: str) -> JobRun:

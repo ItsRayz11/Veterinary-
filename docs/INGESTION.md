@@ -22,10 +22,17 @@ Header names are case-insensitive; common aliases (`brand`, `product`, `generic`
 Limits: 2 MB, 5000 rows per file. Strengths, packs and ingredients are not imported; add them in the admin.
 
 ## What is deliberately not done
-- No fetcher pulls from DRAP, CDSCO or any site. Files that a person (or this project's owner) downloaded from a public download link are imported with `manage.py import_products <adapter> <file> --country XX --source-title ... --publisher ... --url ... --license-note ...` (adapters: `standard`, `drap-vet-applications`, `drap-vet-biologicals`). It resumes by file checksum, can run in parallel with `--shard i/n`, and always creates unreviewed, hidden records.
+- Only the registered data sources below are fetched (see "Scheduled data sources"); nothing else is scraped. Files that a person (or this project's owner) downloaded from a public download link are imported with `manage.py import_products <adapter> <file> --country XX --source-title ... --publisher ... --url ... --license-note ...` (adapters: `standard`, `drap-vet-applications`, `drap-vet-biologicals`). It resumes by file checksum, can run in parallel with `--shard i/n`, and always creates unreviewed, hidden records.
 - DRAP's online product registry carries a notice that it must not be used as a reference, so it is not scraped. The per-source checklist in `DATA_SOURCES.md` (terms, robots.txt, API/bulk access, scope, legal sign-off) is still unfilled for every source, so none is enabled.
 - The importer does not decide that a record is correct; it only records where it came from.
 - Prices and doses are not imported here. They have their own governed models.
+
+## Scheduled data sources (`apps/automation`, model `DataSource`)
+Eleven sources from `DATA_RESOURCES.md` are registered (Django admin > Automation > Data sources, and the Automation tab of the review panel).
+- **Check (daily cron `data-sources`, `/api/v1/cron/data-sources/`):** reads each source's public URL with robots.txt honoured, records reachable / unreachable / skipped, and detects a changed file (ETag / Last-Modified, or openFDA's `last_updated`). Never touches the catalogue. Sources whose robots.txt forbids automation or cannot be read are *skipped*, not fetched (live result 2026-11-03: APVMA, CDSCO, EMA and FARAD are skipped; the others are reachable).
+- **Import (`manage.py sync_data_sources`, or the opt-in weekly workflow `.github/workflows/data-sync.yml`):** only for sources with an importer (UK VMD, Health Canada), `import_enabled`, and **terms confirmed by an admin** (admin action "I have read the publisher's terms..."; recorded with who and when). Files are downloaded (40 MB cap), reshaped by the adapter, split into 2000-row batches and approved as `imported_unverified`: never public, labelled and noindex where unverified imports are listed. A layout change or empty file stops the import with a clear message. Re-running a file already imported stages nothing.
+- Adapters: `adapters/uk_vmd.py` (current + suspended products; expired and homeopathic skipped; no strengths or withdrawal periods exist in the file), `adapters/ca_dpd.py` (class Veterinary only; DIN as registration number; strengths kept as source text).
+- Not importable yet (monitor only): FDA Green Book, openFDA, DailyMed, APVMA, DRAP registry, CDSCO (PDF), EMA, FARAD.
 
 ## Per-source status
 | Source | Terms checked | robots.txt | Bulk/API | Scope | Legal sign-off | Enabled |

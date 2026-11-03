@@ -62,6 +62,12 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 _opener = urllib.request.build_opener(_NoRedirect)
 
 
+def _headers(obj) -> dict[str, str]:
+    """Response headers with lower-cased names; empty when the object carries none."""
+    headers = getattr(obj, "headers", None)
+    return {k.lower(): v for k, v in headers.items()} if headers else {}
+
+
 def _remaining(deadline: float | None, timeout: float) -> float:
     """Socket timeout for the next step: never longer than what is left of the overall deadline."""
     if deadline is None:
@@ -98,6 +104,21 @@ def fetch(
     `timeout` bounds each network step; `deadline` (an absolute `time.monotonic()` value) bounds
     the whole call, redirects and body included.
     """
+    status, body, final_url, _ = fetch_full(
+        url, method=method, max_bytes=max_bytes, timeout=timeout, deadline=deadline
+    )
+    return status, body, final_url
+
+
+def fetch_full(
+    url: str,
+    *,
+    method: str = "GET",
+    max_bytes: int = DEFAULT_MAX_BYTES,
+    timeout: float = DEFAULT_TIMEOUT,
+    deadline: float | None = None,
+) -> tuple[int, bytes, str, dict[str, str]]:
+    """Like `fetch`, but also returns the response headers (lower-cased names)."""
     current = url
     for _ in range(MAX_REDIRECTS + 1):
         assert_public_url(current)
@@ -108,13 +129,13 @@ def fetch(
                 body = (
                     b"" if method == "HEAD" else _read_limited(resp, max_bytes, deadline, timeout)
                 )
-                return resp.status, body, current
+                return resp.status, body, current, _headers(resp)
         except urllib.error.HTTPError as exc:
             location = exc.headers.get("Location")
             if exc.code in (301, 302, 303, 307, 308) and location:
                 current = urljoin(current, location)
                 continue
-            return exc.code, b"", current
+            return exc.code, b"", current, _headers(exc)
         except FetchError:
             raise
         except (

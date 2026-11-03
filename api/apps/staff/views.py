@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from apps.accounts.models import Role
 from apps.accounts.permissions import HasRole, IsEditor, IsModerator
 from apps.automation import tasks as automation_tasks
-from apps.automation.models import Feed, JobRun, SourceHealth
+from apps.automation.models import DataSource, Feed, JobRun, SourceHealth
 from apps.core.models import AuditLog
 from apps.core.schema import untyped_schema
 from apps.education.models import QuestionReport
@@ -254,6 +254,27 @@ def automation_status(request):
                     "checked_at": h.checked_at,
                 }
                 for h in broken
+            ],
+            "data_sources": [
+                {
+                    "id": d.pk,
+                    "name": d.name,
+                    "publisher": d.publisher,
+                    "country": d.country_iso2,
+                    "url": d.landing_url,
+                    "licence": d.licence_note,
+                    "monitored": d.enabled,
+                    "reachable": d.last_ok,
+                    "error": d.last_error,
+                    "update_available": d.update_available,
+                    "last_checked_at": d.last_checked_at,
+                    "can_import": bool(d.importer),
+                    "import_enabled": d.import_enabled,
+                    "terms_confirmed": d.terms_confirmed_at is not None,
+                    "last_imported_at": d.last_imported_at,
+                    "last_import_result": d.last_import_result,
+                }
+                for d in DataSource.objects.all()
             ],
             "feeds": [
                 {

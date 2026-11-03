@@ -10,6 +10,7 @@ import io
 import json
 from decimal import Decimal, InvalidOperation
 
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -35,6 +36,7 @@ from apps.units.models import Unit
 
 from .models import ImportBatch, RowStatus, StagedRecord
 
+IMPORT_USER = "import-bot"
 MAX_BYTES = 2_000_000
 MAX_ROWS = 5000
 REQUIRED = ("brand_name", "generic_name", "manufacturer")
@@ -538,3 +540,13 @@ def _maybe_complete(batch: ImportBatch) -> None:
     if not batch.rows.filter(status__in=(RowStatus.PENDING,)).exists():
         batch.status = "completed"
         batch.save(update_fields=["status", "updated_at"])
+
+
+def import_user():
+    """The account that appears in audit logs for automated imports (never able to sign in)."""
+    User = get_user_model()
+    user, _ = User.objects.get_or_create(username=IMPORT_USER, defaults={"role": "editor"})
+    if user.has_usable_password():
+        user.set_unusable_password()
+        user.save(update_fields=["password"])
+    return user

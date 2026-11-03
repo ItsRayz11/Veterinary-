@@ -1,0 +1,28 @@
+name: Data source sync
+
+# Checks the external data sources and imports changed ones (unreviewed records only) into the
+# production database. Off until the repository variable DATA_SYNC_ENABLED is set to "true" and the
+# secrets DATABASE_URL and SECRET_KEY exist. An admin must still confirm each publisher's terms in
+# the Django admin: sources without confirmed terms are only checked, never imported.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  sync:
+    if: vars.DATA_SYNC_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults: { run: { working-directory: api } }
+    env:
+      DEBUG: "false"
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ALLOWED_HOSTS: localhost
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: api/requirements.txt }
+      - run: pip install -r requirements.txt
+      - run: python manage.py sync_data_sources

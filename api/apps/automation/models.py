@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -88,3 +89,82 @@ class Feed(TimeStampedModel):
             raise ValidationError("Choose a default job type for a jobs feed.")
         if self.enabled and self.kind == FeedKind.SCHOLARSHIPS and not self.default_level:
             raise ValidationError("Choose a default level for a scholarships feed.")
+
+
+class SourceKind(models.TextChoices):
+    REGULATOR_LIST = "regulator_list", "Regulator product list"
+    OPEN_DATA = "open_data", "Open data portal / API"
+    DOCUMENT = "document", "Published document (PDF)"
+    PORTAL = "portal", "Search portal"
+
+
+class DataSource(TimeStampedModel):
+    """An external data publisher we watch, and optionally import from.
+
+    Two separate switches. `enabled` only lets the scheduled check read the public URL (robots.txt
+    honoured) to see whether it is reachable and has changed; it never touches the catalogue.
+    Importing needs an importer, `import_enabled`, and a person who has confirmed the publisher's
+    terms (`terms_confirmed_at`). Imported records always start unreviewed (never public).
+    """
+
+    slug = models.SlugField(max_length=60, unique=True)
+    name = models.CharField(max_length=160)
+    publisher = models.CharField(max_length=160, blank=True)
+    country_iso2 = models.CharField(max_length=2, blank=True, help_text="ISO 3166 alpha-2, if any")
+    kind = models.CharField(max_length=16, choices=SourceKind.choices)
+    landing_url = models.URLField(max_length=500, help_text="Human-readable page for the data")
+    data_url = models.URLField(
+        max_length=500, blank=True, help_text="Direct file/API URL to check and import"
+    )
+    licence_note = models.CharField(
+        max_length=300, help_text="Licence as stated by the publisher (verify on their site)"
+    )
+    notes = models.TextField(blank=True)
+
+    importer = models.CharField(
+        max_length=24, blank=True, help_text="Adapter key; empty = monitor only"
+    )
+    enabled = models.BooleanField(default=True, help_text="Run the scheduled reachability check")
+    import_enabled = models.BooleanField(default=False)
+    check_interval_hours = models.PositiveSmallIntegerField(default=24)
+    terms_confirmed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    terms_confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    last_checked_at = models.DateTimeField(null=True, blank=True, editable=False)
+    last_ok = models.BooleanField(null=True, editable=False)
+    last_http_status = models.PositiveSmallIntegerField(null=True, blank=True, editable=False)
+    last_error = models.CharField(max_length=300, blank=True, editable=False)
+    consecutive_failures = models.PositiveSmallIntegerField(default=0, editable=False)
+    fingerprint = models.CharField(max_length=200, blank=True, editable=False)
+    last_changed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    update_available = models.BooleanField(default=False, editable=False)
+    imported_fingerprint = models.CharField(max_length=200, blank=True, editable=False)
+    last_imported_at = models.DateTimeField(null=True, blank=True, editable=False)
+    last_import_result = models.CharField(max_length=300, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def check_url(self) -> str:
+        return self.data_url or self.landing_url
+
+    def clean(self):
+        if self.import_enabled and not self.importer:
+            raise ValidationError("Choose an importer before enabling import.")
+        if self.import_enabled and not self.terms_confirmed_at:
+            raise ValidationError(
+                "Confirm the publisher's terms (admin action) before enabling import."
+            )
+        if self.importer and not self.data_url:
+            raise ValidationError("An importer needs a direct data URL.")

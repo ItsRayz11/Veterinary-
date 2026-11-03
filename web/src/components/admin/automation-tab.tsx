@@ -33,6 +33,36 @@ interface Status {
     last_run_at: string | null;
     last_result: string;
   }[];
+  data_sources: {
+    id: number;
+    name: string;
+    publisher: string;
+    country: string;
+    url: string;
+    licence: string;
+    monitored: boolean;
+    reachable: boolean | null;
+    error: string;
+    update_available: boolean;
+    last_checked_at: string | null;
+    can_import: boolean;
+    import_enabled: boolean;
+    terms_confirmed: boolean;
+    last_imported_at: string | null;
+    last_import_result: string;
+  }[];
+}
+
+function sourceState(d: Status["data_sources"][number]): string {
+  if (d.last_checked_at === null) return "not checked yet";
+  if (d.reachable) return d.update_available ? "reachable, update available" : "reachable";
+  return d.reachable === false ? "unreachable" : "skipped";
+}
+
+function importState(d: Status["data_sources"][number]): string {
+  if (!d.can_import) return "monitor only";
+  if (!d.terms_confirmed) return "terms not confirmed";
+  return d.import_enabled ? "import on" : "import off";
 }
 
 export function AutomationTab() {
@@ -82,6 +112,55 @@ export function AutomationTab() {
           ))}
         </div>
       )}
+
+      <section aria-labelledby="sources-h" className="space-y-2">
+        <h3 id="sources-h" className="font-semibold">
+          External data sources
+        </h3>
+        <p className="text-sm text-muted">
+          Checked daily for reachability and changes (robots.txt honoured). Imports run from the
+          command line or scheduled workflow once an admin confirms the publisher&apos;s terms in
+          the Django admin; imported records always start unreviewed and are never treated as verified.
+        </p>
+        <DataTable caption="External data sources">
+          <thead>
+            <tr>
+              <th className={th}>Source</th>
+              <th className={th}>Status</th>
+              <th className={th}>Import</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.data_sources.map((d) => (
+              <tr key={d.id}>
+                <td className={td}>
+                  <a href={d.url} rel="noopener noreferrer" target="_blank" className="underline">
+                    {d.name}
+                  </a>
+                  <p className="text-xs text-muted">
+                    {[d.publisher, d.country].filter(Boolean).join(" · ")}
+                  </p>
+                  <p className="text-xs text-muted">{d.licence}</p>
+                </td>
+                <td className={td}>
+                  {sourceState(d)}
+                  <p className="text-xs text-muted">
+                    {d.last_checked_at ? fmt(d.last_checked_at) : ""}
+                    {d.error ? ` · ${d.error}` : ""}
+                  </p>
+                </td>
+                <td className={td}>
+                  {importState(d)}
+                  <p className="text-xs text-muted">
+                    {d.last_imported_at ? `${fmt(d.last_imported_at)}: ` : ""}
+                    {d.last_import_result}
+                  </p>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </DataTable>
+      </section>
 
       <section aria-labelledby="feeds-h" className="space-y-2">
         <h3 id="feeds-h" className="font-semibold">

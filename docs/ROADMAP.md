@@ -114,6 +114,11 @@ Verification after all three rounds: 262 API tests (CI-equivalent environment, `
 - Real data candidates researched: [DATA_RESOURCES.md](DATA_RESOURCES.md).
 - Local-only: on Windows with `autocrlf`, `npm run format` reports every file; the repo itself is LF and CI passes.
 
+## Data sources (2026-11-03)
+- [x] `DataSource` registry for 11 researched sources, daily robots-aware reachability/change check (cron `data-sources`), Django admin and review-panel visibility, adapters for UK VMD (4,816 rows from the real file) and Health Canada (926 veterinary rows), guarded import command (`sync_data_sources`) and opt-in weekly workflow. 17 tests.
+- [ ] Not yet run against production: an admin must confirm each publisher's terms (UK VMD states OGL v3.0; Health Canada's licence came from secondary sources) and set `import_enabled`; the workflow also needs `DATA_SYNC_ENABLED`, `DATABASE_URL`, `SECRET_KEY`.
+- [ ] Importers for Green Book, openFDA, DailyMed, APVMA (blocked by robots/403), CDSCO PDF.
+
 ## Phase 6: Pakistan Data
 - [x] Reviewed ingestion pipeline (`apps/ingestion`, `docs/INGESTION.md`): CSV stage -> match (generic/company/product/registration, duplicates, errors) -> staff approve/reject -> unreviewed records linked to the Source; checksum + licence note required; audit log; admin + Imports tab in the review panel; 6 tests; verified live (imports stay hidden until reviewed)
 - [ ] Real Pakistan data: blocked on per-source terms/legal sign-off (checklist in `INGESTION.md` all unfilled); no fetcher enabled; nothing invented

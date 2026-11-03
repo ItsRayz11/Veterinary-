@@ -7,6 +7,14 @@ COUNTRIES = [
     ("AE", "United Arab Emirates", "AED", "", 50),
     ("US", "United States", "USD", "FDA Center for Veterinary Medicine", 60),
     ("GB", "United Kingdom", "GBP", "Veterinary Medicines Directorate", 61),
+    ("CA", "Canada", "CAD", "Health Canada Veterinary Drugs Directorate", 62),
+    (
+        "AU",
+        "Australia",
+        "AUD",
+        "Australian Pesticides and Veterinary Medicines Authority (APVMA)",
+        63,
+    ),
 ]
 
 # slug, name, parent slug, food producing

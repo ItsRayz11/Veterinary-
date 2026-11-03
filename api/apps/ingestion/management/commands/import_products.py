@@ -12,7 +12,6 @@ import hashlib
 import json
 from pathlib import Path
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Count
@@ -21,22 +20,12 @@ from apps.countries.models import Country
 from apps.ingestion import services
 from apps.ingestion.adapters import drap
 from apps.ingestion.models import ImportBatch
+from apps.ingestion.services import import_user
 
 ADAPTERS = {
     "drap-vet-applications": drap.clean_vet_applications,
     "drap-vet-biologicals": drap.clean_vet_biologicals,
 }
-IMPORT_USER = "import-bot"
-
-
-def import_user():
-    """The account that appears in audit logs for command-line imports (never able to sign in)."""
-    User = get_user_model()
-    user, _ = User.objects.get_or_create(username=IMPORT_USER, defaults={"role": "editor"})
-    if user.has_usable_password():
-        user.set_unusable_password()
-        user.save(update_fields=["password"])
-    return user
 
 
 class Command(BaseCommand):
