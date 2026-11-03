@@ -7,6 +7,8 @@ import { SITE_URL } from "@/lib/site";
 import { SourcesList } from "@/components/sources-list";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
+import { IconChip } from "@/components/ui/icons";
+import { MetadataBadge } from "@/components/ui/visual";
 import {
   Alert,
   Breadcrumbs,
@@ -72,7 +74,15 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
       )}
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Drugs" }, { label: g.name }]} />
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{g.name}</h1>
+        <div className="flex items-center gap-3">
+          <IconChip category="medicines" size="lg" />
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{g.name}</h1>
+        </div>
+        {g.drug_class && (
+          <div>
+            <MetadataBadge tone="teal">{g.drug_class}</MetadataBadge>
+          </div>
+        )}
         <p className="text-sm text-muted">
           {[g.drug_class, g.ingredients.length > 1 ? g.ingredients.join(" + ") : null]
             .filter(Boolean)
@@ -95,7 +105,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
         ]}
       />
 
-      <Section id="overview" title="Overview">
+      <Section id="overview" title="Overview" category="reference">
         {g.description || g.mechanism ? (
           <div className="space-y-2 text-sm">
             {g.description && <p>{g.description}</p>}
@@ -111,7 +121,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
         )}
       </Section>
 
-      <Section id="dosing" title="Dosing by species">
+      <Section id="dosing" title="Dosing by species" category="calculators">
         {speciesInDoses.length > 0 && (
           <p className="mb-2 flex flex-wrap gap-2 text-sm">
             <Link
@@ -202,7 +212,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
         )}
       </Section>
 
-      <Section id="safety" title="Safety">
+      <Section id="safety" title="Safety" category="diseases">
         {notesByKind.length ? (
           <div className="space-y-4">
             {notesByKind.map((k) => (
@@ -223,7 +233,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
         )}
       </Section>
 
-      <Section id="brands" title={`Brands (${g.brands.length})`}>
+      <Section id="brands" title={`Brands (${g.brands.length})`} category="companies">
         <p className="mb-2 flex flex-wrap gap-2 text-sm">
           <Link
             href={`/drugs/${g.slug}`}
@@ -278,7 +288,7 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
         )}
       </Section>
 
-      <Section id="sources" title="Sources">
+      <Section id="sources" title="Sources" category="regulatory">
         <SourcesList sources={g.sources} />
       </Section>
     </div>

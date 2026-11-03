@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ApiError, apiGet } from "@/lib/api";
 import { SearchBox } from "@/components/search-box";
+import { CategoryIcon, type CategoryName } from "@/components/ui/icons";
 import { Alert, EmptyState } from "@/components/ui/primitives";
 
 export const metadata: Metadata = { title: "Search", robots: { index: false } };
@@ -58,10 +59,12 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         <div className="space-y-4">
           <Group
             title="Generics"
+            category="medicines"
             items={results.generics.map((g) => ({ href: `/drugs/${g.slug}`, main: g.name }))}
           />
           <Group
             title="Brands"
+            category="vaccines"
             items={results.products.map((p) => ({
               href: `/products/${p.slug}`,
               main: p.name,
@@ -70,6 +73,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           />
           <Group
             title="Companies"
+            category="companies"
             items={results.companies.map((c) => ({ href: `/companies/${c.slug}`, main: c.name }))}
           />
         </div>
@@ -80,19 +84,25 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
 function Group({
   title,
+  category,
   items,
 }: {
   title: string;
+  category: CategoryName;
   items: { href: string; main: string; sub?: string }[];
 }) {
   if (!items.length) return null;
   return (
     <section>
-      <h2 className="text-sm font-medium uppercase tracking-wide text-muted">{title}</h2>
+      <h2 className="flex items-center gap-1.5 text-sm font-medium text-muted">
+        <CategoryIcon category={category} size={16} />
+        {title} <span className="text-xs">({items.length})</span>
+      </h2>
       <ul className="mt-1 card divide-y divide-border">
         {items.map((i) => (
           <li key={i.href}>
-            <Link href={i.href} className="block px-3 py-2 hover:bg-surface-2">
+            <Link href={i.href} className="flex items-center gap-2 px-3 py-2 hover:bg-surface-2">
+              <CategoryIcon category={category} size={16} className="shrink-0 text-muted" />
               <span className="font-medium">{i.main}</span>
               {i.sub && <span className="ml-2 text-sm text-muted">{i.sub}</span>}
             </Link>

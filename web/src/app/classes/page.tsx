@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
+import { CategoryIcon } from "@/components/ui/icons";
 import { Breadcrumbs, EmptyState, PageHeader } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,11 @@ function Tree({ rows, parent }: { rows: ClassRow[]; parent: string | null }) {
     <ul className={parent ? "ml-5 mt-1 space-y-1" : "space-y-2"}>
       {level.map((c) => (
         <li key={c.slug}>
-          <Link className="text-primary underline" href={`/classes/${c.slug}`}>
+          <Link
+            className="inline-flex items-center gap-1.5 text-primary hover:underline"
+            href={`/classes/${c.slug}`}
+          >
+            <CategoryIcon category="classes" size={16} />
             {c.name}
           </Link>{" "}
           <span className="text-xs text-muted">({c.generic_count})</span>

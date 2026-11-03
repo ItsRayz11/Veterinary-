@@ -8,6 +8,8 @@ import { PriceTrends } from "@/components/price-trends";
 import { PriceSubmitForm } from "@/components/price-submit-form";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
+import { ProductArt } from "@/components/ui/product-art";
+import { MetadataBadge } from "@/components/ui/visual";
 import { Breadcrumbs, DataTable, EmptyState, Section, td, th } from "@/components/ui/primitives";
 
 export async function generateMetadata({
@@ -50,23 +52,33 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           { label: p.brand_name },
         ]}
       />
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{p.brand_name}</h1>
-        <p className="text-sm text-muted">
-          <Link href={`/drugs/${p.generic}`} className="underline">
-            {p.generic_name}
-          </Link>{" "}
-          by{" "}
-          <Link href={`/companies/${p.manufacturer.slug}`} className="underline">
-            {p.manufacturer.name}
-          </Link>
-          {p.marketing_holder && ` · Marketing authorisation holder: ${p.marketing_holder}`}
-        </p>
-        <StatusLine status={p.status} />
+      <header className="flex items-start gap-4">
+        <ProductArt forms={p.packs.map((k) => k.form)} />
+        <div className="min-w-0 space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{p.brand_name}</h1>
+          <p className="text-sm text-muted">
+            <Link href={`/drugs/${p.generic}`} className="underline">
+              {p.generic_name}
+            </Link>{" "}
+            by{" "}
+            <Link href={`/companies/${p.manufacturer.slug}`} className="underline">
+              {p.manufacturer.name}
+            </Link>
+            {p.marketing_holder && ` · Marketing authorisation holder: ${p.marketing_holder}`}
+          </p>
+          <StatusLine status={p.status} />
+          {p.packs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {[...new Set(p.packs.map((k) => k.form))].map((f) => (
+                <MetadataBadge key={f}>{f}</MetadataBadge>
+              ))}
+            </div>
+          )}
+        </div>
       </header>
       <UnverifiedNotice status={p.status} what="product" />
 
-      <Section id="composition" title="Composition and presentations">
+      <Section id="composition" title="Composition and presentations" category="medicines">
         <div className="grid gap-4 sm:grid-cols-2">
           <DataTable caption="Active ingredients and strengths">
             <thead>
@@ -120,7 +132,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         </div>
       </Section>
 
-      <Section id="availability" title="Country availability">
+      <Section id="availability" title="Country availability" category="countries">
         {p.registrations.length ? (
           <DataTable caption="Registrations by country">
             <thead>
@@ -152,7 +164,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         )}
       </Section>
 
-      <Section id="withdrawal" title="Withdrawal periods">
+      <Section id="withdrawal" title="Withdrawal periods" category="regulatory">
         {p.withdrawal_periods.length ? (
           <DataTable caption="Withdrawal periods by country, species and commodity">
             <thead>
@@ -191,7 +203,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         )}
       </Section>
 
-      <Section id="prices" title="Prices">
+      <Section id="prices" title="Prices" category="reference">
         {prices.current.length ? (
           <>
             <DataTable caption="Latest published price per pack">
@@ -238,7 +250,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         </div>
       </Section>
 
-      <Section id="sources" title="Sources">
+      <Section id="sources" title="Sources" category="regulatory">
         <SourcesList sources={p.sources} />
       </Section>
     </div>

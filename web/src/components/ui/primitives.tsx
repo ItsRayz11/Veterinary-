@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { IconChip, type CategoryName } from "@/components/ui/icons";
 import { SITE_URL } from "@/lib/site";
 
 export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
@@ -69,15 +70,21 @@ export function Alert({
 export function Section({
   id,
   title,
+  category,
   children,
 }: {
   id: string;
   title: string;
+  category?: CategoryName;
   children: ReactNode;
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-28">
-      <h2 id={`${id}-h`} className="mb-3 text-lg font-semibold tracking-tight">
+      <h2
+        id={`${id}-h`}
+        className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight"
+      >
+        {category && <IconChip category={category} size="sm" />}
         {title}
       </h2>
       {children}

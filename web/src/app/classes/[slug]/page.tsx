@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
+import { IconChip } from "@/components/ui/icons";
 import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
+import { FeatureCard } from "@/components/ui/visual";
 
 interface ClassDetail {
   slug: string;
@@ -32,7 +34,10 @@ export default async function ClassPage({ params }: PageProps<"/classes/[slug]">
           { label: c.name },
         ]}
       />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c.name}</h1>
+      <div className="flex items-center gap-3">
+        <IconChip category="classes" size="lg" />
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c.name}</h1>
+      </div>
       {c.children.length > 0 && (
         <p className="flex flex-wrap gap-3 text-sm">
           {c.children.map((k) => (
@@ -48,10 +53,13 @@ export default async function ClassPage({ params }: PageProps<"/classes/[slug]">
         <ul className="grid gap-2 sm:grid-cols-2">
           {c.generics.map((g) => (
             <li key={g.slug}>
-              <Link href={`/drugs/${g.slug}`} className="block card card-link p-4">
-                <span className="font-medium">{g.name}</span>
-                {g.drug_class && <span className="block text-sm text-muted">{g.drug_class}</span>}
-              </Link>
+              <FeatureCard
+                layout="row"
+                href={`/drugs/${g.slug}`}
+                category="medicines"
+                title={g.name}
+                desc={g.drug_class ?? undefined}
+              />
             </li>
           ))}
         </ul>

@@ -6,6 +6,7 @@ import { SITE_URL } from "@/lib/site";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
 import { ProductTable } from "@/components/product-table";
+import { IconChip } from "@/components/ui/icons";
 import { Breadcrumbs, EmptyState, Section } from "@/components/ui/primitives";
 
 export async function generateMetadata({
@@ -44,7 +45,10 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
         items={[{ label: "Home", href: "/" }, { label: "Companies" }, { label: c.name }]}
       />
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c.name}</h1>
+        <div className="flex items-center gap-3">
+          <IconChip category="companies" size="lg" />
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c.name}</h1>
+        </div>
         <p className="text-sm text-muted">
           {c.country}
           {c.roles.length > 0 && ` · ${c.roles.join(", ")}`}
@@ -68,7 +72,11 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
       </header>
       <UnverifiedNotice status={c.status} what="company" />
 
-      <Section id="products" title={`Product catalogue (${c.products.length})`}>
+      <Section
+        id="products"
+        title={`Product catalogue (${c.products.length})`}
+        category="medicines"
+      >
         {c.products.length ? (
           <ProductTable
             products={c.products}

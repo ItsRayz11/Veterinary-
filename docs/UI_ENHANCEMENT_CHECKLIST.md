@@ -8,15 +8,15 @@ Tracks the website-wide enhancement brief. `[x]` done and verified, `[ ]` open.
 - [x] Calculator line illustrations (`ui/calc-art.tsx`)
 - [x] Flag component with safe fallback (`ui/flag.tsx`)
 - [x] FeatureCard, CalculatorCard, DocumentCard, CountryHero, SectionHeader, MetadataBadge (`ui/visual.tsx`)
-- [ ] ProductImageFallback (category SVG) for products
+- [x] ProductImageFallback (category SVG) for products
 - [ ] EmptyState illustration variant
 - [ ] RelatedResources component (evidence-based links only)
 
 ## Pages
 - [x] Homepage, calculators index and detail, countries index and detail, species index and detail
 - [x] Study hub, past papers, jobs and scholarships index, primary and mobile nav icons
-- [ ] Drug detail (`/drugs/[slug]`), product detail (`/products/[slug]`), product table
-- [ ] Drug classes (`/classes`), companies (`/companies/[slug]`)
+- [x] Drug detail (`/drugs/[slug]`), product detail (`/products/[slug]`); product table still open
+- [x] Drug classes (`/classes`), companies (`/companies/[slug]`)
 - [ ] Search page and search box suggestions (icons, grouping, keyboard)
 - [ ] Jobs and scholarships detail pages
 - [ ] Lessons, books, flashcards, interactions, ask, auth pages
