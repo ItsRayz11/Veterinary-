@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet, type GenericDetail } from "@/lib/api";
 import { formatDoseRange, formatDuration, formatFrequency } from "@/lib/format";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_URL } from "@/lib/site";
 import { SourcesList } from "@/components/sources-list";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
@@ -53,8 +55,21 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
     .map(([kind, label]) => ({ label, items: g.notes.filter((n) => n.kind === kind) }))
     .filter((k) => k.items.length);
 
+  const indexable = !g.status.is_unverified_import && !g.status.is_development_data;
+
   return (
     <div className="space-y-6">
+      {indexable && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "Drug",
+            name: g.name,
+            url: `${SITE_URL}/drugs/${g.slug}`,
+            ...(g.synonyms.length ? { alternateName: g.synonyms } : {}),
+          }}
+        />
+      )}
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Drugs" }, { label: g.name }]} />
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{g.name}</h1>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet, type CompanyDetail } from "@/lib/api";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_URL } from "@/lib/site";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
 import { ProductTable } from "@/components/product-table";
@@ -23,8 +25,21 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
   const c = await apiGet<CompanyDetail>(`/companies/${slug}/`);
   const generics = [...new Map(c.products.map((p) => [p.generic, p.generic_name])).entries()];
 
+  const indexable = !c.status.is_unverified_import && !c.status.is_development_data;
+
   return (
     <div className="space-y-6">
+      {indexable && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: c.name,
+            url: `${SITE_URL}/companies/${c.slug}`,
+            ...(c.website ? { sameAs: [c.website] } : {}),
+          }}
+        />
+      )}
       <Breadcrumbs
         items={[{ label: "Home", href: "/" }, { label: "Companies" }, { label: c.name }]}
       />

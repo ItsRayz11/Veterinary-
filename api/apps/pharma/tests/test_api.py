@@ -60,6 +60,13 @@ def test_search_grouped_and_typo_tolerant(api):
     assert api.get("/api/v1/search/?q=e").json()["generics"] == []
 
 
+def test_search_typo_suggests_brands_and_companies(api):
+    brand = api.get("/api/v1/generics/enrofloxacin/").json()["brands"][0]["brand_name"]
+    typo = api.get(f"/api/v1/search/?q={brand.replace('Enro', 'Enroo')}").json()
+    assert brand in typo["did_you_mean"]
+    assert api.get("/api/v1/search/?q=zzzzqqqq").json()["did_you_mean"] == []
+
+
 def test_dose_shown_with_sources_and_only_verified_is_calculator_ready(api):
     generic = Generic.objects.get(slug="enrofloxacin")
     generic.is_development_data = False

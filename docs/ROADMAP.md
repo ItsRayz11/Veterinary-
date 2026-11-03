@@ -65,9 +65,9 @@ Priority order: Accuracy > Data integrity > Safety > Architecture > Usability > 
 - [x] Company page: catalogue + generic portfolio; navigation both ways (generic -> brand -> company -> products)
 - [x] Review status + "development data" shown on every record; empty states say verified info is unavailable
 - [x] Species pages (`/species`, `/species/[slug]`: only generics with public doses), country landing pages (`/countries/[iso2]`: reviewed registrations only), drug-class browse (`/classes`); API `pharma/browse.py` with 4 tests
-- [ ] Typo tolerance on Postgres (pg_trgm) and brand-name fuzzy match; current fuzzy covers generics only
+- [x] Typo tolerance on Postgres (pg_trgm) and brand-name fuzzy match: "did you mean" now suggests generics, brands and companies (trigram on Postgres, difflib elsewhere); Postgres path not run locally (SQLite only)
 - [x] SEO (part): `robots.txt`, dynamic `sitemap.xml` (public records only, tolerant of API downtime), canonical URLs, API-backed index pages render on request so a build never needs the API
-- [ ] SEO (remaining): JSON-LD, OG images (Phase 14 audit)
+- [x] SEO (remaining): JSON-LD (Drug/Organization, only for reviewed non-development records, no clinical claims) and a site-wide generated OG image with `metadataBase`. Per-record OG images not done
 - [ ] Manual mobile/browser QA (only HTTP-level checks done so far)
 
 ## Phase 5: Calculators
@@ -107,6 +107,12 @@ A high-effort code review of everything since the last push, plus a manual pass,
 - Dialog title ids were duplicated when two modals exist (wrong accessible names): unique ids. The service-worker registration pulled the whole calculation engine into every page's JavaScript: measured 0 of 9 home-page chunks contain it now.
 - The withdrawal calculator displayed 36.5 h as "37 h" while using 36.5 h: shown with 2 decimals.
 Verification after all three rounds: 262 API tests (CI-equivalent environment, `.env` hidden), 121 web tests, deploy check clean, three real-browser suites (login/admin/logout, import upload + chunked approval, PWA/offline with the server stopped) all passing. Each round found fewer and less severe problems; further review has diminishing returns compared with real usage, a first CI run on Postgres, and a penetration test (see SECURITY.md).
+
+## Cross-check after phases 1-15 (2026-11-03)
+- **CI had failed on every push** (`api` and `api-postgres`): admin tests hit `/admin/` and the manifest static storage needs `collectstatic`, which CI never ran. Fixed in settings (plain static storage when `DEBUG`); 159 tests pass with no collected files, deploy check clean. `web` job was already green. Re-check the next push on GitHub.
+- Site URL fell back to `localhost` when `NEXT_PUBLIC_SITE_URL` is unset (would have put localhost in canonical/OG/sitemap URLs): now falls back to the Vercel production domain.
+- Real data candidates researched: [DATA_RESOURCES.md](DATA_RESOURCES.md).
+- Local-only: on Windows with `autocrlf`, `npm run format` reports every file; the repo itself is LF and CI passes.
 
 ## Phase 6: Pakistan Data
 - [x] Reviewed ingestion pipeline (`apps/ingestion`, `docs/INGESTION.md`): CSV stage -> match (generic/company/product/registration, duplicates, errors) -> staff approve/reject -> unreviewed records linked to the Source; checksum + licence note required; audit log; admin + Imports tab in the review panel; 6 tests; verified live (imports stay hidden until reviewed)
@@ -162,7 +168,8 @@ Verification after all three rounds: 262 API tests (CI-equivalent environment, `
 - [x] Query-budget guards on 13 public endpoints + growth tests (`core/tests/test_query_budget.py`). The growth test found a real N+1 (drug page re-fetched the generic once per brand: 13 -> 23 queries); fixed in `brands_for_generic`, count now flat
 - [ ] Not verified on real devices/browsers: installability prompt, Lighthouse scores, offline behaviour in an actual browser (only unit-tested + HTTP-level)
 - [x] Web push notifications: see Phase 15. Background sync is not done
-- [ ] API-level HTTP caching headers/CDN rules and image optimisation (no images yet)
+- [x] API HTTP caching headers (`core/cache_headers.py`): `s-maxage=60` on an allowlist of anonymous public catalogue GETs only; never on session, account or staff requests (2 tests)
+- [ ] Image optimisation (no images yet)
 ## Phase 14: Production Hardening
 - [x] Audits run and recorded: `pip-audit` and `npm audit` clean; secrets scan of working tree + full git history clean (no keys, tokens or connection strings; `.env` never tracked); `manage.py check --deploy` clean (2 HSTS advisories deliberately silenced, owner decision); OpenAPI schema warning-free with 63 unique operations (`--fail-on-warn` test)
 - [x] Django: HttpOnly CSRF cookie (client fetches the token from the body), SameSite Lax, request size limits, configurable `ADMIN_URL`, HSTS opt-ins via env; 8 hardening tests

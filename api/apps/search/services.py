@@ -80,6 +80,26 @@ def _fuzzy_generics(q: str):
     return out
 
 
+def _fuzzy_brands_and_companies(q: str) -> list[str]:
+    """Brand and company names close to a mistyped query (trigram on Postgres, else difflib)."""
+    products, companies = Product.objects.listed(), Company.objects.listed()
+    if connection.vendor == "postgresql":
+        brands = (
+            products.annotate(sim=TrigramSimilarity("normalized_brand_name", q))
+            .filter(sim__gte=TRIGRAM_CUTOFF)
+            .order_by("-sim", "brand_name")[:LIMIT]
+        )
+        firms = (
+            companies.annotate(sim=TrigramSimilarity("normalized_name", q))
+            .filter(sim__gte=TRIGRAM_CUTOFF)
+            .order_by("-sim", "name")[:LIMIT]
+        )
+        return [p.brand_name for p in brands] + [c.name for c in firms]
+    names = {p.normalized_brand_name: p.brand_name for p in products}
+    names.update({c.normalized_name: c.name for c in companies})
+    return [names[n] for n in get_close_matches(q, names.keys(), n=LIMIT, cutoff=0.75)]
+
+
 def search(query: str) -> dict:
     q = normalize_name(query)
     empty = {"query": query, "generics": [], "products": [], "companies": [], "did_you_mean": []}
@@ -98,6 +118,8 @@ def search(query: str) -> dict:
     did_you_mean = []
     if not (generics or products or companies):
         did_you_mean = [g.name for g in _fuzzy_generics(q)]
+        did_you_mean += [n for n in _fuzzy_brands_and_companies(q) if n not in did_you_mean]
+        did_you_mean = did_you_mean[:LIMIT]
     return {
         "query": query,
         "generics": [{"name": g.name, "slug": g.slug} for g in generics],

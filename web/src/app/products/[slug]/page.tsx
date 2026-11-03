@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet, type Prices, type ProductDetail } from "@/lib/api";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_URL } from "@/lib/site";
 import { SourcesList } from "@/components/sources-list";
 import { PriceTrends } from "@/components/price-trends";
 import { PriceSubmitForm } from "@/components/price-submit-form";
@@ -25,8 +27,22 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   const p = await apiGet<ProductDetail>(`/products/${slug}/`);
   const prices = await apiGet<Prices>(`/products/${slug}/prices/`);
 
+  const indexable = !p.status.is_unverified_import && !p.status.is_development_data;
+
   return (
     <div className="space-y-6">
+      {indexable && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "Drug",
+            name: p.brand_name,
+            url: `${SITE_URL}/products/${p.slug}`,
+            nonProprietaryName: p.generic_name,
+            manufacturer: { "@type": "Organization", name: p.manufacturer.name },
+          }}
+        />
+      )}
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
