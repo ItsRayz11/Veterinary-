@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Breadcrumbs, PageHeader, Tile } from "@/components/ui/primitives";
+import { Breadcrumbs, PageHeader } from "@/components/ui/primitives";
+import { CalculatorCard } from "@/components/ui/visual";
 import { CALCULATORS } from "@/lib/calc/registry";
 
 export const metadata: Metadata = {
@@ -11,11 +12,13 @@ export const metadata: Metadata = {
 const ALL = [
   {
     href: "/calculators/dose-calculator",
+    slug: "dose-calculator",
     title: "Dose",
     desc: "mg/kg to total mg and mL",
   },
   ...CALCULATORS.map((c) => ({
     href: `/calculators/${c.slug}`,
+    slug: c.slug,
     title: c.title,
     desc: c.description,
   })),
@@ -29,10 +32,22 @@ export default function CalculatorsIndex() {
         title="Calculators"
         lead="Deterministic calculations. Check every result against the product label."
       />
-      <ul className="bento">
-        {ALL.map((c, i) => (
-          <li key={c.href} className={i === 0 ? "bento-wide" : ""}>
-            <Tile href={c.href} title={c.title} desc={c.desc} />
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {ALL.map((c) => (
+          <li key={c.href}>
+            <CalculatorCard
+              href={c.href}
+              slug={c.slug}
+              title={c.title}
+              desc={c.desc}
+              tone={
+                c.slug === "withdrawal-date"
+                  ? "amber"
+                  : c.slug === "dose-calculator"
+                    ? "teal"
+                    : "violet"
+              }
+            />
           </li>
         ))}
       </ul>

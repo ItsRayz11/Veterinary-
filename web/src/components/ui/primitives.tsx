@@ -1,9 +1,24 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { SITE_URL } from "@/lib/site";
 
 export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.label,
+      ...(it.href ? { item: `${SITE_URL}${it.href}` } : {}),
+    })),
+  };
   return (
     <nav aria-label="Breadcrumb" className="text-sm text-muted">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <ol className="flex flex-wrap items-center gap-1">
         {items.map((it, i) => (
           <li key={it.label} className="flex items-center gap-1">

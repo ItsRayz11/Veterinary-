@@ -1,15 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AuthMenu } from "@/components/auth-menu";
-import { NavLinks } from "@/components/nav-links";
+import { NavLinks, type NavItem } from "@/components/nav-links";
 
-const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/search", label: "Search" },
-  { href: "/calculators", label: "Calculators" },
-  { href: "/study", label: "Study" },
-  { href: "/jobs", label: "Jobs" },
-  { href: "/scholarships", label: "Scholarships" },
+const NAV: NavItem[] = [
+  { icon: "home", href: "/", label: "Home" },
+  { icon: "search", href: "/search", label: "Search" },
+  { icon: "calculators", href: "/calculators", label: "Calculators" },
+  { icon: "study", href: "/study", label: "Study" },
+  { icon: "jobs", href: "/jobs", label: "Jobs" },
+  { icon: "scholarships", href: "/scholarships", label: "Scholarships" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

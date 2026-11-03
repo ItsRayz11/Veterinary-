@@ -31,6 +31,20 @@
   --danger-bg: #fbe4e2;
   --info: #1f5fa8;
   --info-bg: #e3eefa;
+
+  /* Semantic accents for category icons (decorative; text never relies on them). */
+  --tone-teal: #0b6e6e;
+  --tone-teal-bg: #dff1f0;
+  --tone-blue: #1f5fa8;
+  --tone-blue-bg: #e3eefa;
+  --tone-green: #2a7a3a;
+  --tone-green-bg: #e5f4ea;
+  --tone-violet: #6040b0;
+  --tone-violet-bg: #ece8f8;
+  --tone-amber: #8a5a00;
+  --tone-amber-bg: #fdf1d6;
+  --tone-red: #b3261e;
+  --tone-red-bg: #fbe4e2;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,6 +74,18 @@
     --danger-bg: #3a1614;
     --info: #8ab8f0;
     --info-bg: #14283f;
+    --tone-teal: #5fc4c4;
+    --tone-teal-bg: #12302f;
+    --tone-blue: #8ab8f0;
+    --tone-blue-bg: #14283f;
+    --tone-green: #7fd493;
+    --tone-green-bg: #14301f;
+    --tone-violet: #b8a2f0;
+    --tone-violet-bg: #251d3d;
+    --tone-amber: #f0c060;
+    --tone-amber-bg: #33270a;
+    --tone-red: #f28b82;
+    --tone-red-bg: #3a1614;
   }
 }
 
@@ -171,6 +197,46 @@ body {
   }
   .bento > li > * {
     width: 100%;
+  }
+  .tone-teal {
+    --tone: var(--tone-teal);
+    --tone-bg: var(--tone-teal-bg);
+  }
+  .tone-blue {
+    --tone: var(--tone-blue);
+    --tone-bg: var(--tone-blue-bg);
+  }
+  .tone-green {
+    --tone: var(--tone-green);
+    --tone-bg: var(--tone-green-bg);
+  }
+  .tone-violet {
+    --tone: var(--tone-violet);
+    --tone-bg: var(--tone-violet-bg);
+  }
+  .tone-amber {
+    --tone: var(--tone-amber);
+    --tone-bg: var(--tone-amber-bg);
+  }
+  .tone-red {
+    --tone: var(--tone-red);
+    --tone-bg: var(--tone-red-bg);
+  }
+  .icon-chip {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--tone, var(--primary));
+    background: var(--tone-bg, var(--surface-2));
+  }
+  /* Soft prism edge on feature cards: a thin tinted top highlight, no extra blur layers. */
+  .prism-edge {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tone, var(--primary)) 7%, transparent),
+      transparent 55%
+    );
   }
   .data-table tbody tr:nth-child(even) {
     background: color-mix(in srgb, var(--surface-2) 55%, transparent);

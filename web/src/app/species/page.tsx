@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
+import { IconChip, speciesIcon } from "@/components/ui/icons";
 import { Breadcrumbs, EmptyState, PageHeader } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,11 @@ export default async function SpeciesIndex() {
         <ul className="grid gap-3 sm:grid-cols-2">
           {top.map((s) => (
             <li key={s.slug} className="card p-4">
-              <Link className="font-medium text-primary underline" href={`/species/${s.slug}`}>
+              <Link
+                className="flex items-center gap-3 font-medium text-primary hover:underline"
+                href={`/species/${s.slug}`}
+              >
+                <IconChip icon={speciesIcon(`${s.slug} ${s.name}`)} category="species" />
                 {s.name}
               </Link>
               <ul className="mt-2 flex flex-wrap gap-2 text-sm">

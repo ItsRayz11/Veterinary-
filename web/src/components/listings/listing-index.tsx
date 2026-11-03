@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { Building2, CalendarClock, MapPin } from "lucide-react";
+import { IconChip } from "@/components/ui/icons";
 import { EmptyState } from "@/components/ui/primitives";
+import { MetadataBadge } from "@/components/ui/visual";
 import { FUNDING, JOB_TYPES, LABELS, LEVELS, label, type Kind, type Listing } from "@/lib/listings";
 
-function meta(l: Listing): string {
-  const parts = [l.organization];
-  if (l.kind === "jobs") parts.push(label(JOB_TYPES, l.job_type), l.city ?? "");
-  else parts.push(label(LEVELS, l.level), label(FUNDING, l.funding));
-  parts.push(l.country_name ?? "");
-  return parts.filter(Boolean).join(" · ");
+function badges(l: Listing): string[] {
+  const parts =
+    l.kind === "jobs"
+      ? [label(JOB_TYPES, l.job_type)]
+      : [label(LEVELS, l.level), label(FUNDING, l.funding)];
+  return parts.filter(Boolean);
 }
 
 export function ListingIndex({ kind, items }: { kind: Kind; items: Listing[] }) {
@@ -32,12 +35,30 @@ export function ListingIndex({ kind, items }: { kind: Kind; items: Listing[] }) 
         <ul className="space-y-2">
           {items.map((l) => (
             <li key={l.id}>
-              <Link href={`/${kind}/${l.id}`} className="block card card-link p-4">
-                <span className="font-medium">{l.title}</span>
-                <span className="block text-sm text-muted">{meta(l)}</span>
-                {l.closes_on && (
-                  <span className="block text-xs text-muted">Closes {l.closes_on}</span>
-                )}
+              <Link href={`/${kind}/${l.id}`} className="card card-link flex gap-3 p-4">
+                <IconChip category={kind === "jobs" ? "jobs" : "scholarships"} />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{l.title}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-sm text-muted">
+                    <Building2 size={14} aria-hidden="true" />
+                    {l.organization}
+                  </span>
+                  <span className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {badges(l).map((b) => (
+                      <MetadataBadge key={b}>{b}</MetadataBadge>
+                    ))}
+                    {(l.city || l.country_name) && (
+                      <MetadataBadge icon={MapPin}>
+                        {[l.city, l.country_name].filter(Boolean).join(", ")}
+                      </MetadataBadge>
+                    )}
+                    {l.closes_on && (
+                      <MetadataBadge tone="amber" icon={CalendarClock}>
+                        Closes {l.closes_on}
+                      </MetadataBadge>
+                    )}
+                  </span>
+                </span>
               </Link>
             </li>
           ))}

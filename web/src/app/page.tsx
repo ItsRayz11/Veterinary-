@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { SearchBox } from "@/components/search-box";
-import { Tile } from "@/components/ui/primitives";
+import { Flag } from "@/components/ui/flag";
+import { speciesIcon, type CategoryName } from "@/components/ui/icons";
+import { FeatureCard, SectionHeader } from "@/components/ui/visual";
 import { apiGet } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -17,31 +19,56 @@ interface CountryRow {
   currency: string;
 }
 
-const TOOLS = [
+const TOOLS: {
+  href: string;
+  title: string;
+  desc: string;
+  category: CategoryName;
+  wide?: boolean;
+  full?: boolean;
+}[] = [
   {
     href: "/calculators/dose-calculator",
     title: "Dose calculator",
     desc: "mg/kg to total mg and mL",
+    category: "medicines",
     wide: true,
   },
-  { href: "/interactions", title: "Interaction checker", desc: "Reviewed drug-drug interactions" },
+  {
+    href: "/interactions",
+    title: "Interaction checker",
+    desc: "Reviewed drug-drug interactions",
+    category: "interactions",
+  },
   {
     href: "/ask",
     title: "Ask the reference",
     desc: "Answers only from reviewed records, with citations",
+    category: "ask",
   },
   {
     href: "/calculators",
     title: "All calculators",
     desc: "Dilution, fluids, infusion, CRI, flock water dose, withdrawal date",
+    category: "calculators",
     full: true,
   },
 ];
 
-const LEARN = [
-  { href: "/study", title: "Study", desc: "Mock exams from reviewed questions" },
-  { href: "/jobs", title: "Jobs", desc: "Moderated veterinary job listings" },
-  { href: "/scholarships", title: "Scholarships", desc: "Moderated scholarship listings" },
+const LEARN: { href: string; title: string; desc: string; category: CategoryName }[] = [
+  {
+    href: "/study",
+    title: "Study",
+    desc: "Mock exams from reviewed questions",
+    category: "mocktests",
+  },
+  { href: "/jobs", title: "Jobs", desc: "Moderated veterinary job listings", category: "jobs" },
+  {
+    href: "/scholarships",
+    title: "Scholarships",
+    desc: "Moderated scholarship listings",
+    category: "scholarships",
+  },
 ];
 
 /** A homepage block must never take the page down when the data service is unavailable. */
@@ -51,14 +78,6 @@ async function safeGet<T>(path: string): Promise<T[]> {
   } catch {
     return [];
   }
-}
-
-function SectionHeading({ id, children }: { id: string; children: string }) {
-  return (
-    <h2 id={id} className="mb-3 text-sm font-medium uppercase tracking-wide text-muted">
-      {children}
-    </h2>
-  );
 }
 
 export default async function Home() {
@@ -89,11 +108,22 @@ export default async function Home() {
 
       {topSpecies.length > 0 && (
         <section aria-labelledby="species-h">
-          <SectionHeading id="species-h">Browse by species</SectionHeading>
+          <SectionHeader
+            id="species-h"
+            title="Browse by species"
+            category="species"
+            action={{ href: "/species", label: "All species" }}
+          />
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {topSpecies.map((s) => (
               <li key={s.slug}>
-                <Tile href={`/species/${s.slug}`} title={s.name} />
+                <FeatureCard
+                  layout="row"
+                  href={`/species/${s.slug}`}
+                  icon={speciesIcon(s.slug + " " + s.name)}
+                  category="species"
+                  title={s.name}
+                />
               </li>
             ))}
           </ul>
@@ -106,11 +136,17 @@ export default async function Home() {
       )}
 
       <section aria-labelledby="tools-h">
-        <SectionHeading id="tools-h">Clinical tools</SectionHeading>
+        <SectionHeader id="tools-h" title="Clinical tools" category="calculators" />
         <ul className="bento">
           {TOOLS.map((t) => (
             <li key={t.href} className={t.full ? "bento-full" : t.wide ? "bento-wide" : ""}>
-              <Tile href={t.href} title={t.title} desc={t.desc} />
+              <FeatureCard
+                layout="row"
+                href={t.href}
+                category={t.category}
+                title={t.title}
+                desc={t.desc}
+              />
             </li>
           ))}
         </ul>
@@ -118,14 +154,20 @@ export default async function Home() {
 
       {countries.length > 0 && (
         <section aria-labelledby="countries-h">
-          <SectionHeading id="countries-h">Country catalogues</SectionHeading>
+          <SectionHeader
+            id="countries-h"
+            title="Country catalogues"
+            category="countries"
+            action={{ href: "/countries", label: "All countries" }}
+          />
           <ul className="flex flex-wrap gap-3 text-sm">
             {countries.map((c) => (
               <li key={c.iso2}>
                 <Link
                   href={`/countries/${c.iso2}`}
-                  className="neo inline-block rounded-full px-4 py-2"
+                  className="neo inline-flex items-center gap-2 rounded-full px-4 py-2"
                 >
+                  <Flag iso2={c.iso2} className="h-4 w-6 text-[10px]" />
                   {c.name}
                 </Link>
               </li>
@@ -135,11 +177,17 @@ export default async function Home() {
       )}
 
       <section aria-labelledby="learn-h">
-        <SectionHeading id="learn-h">Study and careers</SectionHeading>
+        <SectionHeader id="learn-h" title="Study and careers" category="study" />
         <ul className="grid gap-3 sm:grid-cols-3">
           {LEARN.map((t) => (
             <li key={t.href}>
-              <Tile href={t.href} title={t.title} desc={t.desc} />
+              <FeatureCard
+                layout="row"
+                href={t.href}
+                category={t.category}
+                title={t.title}
+                desc={t.desc}
+              />
             </li>
           ))}
         </ul>

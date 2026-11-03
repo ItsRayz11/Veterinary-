@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { apiGet } from "@/lib/api";
 import type { PastPaper } from "@/components/study/types";
-import { Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
+import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
+import { DocumentCard, MetadataBadge } from "@/components/ui/visual";
 
 export const dynamic = "force-dynamic";
 
@@ -21,36 +22,24 @@ export default async function PastPapersPage() {
           Entries are added only with a legal source link and licence note.
         </EmptyState>
       ) : (
-        <DataTable caption="Indexed past papers">
-          <thead>
-            <tr>
-              <th className={th}>University</th>
-              <th className={th}>Course</th>
-              <th className={th}>Year</th>
-              <th className={th}>Licence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {papers.map((p) => (
-              <tr key={p.url}>
-                <td className={td}>{p.university}</td>
-                <td className={td}>
-                  <a
-                    className="text-primary underline"
-                    href={p.url}
-                    rel="noopener noreferrer nofollow"
-                    target="_blank"
-                  >
-                    {p.course}
-                  </a>{" "}
-                  ({p.exam_type})
-                </td>
-                <td className={td}>{p.year}</td>
-                <td className={td}>{p.license_note}</td>
-              </tr>
-            ))}
-          </tbody>
-        </DataTable>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {papers.map((p) => (
+            <li key={p.url}>
+              <DocumentCard
+                href={p.url}
+                title={p.course}
+                source={p.university}
+                note={p.license_note}
+                badges={
+                  <>
+                    <MetadataBadge tone="blue">{p.exam_type}</MetadataBadge>
+                    <MetadataBadge>{p.year}</MetadataBadge>
+                  </>
+                }
+              />
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DoseCalculator } from "@/components/dose-calculator";
+import { CalcArt } from "@/components/ui/calc-art";
 import { Alert, Breadcrumbs } from "@/components/ui/primitives";
 
 export const metadata: Metadata = {
@@ -19,7 +20,12 @@ export default async function Page({ searchParams }: PageProps<"/calculators/dos
       <Breadcrumbs
         items={[{ label: "Home", href: "/" }, { label: "Calculators" }, { label: "Dose" }]}
       />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dose calculator</h1>
+      <div className="flex items-center gap-4">
+        <span className="tone-teal flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-[var(--tone-bg)]">
+          <CalcArt slug="dose-calculator" tone="teal" className="h-12 w-16" />
+        </span>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dose calculator</h1>
+      </div>
       <Alert tone="warn" title="Decision support only">
         The calculator does simple arithmetic on the values you enter. It does not choose a drug or
         dose. Confirm every dose against the source and the product label.

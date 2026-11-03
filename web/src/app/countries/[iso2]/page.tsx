@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { apiGet, type Brand } from "@/lib/api";
 import { ProductTable } from "@/components/product-table";
-import { Alert, Breadcrumbs, EmptyState, PageHeader } from "@/components/ui/primitives";
+import { Alert, Breadcrumbs, EmptyState } from "@/components/ui/primitives";
+import { CountryHero } from "@/components/ui/visual";
 
 interface CountryDetail {
   iso2: string;
@@ -16,7 +17,13 @@ export async function generateMetadata({
 }: PageProps<"/countries/[iso2]">): Promise<Metadata> {
   const { iso2 } = await params;
   const c = await apiGet<CountryDetail>(`/countries/${iso2}/`);
-  return { title: `Products in ${c.name}`, alternates: { canonical: `/countries/${c.iso2}` } };
+  return {
+    title: `Veterinary products in ${c.name}`,
+    description: `${c.products.length} veterinary products listed for ${c.name}${
+      c.regulator ? `, with regulator ${c.regulator}` : ""
+    }. Imported entries are labelled until reviewed.`,
+    alternates: { canonical: `/countries/${c.iso2}` },
+  };
 }
 
 export default async function CountryPage({ params }: PageProps<"/countries/[iso2]">) {
@@ -31,7 +38,13 @@ export default async function CountryPage({ params }: PageProps<"/countries/[iso
           { label: c.name },
         ]}
       />
-      <PageHeader title={c.name} lead={c.regulator ? `Regulator: ${c.regulator}` : undefined} />
+      <CountryHero
+        iso2={c.iso2}
+        name={c.name}
+        regulator={c.regulator || undefined}
+        currency={c.currency || undefined}
+        productCount={c.products.length}
+      />
       {c.products.some((p) => p.status.is_unverified_import) && (
         <Alert tone="warn" title="Some entries are imported, not reviewed">
           Entries marked &ldquo;Imported, not reviewed&rdquo; come from the regulator&apos;s public

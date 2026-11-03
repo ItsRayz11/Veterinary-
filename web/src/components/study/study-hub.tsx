@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button, Field, Select, Skeleton } from "@/components/ui/forms";
 import { Alert, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
+import { FeatureCard } from "@/components/ui/visual";
+import type { CategoryName } from "@/components/ui/icons";
 import { ClientApiError, apiFetch, apiSend } from "@/lib/client-api";
 import { useUser } from "@/lib/use-user";
 import { Progress } from "./progress";
@@ -206,17 +208,21 @@ export function StudyHub() {
         </section>
       )}
 
-      <nav aria-label="Study tools" className="flex flex-wrap gap-4 text-sm">
-        {[
-          ["/study/flashcards", "Flashcards"],
-          ["/study/lessons", "Lessons"],
-          ["/study/books", "Book references"],
-          ["/study/past-papers", "Past-paper index"],
-        ].map(([href, label]) => (
-          <Link key={href} className="text-primary underline" href={href}>
-            {label}
-          </Link>
-        ))}
+      <nav aria-label="Study tools">
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {(
+            [
+              ["/study/flashcards", "Flashcards", "mocktests"],
+              ["/study/lessons", "Lessons", "lessons"],
+              ["/study/books", "Book references", "study"],
+              ["/study/past-papers", "Past-paper index", "papers"],
+            ] as [string, string, CategoryName][]
+          ).map(([href, label, category]) => (
+            <li key={href}>
+              <FeatureCard layout="row" href={href} category={category} title={label} />
+            </li>
+          ))}
+        </ul>
       </nav>
     </div>
   );

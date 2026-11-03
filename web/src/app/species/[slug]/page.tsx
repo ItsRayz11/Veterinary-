@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
+import { IconChip, speciesIcon } from "@/components/ui/icons";
 import { Alert, Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
 
 interface SpeciesDetail {
@@ -33,7 +34,10 @@ export default async function SpeciesPage({ params }: PageProps<"/species/[slug]
           { label: s.name },
         ]}
       />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{s.name}</h1>
+      <div className="flex items-center gap-3">
+        <IconChip icon={speciesIcon(`${s.slug} ${s.name}`)} category="species" size="lg" />
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{s.name}</h1>
+      </div>
       {s.is_food_producing && (
         <Alert tone="warn" title="Food-producing species">
           Withdrawal periods apply. They are shown per product, per country, on each product page.
