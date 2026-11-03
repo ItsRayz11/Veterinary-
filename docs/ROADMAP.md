@@ -198,3 +198,12 @@ Verification after all three rounds: 262 API tests (CI-equivalent environment, `
 - [x] Penetration-style sweep: every API route is called as anonymous/user/staff with hostile payloads (`core/tests/test_pentest_matrix.py`): no 5xx, staff areas closed. `bandit` clean (one SHA1 use marked non-security), `pip-audit` and `npm audit` clean
 - [x] Accessibility/mobile: `web/scripts/a11y-check.mjs` (axe-core, 16 pages x phone/desktop x light/dark, overflow and tap targets) clean after fixing the missing `<main>` landmark and headings on gated pages
 - [ ] Not possible here: real screen-reader sessions, real phones, a human penetration test
+
+## Phase 16: Visual system, universities, real assets (2026-11-04)
+- [x] Design tokens, Lucide icon system, reusable visual components (`web/src/components/ui/`), see `docs/UI_ENHANCEMENT_CHECKLIST.md`
+- [x] Real flags (flag-icons, MIT), Natural Earth country outlines, open-licence species photographs with per-image credit, public `/credits` page
+- [x] `apps/universities`: model, public API, `manage.py import_universities` (Wikipedia + Wikidata, only http(s) links stored, open-licence images only). Records are `imported_unverified`: labelled, noindex, not in the sitemap. Country sources live in `reference_data.UNIVERSITY_SOURCES`
+- [x] Slug list endpoints for products and companies; sitemap includes reviewed products, companies and universities
+- [x] axe sweep (phone/desktop, light/dark) clean for the new pages after fixing a `<dl>` structure error
+- [ ] Run `import_universities` on the deployed database; review the imported schools
+- [ ] Verified product packaging images: none with a reusable licence

@@ -55,6 +55,11 @@ def is_relevant(title: str, extract: str) -> bool:
     return bool(_RELEVANT.search(f"{title} {first}"))
 
 
+def safe_url(value: object) -> str:
+    """Only http(s) links are stored: the website is rendered as an outbound link."""
+    return value if isinstance(value, str) and re.match(r"^https?://", value, re.I) else ""
+
+
 def clean_name(title: str) -> str:
     """The page title is the name; parentheses (a campus, say) are informative, so they stay."""
     return title.strip()[:200]
@@ -163,7 +168,7 @@ def wikidata_facts(fetch: Fetch, qids: list[str]) -> dict[str, dict]:
                 m = re.match(r"^\+?(\d{4})", inception[0].get("time", ""))
                 year = int(m.group(1)) if m else None
             facts[qid] = {
-                "website": sites[0] if sites and isinstance(sites[0], str) else "",
+                "website": safe_url(sites[0]) if sites else "",
                 "lat": coords[0].get("latitude") if coords else None,
                 "lon": coords[0].get("longitude") if coords else None,
                 "year": year,

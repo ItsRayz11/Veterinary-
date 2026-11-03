@@ -267,16 +267,21 @@ export function CountryHero({
               <dd className="mt-1 text-xl font-semibold">{productCount}</dd>
             </div>
             {universityCount !== undefined && (
-              <Link
-                href={`/universities?country=${iso2}`}
-                className="card card-link tone-blue block p-3"
-              >
+              <div className="card card-link tone-blue relative p-3">
                 <dt className="flex items-center gap-1.5 text-xs text-muted">
                   <CategoryIcon category="universities" size={14} className="text-[var(--tone)]" />
                   Veterinary schools
                 </dt>
-                <dd className="mt-1 text-xl font-semibold">{universityCount}</dd>
-              </Link>
+                <dd className="mt-1 text-xl font-semibold">
+                  <Link
+                    href={`/universities?country=${iso2}`}
+                    className="after:absolute after:inset-0 after:content-['']"
+                  >
+                    {universityCount}
+                    <span className="sr-only"> veterinary schools, view list</span>
+                  </Link>
+                </dd>
+              </div>
             )}
             {currency && (
               <div className="card tone-amber p-3">

@@ -255,6 +255,13 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Arrow nudges and similar hover motion elsewhere are decorative: switch them off. */
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
   .card-link,
   .neo {
     transition: none;

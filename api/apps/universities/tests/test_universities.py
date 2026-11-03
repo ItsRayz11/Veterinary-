@@ -100,6 +100,13 @@ def test_license_filter():
     assert not importer.is_open_license("")
 
 
+def test_only_http_links_are_stored():
+    assert importer.safe_url("https://uvas.edu.pk") == "https://uvas.edu.pk"
+    assert importer.safe_url("javascript:alert(1)") == ""
+    assert importer.safe_url("ftp://example.org") == ""
+    assert importer.safe_url(None) == ""
+
+
 def test_relevance_rules():
     assert importer.is_relevant(
         "Ontario Veterinary College", "The Ontario Veterinary College is a school."
