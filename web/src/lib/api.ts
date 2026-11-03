@@ -215,3 +215,59 @@ export interface Prices {
   analytics: { series: PriceSeries[]; region_comparison: RegionComparison[] };
   note: string;
 }
+
+export interface Page<T> {
+  count: number;
+  next: string | null;
+  results: T[];
+}
+
+/** Every row of a paginated list endpoint (follows `?page=`, capped so a bad count cannot loop). */
+export async function apiGetAll<T>(path: string, revalidate = 60): Promise<T[]> {
+  const sep = path.includes("?") ? "&" : "?";
+  const out: T[] = [];
+  for (let page = 1; page <= 40; page++) {
+    const data = await apiGet<Page<T> | T[]>(`${path}${sep}page=${page}`, revalidate);
+    if (Array.isArray(data)) return data;
+    out.push(...data.results);
+    if (!data.next) break;
+  }
+  return out;
+}
+
+export interface UniversityImage {
+  url: string;
+  page_url: string;
+  credit: string;
+  license: string;
+  license_url: string;
+}
+
+export interface UniversityBrief {
+  name: string;
+  slug: string;
+  country: string;
+  country_name: string;
+  city: string;
+  image: UniversityImage | null;
+  status: Status;
+}
+
+export interface UniversityDetail extends UniversityBrief {
+  website: string;
+  summary: string;
+  founded_year: number | null;
+  latitude: string | null;
+  longitude: string | null;
+  source_url: string;
+  source_license: string;
+  wikidata_id: string;
+  past_papers: {
+    course: string;
+    degree: string;
+    year: number;
+    exam_type: string;
+    url: string;
+    license_note: string;
+  }[];
+}

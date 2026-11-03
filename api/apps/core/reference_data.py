@@ -71,3 +71,36 @@ DOSAGE_FORMS = [
     ("intramammary", "Intramammary infusion"),
     ("vaccine", "Vaccine"),
 ]
+
+
+# Where to find each country's veterinary schools: Wikipedia categories (and list pages whose links
+# are only candidates), plus the country's Wikidata item to confirm a candidate is really there.
+# Used by `manage.py import_universities`; add a country by adding a row.
+UNIVERSITY_SOURCES = {
+    "PK": {"wikidata": "Q843", "categories": ["Category:Veterinary schools in Pakistan"]},
+    "IN": {"wikidata": "Q668", "categories": ["Category:Veterinary schools in India"]},
+    "AE": {
+        "wikidata": "Q878",
+        "categories": ["Category:Veterinary schools in the United Arab Emirates"],
+    },
+    "GB": {
+        "wikidata": "Q145",
+        "categories": [
+            "Category:Veterinary schools in England",
+            "Category:Veterinary schools in Scotland",
+            "Category:Veterinary schools in Wales",
+            "Category:Veterinary schools in Northern Ireland",
+        ],
+    },
+    "CA": {"wikidata": "Q16", "categories": ["Category:Veterinary schools in Canada"]},
+    "AU": {
+        "wikidata": "Q408",
+        "categories": ["Category:Veterinary schools in Australia"],
+        "list_pages": ["List of veterinary medicine schools in Australia"],
+    },
+    "US": {
+        "wikidata": "Q30",
+        "categories": ["Category:Veterinary schools in the United States"],
+        "list_pages": ["List of schools of veterinary medicine in the United States"],
+    },
+}

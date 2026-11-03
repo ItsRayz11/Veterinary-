@@ -43,9 +43,17 @@ Tracks the website-wide enhancement brief. `[x]` done and verified, `[ ]` open.
 - [x] Reduced-motion, focus states, contrast of tone tokens
 - [x] Final cross-check for bugs, regressions and disconnections
 
-## Recommendations needing external assets
-- Licensed species photos, India/country map outlines from verified boundary data, product packaging images, university imagery
+## Real assets and data (added after the first pass)
+- [x] Real flags: `flag-icons` (MIT), all 271 SVGs in `web/public/flags`, built by `web/scripts/build-country-assets.mjs`
+- [x] Country outlines from Natural Earth (public domain) in `web/public/maps`, shown on country pages
+- [x] Species photographs from Wikimedia Commons, open licences only, credits in `web/src/lib/image-credits.json` (`web/scripts/fetch_species_images.py`)
+- [x] Universities: `apps/universities` model, API, `import_universities` command (Wikipedia + Wikidata, imported-unreviewed), pages `/universities`, `/universities/[slug]`
+- [x] Open-licence university images with per-image credit; `/credits` page lists every source and licence
+- [x] API list endpoints for products and companies; sitemap now includes reviewed products, companies and universities
 
-- Backend list endpoints for products and companies, so the sitemap can include them
-- Disease and university sections do not exist as routes; add them with reviewed data before designing visuals for them
-- Verified-only product images: wire into `ProductArt` once a source and licence are recorded
+## Still open (needs external data or a decision)
+- Product packaging photos: no source with a licence that allows reuse; products keep the category illustration
+- Production data: run `python manage.py migrate` then `python manage.py import_universities` on the deployed database
+- Coverage: Wikipedia categories list only some schools (none for the UAE). Add missing schools in the admin, or extend `UNIVERSITY_SOURCES` in `apps/core/reference_data.py`
+- Records stay "Imported, not reviewed" (noindex, excluded from the sitemap) until an editor reviews them
+- Country flags for new countries need no code: add the country, the flag file already exists

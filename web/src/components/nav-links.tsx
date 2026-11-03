@@ -23,7 +23,7 @@ export function NavLinks({ items, variant }: { items: NavItem[]; variant: "top" 
         const Icon = n.icon ? CATEGORIES[n.icon].icon : null;
         const cls =
           variant === "top"
-            ? `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors ${
+            ? `inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors ${
                 active
                   ? "bg-primary text-primary-fg"
                   : "text-muted hover:bg-surface-2 hover:text-text"

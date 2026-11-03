@@ -27,7 +27,9 @@ await page.goto(`${BASE}/calculators/dilution`, { waitUntil: "networkidle0" });
 await page.type("#stock_conc", "10");
 await page.type("#target_conc", "2");
 await page.type("#final_volume_ml", "100");
-await page.waitForFunction(() => document.body.innerText.includes("Stock solution"), { timeout: 5000 });
+await page.waitForFunction(() => document.body.innerText.includes("Stock solution"), {
+  timeout: 5000,
+});
 const text = await page.evaluate(() => document.body.innerText);
 ok("dilution: 20.00 mL stock", text.includes("20.00 mL"));
 ok("dilution: 80.00 mL diluent", text.includes("80.00 mL"));
@@ -35,7 +37,9 @@ ok("dilution: 80.00 mL diluent", text.includes("80.00 mL"));
 // 2. Impossible input gives a readable error, not a crash
 await page.$eval("#target_conc", (el) => (el.value = ""));
 await page.type("#target_conc", "50");
-await page.waitForFunction(() => document.body.innerText.includes("cannot be higher"), { timeout: 5000 });
+await page.waitForFunction(() => document.body.innerText.includes("cannot be higher"), {
+  timeout: 5000,
+});
 ok("dilution: impossible input explained", true);
 
 // 3. Service worker registers and precaches calculators + their chunks
@@ -44,21 +48,34 @@ await new Promise((r) => setTimeout(r, 6000));
 const cached = await page.evaluate(async () => {
   const names = await caches.keys();
   const out = {};
-  for (const n of names) out[n] = (await (await caches.open(n)).keys()).map((r) => new URL(r.url).pathname);
+  for (const n of names)
+    out[n] = (await (await caches.open(n)).keys()).map((r) => new URL(r.url).pathname);
   return out;
 });
 const pages = Object.entries(cached).find(([k]) => k.includes("pages"))?.[1] ?? [];
 const statics = Object.entries(cached).find(([k]) => k.includes("static"))?.[1] ?? [];
 ok("sw: offline page cached", pages.includes("/offline"));
-ok("sw: calculators precached", pages.includes("/calculators/dilution") && pages.includes("/calculators/cri"), `(${pages.length} pages)`);
+ok(
+  "sw: calculators precached",
+  pages.includes("/calculators/dilution") && pages.includes("/calculators/cri"),
+  `(${pages.length} pages)`,
+);
 ok("sw: JS chunks cached", statics.length > 3, `(${statics.length} assets)`);
-ok("sw: no private paths cached", !pages.some((p) => /^\/(api|account|admin|login|register|ask)/.test(p)));
+ok(
+  "sw: no private paths cached",
+  !pages.some((p) => /^\/(api|account|admin|login|register|ask)/.test(p)),
+);
 
 // 4. Offline: calculators still work; private pages do not come from cache
 // Really remove the network: stop the server (page.setOfflineMode does not affect the service worker).
-execSync('powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 3100 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }"');
+execSync(
+  'powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 3100 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }"',
+);
 await new Promise((r) => setTimeout(r, 1500));
-const serverGone = await fetch(BASE).then(() => false, () => true);
+const serverGone = await fetch(BASE).then(
+  () => false,
+  () => true,
+);
 ok("network really gone (server stopped)", serverGone);
 await page.setOfflineMode(true);
 await page.goto(`${BASE}/calculators/cri`, { waitUntil: "domcontentloaded" });
@@ -75,10 +92,17 @@ const offlineBody = await page.evaluate(() => document.body.innerText);
 ok("offline: uncached page shows the offline page", /You are offline/.test(offlineBody));
 await page.goto(`${BASE}/account`, { waitUntil: "domcontentloaded" }).catch(() => null);
 const accountBody = await page.evaluate(() => document.body.innerText).catch(() => "");
-ok("offline: /account is never served from cache", !/Account/.test(accountBody) || /offline|ERR|can.t be reached/i.test(accountBody));
+ok(
+  "offline: /account is never served from cache",
+  !/Account/.test(accountBody) || /offline|ERR|can.t be reached/i.test(accountBody),
+);
 await page.setOfflineMode(false);
 
-ok("no console errors / CSP violations", consoleErrors.filter((e) => !/Failed to load resource|net::ERR/.test(e)).length === 0, consoleErrors.slice(0, 2).join(" | "));
+ok(
+  "no console errors / CSP violations",
+  consoleErrors.filter((e) => !/Failed to load resource|net::ERR/.test(e)).length === 0,
+  consoleErrors.slice(0, 2).join(" | "),
+);
 
 await browser.close();
 const failed = results.filter((r) => !r.pass);

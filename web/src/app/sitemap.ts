@@ -32,7 +32,18 @@ async function list<T>(path: string): Promise<T[]> {
 
 /** Unreviewed imports are labelled `unverified` by the API and left out, so search engines only see reviewed pages. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [species, classes, countries, generics, lessons, jobs, scholarships] = await Promise.all([
+  const [
+    species,
+    classes,
+    countries,
+    generics,
+    lessons,
+    jobs,
+    scholarships,
+    companies,
+    products,
+    universities,
+  ] = await Promise.all([
     list<{ slug: string }>("/species/"),
     list<{ slug: string }>("/drug-classes/"),
     list<{ iso2: string }>("/countries/"),
@@ -40,6 +51,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     list<{ slug: string }>("/study/lessons/"),
     list<{ id: number }>("/listings/jobs/"),
     list<{ id: number }>("/listings/scholarships/"),
+    list<{ slug: string; unverified?: boolean }>("/companies/"),
+    list<{ slug: string; unverified?: boolean }>("/products/"),
+    list<{ slug: string; status: { is_unverified_import?: boolean } }>("/universities/"),
   ]);
   const paths = [
     "/",
@@ -59,11 +73,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/study/lessons",
     ...lessons.map((l) => `/study/lessons/${l.slug}`),
     "/study/books",
+    "/universities",
+    ...universities
+      .filter((u) => !u.status.is_unverified_import)
+      .map((u) => `/universities/${u.slug}`),
+    "/credits",
     "/jobs",
     ...jobs.map((j) => `/jobs/${j.id}`),
     "/scholarships",
     ...scholarships.map((j) => `/scholarships/${j.id}`),
     ...generics.filter((g) => !g.unverified).map((g) => `/drugs/${g.slug}`),
+    ...products.filter((p) => !p.unverified).map((p) => `/products/${p.slug}`),
+    ...companies.filter((c) => !c.unverified).map((c) => `/companies/${c.slug}`),
   ];
   return paths.map((p) => ({ url: `${SITE_URL}${p}` }));
 }

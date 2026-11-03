@@ -39,7 +39,7 @@ export default async function CountriesIndex() {
                 category="countries"
                 title={c.name}
                 desc={`Prices in ${c.currency}`}
-                lead={<Flag iso2={c.iso2} className="h-10 w-14 text-xs" />}
+                lead={<Flag iso2={c.iso2} className="h-10 w-14" />}
               />
             </li>
           ))}

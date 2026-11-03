@@ -11,7 +11,8 @@ from django.conf import settings
 
 PUBLIC_READS = re.compile(
     r"^/api/v1/(?:"
-    r"generics/(?:[\w-]+/)?|products/[\w-]+/(?:prices/|packs/)?|companies/[\w-]+/|"
+    r"generics/(?:[\w-]+/)?|products/(?:[\w-]+/(?:prices/|packs/)?)?|companies/(?:[\w-]+/)?|"
+    r"universities/(?:[\w-]+/)?|"
     r"countries/(?:[\w-]+/)?|species/(?:[\w-]+/)?|drug-classes/(?:[\w-]+/)?|search/"
     r")$"
 )

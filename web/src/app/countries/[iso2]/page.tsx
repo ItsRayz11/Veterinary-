@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { apiGet, type Brand } from "@/lib/api";
+import { apiGet, type Brand, type Page, type UniversityBrief } from "@/lib/api";
 import { ProductTable } from "@/components/product-table";
 import { Alert, Breadcrumbs, EmptyState } from "@/components/ui/primitives";
 import { CountryHero } from "@/components/ui/visual";
@@ -29,6 +29,9 @@ export async function generateMetadata({
 export default async function CountryPage({ params }: PageProps<"/countries/[iso2]">) {
   const { iso2 } = await params;
   const c = await apiGet<CountryDetail>(`/countries/${iso2}/`);
+  const universities = await apiGet<Page<UniversityBrief>>(
+    `/universities/?country=${c.iso2}`,
+  ).catch(() => null);
   return (
     <div className="space-y-4">
       <Breadcrumbs
@@ -44,6 +47,7 @@ export default async function CountryPage({ params }: PageProps<"/countries/[iso
         regulator={c.regulator || undefined}
         currency={c.currency || undefined}
         productCount={c.products.length}
+        universityCount={universities?.count}
       />
       {c.products.some((p) => p.status.is_unverified_import) && (
         <Alert tone="warn" title="Some entries are imported, not reviewed">

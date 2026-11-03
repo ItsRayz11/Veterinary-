@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.assistant",
     "apps.monitoring",
     "apps.push",
+    "apps.universities",
 ]
 
 MIDDLEWARE = [

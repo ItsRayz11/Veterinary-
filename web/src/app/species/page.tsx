@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import { IconChip, speciesIcon } from "@/components/ui/icons";
+import { SpeciesPhoto } from "@/components/ui/species-photo";
 import { Breadcrumbs, EmptyState, PageHeader } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
@@ -33,15 +33,15 @@ export default async function SpeciesIndex() {
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {top.map((s) => (
-            <li key={s.slug} className="card p-4">
+            <li key={s.slug} className="card overflow-hidden">
               <Link
-                className="flex items-center gap-3 font-medium text-primary hover:underline"
+                className="block font-medium text-primary hover:underline"
                 href={`/species/${s.slug}`}
               >
-                <IconChip icon={speciesIcon(`${s.slug} ${s.name}`)} category="species" />
-                {s.name}
+                <SpeciesPhoto slug={s.slug} name={s.name} className="aspect-[16/9]" />
+                <span className="block px-4 pt-3">{s.name}</span>
               </Link>
-              <ul className="mt-2 flex flex-wrap gap-2 text-sm">
+              <ul className="flex flex-wrap gap-2 p-4 pt-2 text-sm">
                 {rows
                   .filter((c) => c.parent === s.slug)
                   .map((c) => (

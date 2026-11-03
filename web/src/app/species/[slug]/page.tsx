@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import { IconChip, speciesIcon } from "@/components/ui/icons";
+import { SpeciesPhoto, speciesCredit } from "@/components/ui/species-photo";
 import { RelatedResources } from "@/components/ui/visual";
 import { Alert, Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
 
@@ -35,9 +35,25 @@ export default async function SpeciesPage({ params }: PageProps<"/species/[slug]
           { label: s.name },
         ]}
       />
-      <div className="flex items-center gap-3">
-        <IconChip icon={speciesIcon(`${s.slug} ${s.name}`)} category="species" size="lg" />
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{s.name}</h1>
+      <div className="flex items-center gap-4">
+        <SpeciesPhoto
+          slug={s.slug}
+          name={s.name}
+          sizes="160px"
+          priority
+          className="h-24 w-32 shrink-0 rounded-xl sm:h-28 sm:w-40"
+        />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{s.name}</h1>
+          {speciesCredit(s.slug) && (
+            <p className="mt-1 text-xs text-muted">
+              Photo: {speciesCredit(s.slug)!.credit}, {speciesCredit(s.slug)!.license}.{" "}
+              <Link href="/credits" className="underline">
+                Credits
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
       <RelatedResources
         items={[

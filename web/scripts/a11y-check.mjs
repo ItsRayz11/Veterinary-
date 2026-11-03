@@ -9,10 +9,14 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3100";
-const axeSource = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
-const PAGES = (process.env.PAGES ??
-  "/,/calculators,/calculators/dilution,/calculators/cri,/drugs,/login,/register,/jobs,/scholarships,/study,/ask,/interactions,/offline,/countries,/account,/admin-panel")
-  .split(",");
+const axeSource = readFileSync(
+  createRequire(import.meta.url).resolve("axe-core/axe.min.js"),
+  "utf8",
+);
+const PAGES = (
+  process.env.PAGES ??
+  "/,/calculators,/calculators/dilution,/calculators/cri,/drugs,/login,/register,/jobs,/scholarships,/study,/ask,/interactions,/offline,/countries,/account,/admin-panel"
+).split(",");
 const VIEWPORTS = [
   { name: "phone", width: 375, height: 812, isMobile: true, hasTouch: true },
   { name: "desktop", width: 1280, height: 800 },
@@ -41,7 +45,9 @@ for (const vp of VIEWPORTS) {
       await page.evaluate(axeSource);
       const res = await page.evaluate(() =>
         // eslint-disable-next-line no-undef
-        axe.run(document, { runOnly: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa", "best-practice"] }),
+        axe.run(document, {
+          runOnly: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa", "best-practice"],
+        }),
       );
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

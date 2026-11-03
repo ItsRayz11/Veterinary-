@@ -5,7 +5,9 @@ from . import browse, views
 urlpatterns = [
     path("generics/", views.GenericList.as_view()),
     path("generics/<slug:slug>/", views.generic_detail),
+    path("products/", views.ProductSlugList.as_view()),
     path("products/<slug:slug>/", views.product_detail),
+    path("companies/", views.CompanySlugList.as_view()),
     path("companies/<slug:slug>/", views.company_detail),
     path("countries/", views.countries),
     path("species/", views.species_list),

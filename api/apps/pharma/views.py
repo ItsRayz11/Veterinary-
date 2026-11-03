@@ -22,6 +22,7 @@ from .serializers import (
     GenericListSerializer,
     NoteSerializer,
     ProductBriefSerializer,
+    SlugStampSerializer,
     WithdrawalSerializer,
     _status,
     source_payload,
@@ -38,6 +39,24 @@ class GenericList(ListAPIView):
         if q:
             qs = qs.filter(normalized_name__contains=q)
         return qs
+
+
+class ProductSlugList(ListAPIView):
+    """Every publicly listed product, slug only. Feeds the sitemap."""
+
+    permission_classes = [AllowAny]
+    serializer_class = SlugStampSerializer
+
+    def get_queryset(self):
+        return Product.objects.listed().only("slug", "updated_at", "review_status").order_by("slug")
+
+
+class CompanySlugList(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = SlugStampSerializer
+
+    def get_queryset(self):
+        return Company.objects.listed().only("slug", "updated_at", "review_status").order_by("slug")
 
 
 @untyped_schema

@@ -8,6 +8,7 @@ const NAV: NavItem[] = [
   { icon: "search", href: "/search", label: "Search" },
   { icon: "calculators", href: "/calculators", label: "Calculators" },
   { icon: "study", href: "/study", label: "Study" },
+  { icon: "universities", href: "/universities", label: "Universities" },
   { icon: "jobs", href: "/jobs", label: "Jobs" },
   { icon: "scholarships", href: "/scholarships", label: "Scholarships" },
 ];
@@ -22,7 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <header className="glass sticky top-0 z-30 border-x-0 border-t-0">
-        <div className="mx-auto flex h-14 max-w-5xl items-center gap-6 px-4">
+        <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4">
           <Link href="/" className="text-lg font-semibold tracking-tight text-primary">
             VetRef
           </Link>
@@ -39,7 +40,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       <footer className="hidden border-t border-border py-4 text-center text-xs text-muted sm:block">
         Clinical reference for licensed veterinary professionals. Does not replace clinical
-        judgement or the product label.
+        judgement or the product label.{" "}
+        <Link href="/credits" className="underline">
+          Credits
+        </Link>
       </footer>
       <nav
         aria-label="Mobile"

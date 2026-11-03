@@ -1,0 +1,121 @@
+{
+  "species": {
+    "cattle": {
+      "file": "/species/cattle.jpg",
+      "source_article": "Cattle",
+      "commons_file": "Cow_(Fleckvieh_breed)_Oeschinensee_Slaunger_2009-07-07.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Cow_(Fleckvieh_breed)_Oeschinensee_Slaunger_2009-07-07.jpg",
+      "credit": "Kim Hansen",
+      "license": "CC BY-SA 3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+    },
+    "buffalo": {
+      "file": "/species/buffalo.jpg",
+      "source_article": "Water buffalo",
+      "commons_file": "Water_buffalo_at_Rinca.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Water_buffalo_at_Rinca.jpg",
+      "credit": "Alexander Vasenin",
+      "license": "CC BY-SA 3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+    },
+    "sheep": {
+      "file": "/species/sheep.jpg",
+      "source_article": "Sheep",
+      "commons_file": "Flock_of_sheep.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Flock_of_sheep.jpg",
+      "credit": "Keith Weller",
+      "license": "Public domain",
+      "license_url": ""
+    },
+    "goat": {
+      "file": "/species/goat.jpg",
+      "source_article": "Goat",
+      "commons_file": "Hausziege_04.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Hausziege_04.jpg",
+      "credit": "Kuebi = Armin Kübelbeck",
+      "license": "CC BY-SA 3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+    },
+    "camel": {
+      "file": "/species/camel.jpg",
+      "source_article": "Camel",
+      "commons_file": "07._Camel_Profile,_near_Silverton,_NSW,_07.07.2007.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:07._Camel_Profile,_near_Silverton,_NSW,_07.07.2007.jpg",
+      "credit": "Jjron",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "horse": {
+      "file": "/species/horse.jpg",
+      "source_article": "Horse",
+      "commons_file": "Nokota_Horses_cropped.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Nokota_Horses_cropped.jpg",
+      "credit": "Nokota_Horses.jpg: François Marchal derivative work: Dana boomer (talk)",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "dog": {
+      "file": "/species/dog.jpg",
+      "source_article": "Dog",
+      "commons_file": "Huskiesatrest.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Huskiesatrest.jpg",
+      "credit": "M. Rehemtulla",
+      "license": "CC BY 2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0"
+    },
+    "cat": {
+      "file": "/species/cat.jpg",
+      "source_article": "Cat",
+      "commons_file": "Siam_lilacpoint.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Siam_lilacpoint.jpg",
+      "credit": "Karin Langner-Bahmann, upload von Martin Bahmann",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "poultry": {
+      "file": "/species/poultry.jpg",
+      "source_article": "Chicken",
+      "commons_file": "Male_and_female_chicken_sitting_together.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Male_and_female_chicken_sitting_together.jpg",
+      "credit": "Andrei Niemimäki from Turku, Finland",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+    },
+    "broiler": {
+      "file": "/species/broiler.jpg",
+      "source_article": "Broiler",
+      "commons_file": "Broilers_Australia_June_2018.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Broilers_Australia_June_2018.jpg",
+      "credit": "Animals Uncovered",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0"
+    },
+    "turkey": {
+      "file": "/species/turkey.jpg",
+      "source_article": "Turkey (bird)",
+      "commons_file": "Male_wild_turkey_(Meleagris_gallopavo)_strutting.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Male_wild_turkey_(Meleagris_gallopavo)_strutting.jpg",
+      "credit": "Frank Schulenburg",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "rabbit": {
+      "file": "/species/rabbit.jpg",
+      "source_article": "Rabbit",
+      "commons_file": "Oryctolagus_cuniculus_Rcdo.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Oryctolagus_cuniculus_Rcdo.jpg",
+      "credit": "JM Ligero Loarte",
+      "license": "CC BY 3.0",
+      "license_url": "https://creativecommons.org/licenses/by/3.0"
+    },
+    "swine": {
+      "file": "/species/swine.jpg",
+      "source_article": "Pig",
+      "commons_file": "Pig_farm_Vampula_1.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Pig_farm_Vampula_1.jpg",
+      "credit": "kallerna",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    }
+  }
+}

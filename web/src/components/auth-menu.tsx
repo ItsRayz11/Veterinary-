@@ -11,7 +11,7 @@ export function AuthMenu() {
   if (user === undefined) return <span className="h-5 w-16" aria-hidden="true" />;
   if (!user)
     return (
-      <div className="flex gap-3 text-sm">
+      <div className="flex gap-3 whitespace-nowrap text-sm">
         <Link href="/login" className="text-muted hover:text-text">
           Sign in
         </Link>

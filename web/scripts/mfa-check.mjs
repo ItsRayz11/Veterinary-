@@ -10,13 +10,14 @@ const BASE = process.env.BASE_URL ?? "http://localhost:3100";
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const totp = (secret, step = Math.floor(Date.now() / 30000)) => {
   let bits = "";
-  for (const c of secret.replace(/=+$/, "").toUpperCase()) bits += B32.indexOf(c).toString(2).padStart(5, "0");
+  for (const c of secret.replace(/=+$/, "").toUpperCase())
+    bits += B32.indexOf(c).toString(2).padStart(5, "0");
   const key = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)));
   const msg = Buffer.alloc(8);
   msg.writeBigUInt64BE(BigInt(step));
   const h = createHmac("sha1", key).update(msg).digest();
   const o = h[h.length - 1] & 15;
-  return String(((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000)).padStart(6, "0");
+  return String((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000).padStart(6, "0");
 };
 
 let failed = 0;
@@ -31,7 +32,10 @@ const browser = await puppeteer.launch({
 });
 const text = (page) => page.evaluate(() => document.body.innerText);
 const clickButton = (page, label) =>
-  page.evaluate((l) => [...document.querySelectorAll("button")].find((b) => b.innerText.includes(l))?.click(), label);
+  page.evaluate(
+    (l) => [...document.querySelectorAll("button")].find((b) => b.innerText.includes(l))?.click(),
+    label,
+  );
 
 const user = `mfa${Date.now().toString(36)}`;
 const password = "a-long-unusual-passphrase-9";
@@ -42,16 +46,25 @@ await page.goto(`${BASE}/register`, { waitUntil: "networkidle0" });
 await page.type("#username", user);
 await page.type("#email", `${user}@example.com`);
 await page.type("#password", password);
-await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }).catch(() => {}), page.click("button[type=submit]")]);
+await Promise.all([
+  page.waitForNavigation({ waitUntil: "networkidle0" }).catch(() => {}),
+  page.click("button[type=submit]"),
+]);
 await page.goto(`${BASE}/account`, { waitUntil: "networkidle0" });
-await page.waitForFunction(() => document.body.innerText.includes("Set up two-factor"), { timeout: 10000 });
+await page.waitForFunction(() => document.body.innerText.includes("Set up two-factor"), {
+  timeout: 10000,
+});
 await clickButton(page, "Set up two-factor");
 await page.waitForSelector("#mfa-code", { timeout: 10000 });
-const secret = await page.evaluate(() => document.querySelector("p.font-mono")?.textContent?.trim() ?? "");
+const secret = await page.evaluate(
+  () => document.querySelector("p.font-mono")?.textContent?.trim() ?? "",
+);
 ok("setup shows a secret", /^[A-Z2-7]{16,}$/.test(secret.replace(/\s/g, "")));
 await page.type("#mfa-code", totp(secret.replace(/\s/g, "")));
 await clickButton(page, "Turn on");
-await page.waitForFunction(() => document.body.innerText.includes("Save your recovery codes"), { timeout: 10000 });
+await page.waitForFunction(() => document.body.innerText.includes("Save your recovery codes"), {
+  timeout: 10000,
+});
 const codes = await page.$$eval("ul.font-mono li", (els) => els.map((e) => e.textContent.trim()));
 ok("ten recovery codes shown", codes.length === 10);
 await page.close();

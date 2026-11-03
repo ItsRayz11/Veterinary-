@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { SearchBox } from "@/components/search-box";
 import { Flag } from "@/components/ui/flag";
-import { speciesIcon, type CategoryName } from "@/components/ui/icons";
+import { type CategoryName } from "@/components/ui/icons";
+import { SpeciesCard } from "@/components/ui/species-photo";
 import { FeatureCard, SectionHeader } from "@/components/ui/visual";
 import { apiGet } from "@/lib/api";
 
@@ -62,6 +63,12 @@ const LEARN: { href: string; title: string; desc: string; category: CategoryName
     desc: "Mock exams from reviewed questions",
     category: "mocktests",
   },
+  {
+    href: "/universities",
+    title: "Universities",
+    desc: "Veterinary schools by country",
+    category: "universities",
+  },
   { href: "/jobs", title: "Jobs", desc: "Moderated veterinary job listings", category: "jobs" },
   {
     href: "/scholarships",
@@ -115,15 +122,9 @@ export default async function Home() {
             action={{ href: "/species", label: "All species" }}
           />
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {topSpecies.map((s) => (
+            {topSpecies.map((s, i) => (
               <li key={s.slug}>
-                <FeatureCard
-                  layout="row"
-                  href={`/species/${s.slug}`}
-                  icon={speciesIcon(s.slug + " " + s.name)}
-                  category="species"
-                  title={s.name}
-                />
+                <SpeciesCard slug={s.slug} name={s.name} priority={i < 4} />
               </li>
             ))}
           </ul>
@@ -167,7 +168,7 @@ export default async function Home() {
                   href={`/countries/${c.iso2}`}
                   className="neo inline-flex items-center gap-2 rounded-full px-4 py-2"
                 >
-                  <Flag iso2={c.iso2} className="h-4 w-6 text-[10px]" />
+                  <Flag iso2={c.iso2} className="h-4 w-6" />
                   {c.name}
                 </Link>
               </li>
@@ -178,7 +179,7 @@ export default async function Home() {
 
       <section aria-labelledby="learn-h">
         <SectionHeader id="learn-h" title="Study and careers" category="study" />
-        <ul className="grid gap-3 sm:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {LEARN.map((t) => (
             <li key={t.href}>
               <FeatureCard

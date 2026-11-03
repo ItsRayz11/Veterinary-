@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 import { securityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
+  images: {
+    // University photos and logos are openly licensed Wikimedia Commons files, served through
+    // /_next/image so the CSP can keep `img-src 'self'`.
+    remotePatterns: [
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "thumb.wikimedia.org" },
+    ],
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders(process.env.NODE_ENV === "production") },

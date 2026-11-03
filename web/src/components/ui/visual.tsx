@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, FileText, Landmark, Coins, Pill } from "lucide-react";
 import type { ReactNode } from "react";
 import { CalcArt } from "./calc-art";
+import { CountryMap } from "./country-map";
 import { Flag, flagAccent } from "./flag";
 import { CategoryIcon, IconChip, type CategoryName, type Tone } from "./icons";
 import type { LucideIcon } from "lucide-react";
@@ -217,19 +218,21 @@ export function DocumentCard({
   );
 }
 
-/** Country header: flag, name, regulator and real catalogue figures. Country styling comes from `flagAccent` only. */
+/** Country header: flag, name, regulator, outline map and real catalogue figures. */
 export function CountryHero({
   iso2,
   name,
   regulator,
   currency,
   productCount,
+  universityCount,
 }: {
   iso2: string;
   name: string;
   regulator?: string;
   currency?: string;
   productCount: number;
+  universityCount?: number;
 }) {
   const accent = flagAccent(iso2);
   return (
@@ -241,36 +244,61 @@ export function CountryHero({
           style={{ background: accent }}
         />
       )}
-      <div className="flex items-center gap-4">
-        <Flag iso2={iso2} className="h-12 w-[4.5rem]" />
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
-          {regulator && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-              <Landmark size={14} aria-hidden="true" />
-              {regulator}
-            </p>
-          )}
-        </div>
-      </div>
-      <dl className="mt-5 grid grid-cols-2 gap-3 sm:max-w-md">
-        <div className="card tone-teal p-3">
-          <dt className="flex items-center gap-1.5 text-xs text-muted">
-            <Pill size={14} aria-hidden="true" className="text-[var(--tone)]" />
-            Products listed
-          </dt>
-          <dd className="mt-1 text-xl font-semibold">{productCount}</dd>
-        </div>
-        {currency && (
-          <div className="card tone-amber p-3">
-            <dt className="flex items-center gap-1.5 text-xs text-muted">
-              <Coins size={14} aria-hidden="true" className="text-[var(--tone)]" />
-              Price currency
-            </dt>
-            <dd className="mt-1 text-xl font-semibold">{currency}</dd>
+      <div className="grid items-center gap-6 md:grid-cols-[1fr_auto]">
+        <div>
+          <div className="flex items-center gap-4">
+            <Flag iso2={iso2} name={name} className="h-12 w-[4.5rem]" />
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+              {regulator && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                  <Landmark size={14} aria-hidden="true" />
+                  {regulator}
+                </p>
+              )}
+            </div>
           </div>
-        )}
-      </dl>
+          <dl className="mt-5 grid grid-cols-2 gap-3 sm:max-w-md">
+            <div className="card tone-teal p-3">
+              <dt className="flex items-center gap-1.5 text-xs text-muted">
+                <Pill size={14} aria-hidden="true" className="text-[var(--tone)]" />
+                Products listed
+              </dt>
+              <dd className="mt-1 text-xl font-semibold">{productCount}</dd>
+            </div>
+            {universityCount !== undefined && (
+              <Link
+                href={`/universities?country=${iso2}`}
+                className="card card-link tone-blue block p-3"
+              >
+                <dt className="flex items-center gap-1.5 text-xs text-muted">
+                  <CategoryIcon category="universities" size={14} className="text-[var(--tone)]" />
+                  Veterinary schools
+                </dt>
+                <dd className="mt-1 text-xl font-semibold">{universityCount}</dd>
+              </Link>
+            )}
+            {currency && (
+              <div className="card tone-amber p-3">
+                <dt className="flex items-center gap-1.5 text-xs text-muted">
+                  <Coins size={14} aria-hidden="true" className="text-[var(--tone)]" />
+                  Price currency
+                </dt>
+                <dd className="mt-1 text-xl font-semibold">{currency}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+        <figure className="mx-auto w-full max-w-[18rem] md:max-w-[22rem]">
+          <CountryMap iso2={iso2} name={name} />
+          <figcaption className="mt-1 text-center text-xs text-muted">
+            Outline: Natural Earth, public domain.{" "}
+            <Link href="/credits" className="underline">
+              Credits
+            </Link>
+          </figcaption>
+        </figure>
+      </div>
     </section>
   );
 }

@@ -41,6 +41,17 @@ class CompanyBriefSerializer(serializers.ModelSerializer):
         fields = ("name", "slug", "country")
 
 
+class SlugStampSerializer(serializers.Serializer):
+    """Slim row for sitemaps: the slug and when the record last changed."""
+
+    slug = serializers.CharField()
+    updated_at = serializers.DateTimeField()
+    unverified = serializers.SerializerMethodField()
+
+    def get_unverified(self, obj) -> bool:
+        return obj.review_status == ReviewStatus.IMPORTED_UNVERIFIED
+
+
 class ProductBriefSerializer(serializers.ModelSerializer):
     manufacturer = CompanyBriefSerializer()
     generic = serializers.SlugRelatedField(slug_field="slug", read_only=True)
