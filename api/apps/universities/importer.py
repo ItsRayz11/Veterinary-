@@ -11,6 +11,8 @@ tested offline.
 
 import json
 import re
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable
@@ -38,8 +40,15 @@ Fetch = Callable[[str, dict], dict]
 def api_fetch(host: str, params: dict) -> dict:
     url = f"https://{host}/w/api.php?" + urllib.parse.urlencode({**params, "format": "json"})
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310 - fixed https hosts
-        return json.load(resp)
+    last: Exception | None = None
+    for attempt in range(4):  # transient DNS/TLS failures happen; back off and retry
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310 - fixed https hosts
+                return json.load(resp)
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            last = exc
+            time.sleep(2**attempt)
+    raise last  # type: ignore[misc]
 
 
 def is_school_title(title: str) -> bool:

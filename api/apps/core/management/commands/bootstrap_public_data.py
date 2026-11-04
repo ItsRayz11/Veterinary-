@@ -22,6 +22,9 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         call_command("seed_reference")
         self.load_classes()
+        from apps.accounts import roles
+
+        roles.ensure_groups()
         if not opts["skip_universities"]:
             try:
                 call_command("import_universities")

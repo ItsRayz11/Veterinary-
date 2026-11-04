@@ -19,3 +19,13 @@ Run from a trusted machine, never paste the production `DATABASE_URL` into chat 
 
 ## Backups and rollback
 Before any manual production data change, create a Neon snapshot (Console > Branches > Snapshots) and note its name. Restore from the snapshot if needed. Code rollback: redeploy the previous Vercel deployment.
+
+## Roles and permissions (Django groups, synced from `User.role`)
+Setting a user's role in Admin > Users puts them in the matching "Role: …" group and turns on `is_staff` for staff roles (reviewer, veterinarian reviewer, editor, moderator, admin). Definitions: `api/apps/accounts/roles.py`. Reviewers and editors can edit and approve catalogue records but cannot delete them; only veterinarian reviewers and admins can sign off clinical data (`CLINICAL_GOVERNANCE.md`); only admins manage users and data sources. Every staff account must enrol two-factor. Tested end to end in `apps/pharma/tests/test_admin_workflow.py` (find an imported registration, open it with its target species and source, approve it, see "not reviewed" disappear on the public API).
+
+## Review workflow
+1. Admin > Product registrations: search by registration number or brand; filter by country, status, review state.
+2. Open the record: target species (as stated by the regulator), history, and source links are on the page.
+3. Edit if needed, then use the action "Set review status: Official regulatory source" (or the clinical statuses for doses).
+4. The public API and species page update within about a minute (edge cache).
+Unclassified drugs (no class yet): Admin > Generics > filter "Drug class: empty".

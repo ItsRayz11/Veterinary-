@@ -84,6 +84,13 @@ TEMPLATES = [
 # Postgres (Neon or local) in every real environment. SQLite is only the zero-setup fallback for
 # quick local runs; Postgres-only features (pg_trgm, FTS) are added behind feature checks later.
 DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")}
+if DATABASES["default"]["ENGINE"].endswith("postgresql"):
+    # Reuse the connection while a serverless instance stays warm (saves a TLS + auth round trip
+    # per request); verify it before use because Neon may have suspended or recycled it. The pooled
+    # (pgbouncer) endpoint does not support server-side cursors.
+    DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONN_MAX_AGE", default=120)
+    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"

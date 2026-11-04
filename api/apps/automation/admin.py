@@ -26,6 +26,8 @@ class DataSourceAdmin(admin.ModelAdmin):
         "import_enabled",
         "terms_confirmed_at",
         "last_imported_at",
+        "last_import_result",
+        "consecutive_failures",
     )
     list_filter = ("enabled", "last_ok", "update_available", "import_enabled", "kind")
     search_fields = ("name", "publisher", "slug")
