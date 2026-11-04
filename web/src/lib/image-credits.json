@@ -116,6 +116,15 @@
       "credit": "kallerna",
       "license": "CC BY-SA 4.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "fish": {
+      "file": "/species/fish.jpg",
+      "source_article": "Rainbow trout",
+      "commons_file": "Close_up_of_rainbow_trout_fish_underwater_oncorhynchus_mykiss.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Close_up_of_rainbow_trout_fish_underwater_oncorhynchus_mykiss.jpg",
+      "credit": "Engbretson Eric, U.S. Fish and Wildlife Service",
+      "license": "Public domain",
+      "license_url": ""
     }
   }
 }

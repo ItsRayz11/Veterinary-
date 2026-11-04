@@ -13,11 +13,14 @@ export default function InteractionsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Interactions" }]} />
-      <PageTitle category="interactions">Interaction checker</PageTitle>
-      <Alert tone="warn" title="Only reviewed interactions are listed">
-        No result does not mean a combination is safe. Check the product labels and a current
-        reference.
-      </Alert>
+      <PageTitle
+        category="interactions"
+        helpLabel="About the interaction checker"
+        help="Only documented, reviewed interactions are shown. No matching interaction does not establish safety. Consult a veterinarian before combining medicines."
+      >
+        Interaction Checker
+      </PageTitle>
+      <Alert tone="warn">No interaction listed does not mean the combination is safe.</Alert>
       <InteractionChecker />
     </div>
   );

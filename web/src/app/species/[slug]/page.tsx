@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import { SpeciesPhoto, speciesCredit } from "@/components/ui/species-photo";
+import { HelpTip } from "@/components/ui/help-tip";
 import { RelatedResources } from "@/components/ui/visual";
 import { Alert, Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
 
@@ -68,7 +69,7 @@ export default async function SpeciesPage({ params }: PageProps<"/species/[slug]
       />
       {s.is_food_producing && (
         <Alert tone="warn" title="Food-producing species">
-          Withdrawal periods apply. They are shown per product, per country, on each product page.
+          Withdrawal periods apply; see each product page.
         </Alert>
       )}
       {s.children.length > 0 && (
@@ -80,10 +81,16 @@ export default async function SpeciesPage({ params }: PageProps<"/species/[slug]
           ))}
         </p>
       )}
-      <h2 className="font-semibold">Drugs with reviewed dosing for {s.name}</h2>
+      <h2 className="flex items-center gap-1 font-semibold">
+        Reviewed dosing
+        <HelpTip label="About species dosing">
+          Drugs appear here only when a sourced, veterinarian-reviewed dose exists for {s.name}.
+          Doses are never copied from another species or inferred from a drug name.
+        </HelpTip>
+      </h2>
       {s.generics.length === 0 ? (
-        <EmptyState title="No reviewed dosing is published for this species yet.">
-          Doses appear here only after they are sourced and reviewed.
+        <EmptyState title="No reviewed dosing published yet.">
+          This is a coverage gap, not a statement that no drug is used.
         </EmptyState>
       ) : (
         <DataTable caption={`Drugs with reviewed doses for ${s.name}`}>

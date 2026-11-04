@@ -1,3 +1,4 @@
+import { HelpTip } from "./help-tip";
 import Link from "next/link";
 import { ArrowRight, FileText, Landmark, Coins, Pill } from "lucide-react";
 import type { ReactNode } from "react";
@@ -8,11 +9,23 @@ import { CategoryIcon, IconChip, type CategoryName, type Tone } from "./icons";
 import type { LucideIcon } from "lucide-react";
 
 /** Page `h1` with a category icon chip, matching the detail-page headers. */
-export function PageTitle({ category, children }: { category: CategoryName; children: ReactNode }) {
+export function PageTitle({
+  category,
+  children,
+  help,
+  helpLabel = "About this page",
+}: {
+  category: CategoryName;
+  children: ReactNode;
+  /** Longer explanation, shown in a "(?)" popover instead of a paragraph under the title. */
+  help?: ReactNode;
+  helpLabel?: string;
+}) {
   return (
     <div className="flex items-center gap-3">
       <IconChip category={category} size="lg" />
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{children}</h1>
+      {help && <HelpTip label={helpLabel}>{help}</HelpTip>}
     </div>
   );
 }

@@ -35,6 +35,7 @@ ARTICLES = {
     "turkey": "Turkey (bird)",
     "rabbit": "Rabbit",
     "swine": "Pig",
+    "fish": "Rainbow trout",
 }
 OPEN = re.compile(r"^(cc0|public domain|pd\b|cc[ -]by(?:[ -]sa)?[ -][\d.]+)", re.I)
 
