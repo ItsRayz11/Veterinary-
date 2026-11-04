@@ -2,16 +2,21 @@ name: Data source sync
 
 # Checks the external data sources and imports changed ones (unreviewed records only) into the
 # production database. Off until the repository variable DATA_SYNC_ENABLED is set to "true" and the
-# secrets DATABASE_URL and SECRET_KEY exist. An admin must still confirm each publisher's terms in
+# secrets DATABASE_URL and SECRET_KEY exist (a manual run needs only the secrets). An admin must still confirm each publisher's terms in
 # the Django admin: sources without confirmed terms are only checked, never imported.
 on:
   schedule:
     - cron: "0 6 * * *" # daily 06:00 UTC; only changed files are imported
   workflow_dispatch:
+    inputs:
+      source:
+        description: "Data source slug for a one-off forced import (empty = normal run)"
+        default: ""
 
 jobs:
   sync:
-    if: vars.DATA_SYNC_ENABLED == 'true'
+    # Manual runs always work once the secrets exist; the daily schedule needs DATA_SYNC_ENABLED.
+    if: github.event_name == 'workflow_dispatch' || vars.DATA_SYNC_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults: { run: { working-directory: api } }
@@ -25,7 +30,17 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip, cache-dependency-path: api/requirements.txt }
       - run: pip install -r requirements.txt
-      - run: python manage.py sync_data_sources
+      - name: Show what is about to run (no secrets printed)
+        run: python manage.py showmigrations pharma | tail -2
+      - name: Import
+        env:
+          SOURCE: ${{ inputs.source }}
+        run: |
+          if [ -n "$SOURCE" ]; then
+            python manage.py sync_data_sources --source "$SOURCE" --force
+          else
+            python manage.py sync_data_sources
+          fi
       # Fails the run (GitHub emails the repository owner) when a source is failing or stale.
       - run: python manage.py sync_data_sources --alert
         if: always()
