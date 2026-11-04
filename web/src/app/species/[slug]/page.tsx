@@ -34,7 +34,9 @@ export async function generateMetadata({
 
 export default async function SpeciesPage({ params }: PageProps<"/species/[slug]">) {
   const { slug } = await params;
-  const s = await apiGet<SpeciesDetail>(`/species/${slug}/`);
+  const raw = await apiGet<SpeciesDetail>(`/species/${slug}/`);
+  // A cached response from before the field existed must not break the page.
+  const s = { ...raw, authorized_medicines: raw.authorized_medicines ?? [] };
   return (
     <div className="space-y-4">
       <Breadcrumbs
