@@ -4,7 +4,7 @@ import { apiGet } from "@/lib/api";
 import { SpeciesPhoto, speciesCredit } from "@/components/ui/species-photo";
 import { HelpTip } from "@/components/ui/help-tip";
 import { RelatedResources } from "@/components/ui/visual";
-import { Alert, Breadcrumbs, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
+import { Alert, Breadcrumbs, DataTable, td, th } from "@/components/ui/primitives";
 
 interface SpeciesDetail {
   slug: string;
@@ -13,6 +13,15 @@ interface SpeciesDetail {
   parent: { slug: string; name: string } | null;
   children: { slug: string; name: string }[];
   generics: { name: string; slug: string; drug_class: string | null; dose_count: number }[];
+  authorized_medicines: {
+    slug: string;
+    name: string;
+    drug_class: string | null;
+    authorizations: number;
+    in_force: number;
+    countries: string[];
+    unverified: boolean;
+  }[];
 }
 
 export async function generateMetadata({
@@ -81,43 +90,97 @@ export default async function SpeciesPage({ params }: PageProps<"/species/[slug]
           ))}
         </p>
       )}
-      <h2 className="flex items-center gap-1 font-semibold">
-        Reviewed dosing
-        <HelpTip label="About species dosing">
-          Drugs appear here only when a sourced, veterinarian-reviewed dose exists for {s.name}.
-          Doses are never copied from another species or inferred from a drug name.
-        </HelpTip>
-      </h2>
-      {s.generics.length === 0 ? (
-        <EmptyState title="No reviewed dosing published yet.">
-          This is a coverage gap, not a statement that no drug is used.
-        </EmptyState>
-      ) : (
-        <DataTable caption={`Drugs with reviewed doses for ${s.name}`}>
-          <thead>
-            <tr>
-              <th className={th}>Drug</th>
-              <th className={th}>Class</th>
-              <th className={th}>Doses</th>
-            </tr>
-          </thead>
-          <tbody>
-            {s.generics.map((g) => (
-              <tr key={g.slug}>
-                <td className={td}>
-                  <Link
-                    className="text-primary underline"
-                    href={`/drugs/${g.slug}?species=${s.slug}`}
-                  >
-                    {g.name}
-                  </Link>
-                </td>
-                <td className={td}>{g.drug_class ?? ""}</td>
-                <td className={td}>{g.dose_count}</td>
+      {s.authorized_medicines.length > 0 && (
+        <section aria-labelledby="authorized" className="space-y-2">
+          <h2 id="authorized" className="flex items-center gap-1 font-semibold">
+            Authorised medicines ({s.authorized_medicines.length})
+            <HelpTip label="About authorised medicines">
+              Each product authorisation lists its target species as stated by the regulator. The
+              same ingredient may be authorised for other animals only under a different product.
+              Entries marked &ldquo;not reviewed&rdquo; are imported and not yet checked by a
+              reviewer.
+            </HelpTip>
+          </h2>
+          <DataTable caption={`Medicines with a regulator-stated authorisation for ${s.name}`}>
+            <thead>
+              <tr>
+                <th className={th}>Drug</th>
+                <th className={th}>Class</th>
+                <th className={th}>Products</th>
+                <th className={th}>Countries</th>
               </tr>
-            ))}
-          </tbody>
-        </DataTable>
+            </thead>
+            <tbody>
+              {s.authorized_medicines.map((m) => (
+                <tr key={m.slug}>
+                  <td className={td}>
+                    <Link className="text-primary underline" href={`/drugs/${m.slug}`}>
+                      {m.name}
+                    </Link>
+                    {m.unverified && <span className="ml-2 text-xs text-muted">not reviewed</span>}
+                  </td>
+                  <td className={td}>{m.drug_class ?? ""}</td>
+                  <td className={td}>{m.authorizations}</td>
+                  <td className={td}>{m.countries.join(", ")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        </section>
+      )}
+      {s.generics.length > 0 ? (
+        <section aria-labelledby="doses" className="space-y-2">
+          <h2 id="doses" className="flex items-center gap-1 font-semibold">
+            Reviewed dose references
+            <HelpTip label="About species dosing">
+              Drugs appear here only when a sourced, veterinarian-reviewed dose exists for {s.name}.
+              Doses are never copied from another species or inferred from a drug name.
+            </HelpTip>
+          </h2>
+          <DataTable caption={`Drugs with reviewed doses for ${s.name}`}>
+            <thead>
+              <tr>
+                <th className={th}>Drug</th>
+                <th className={th}>Class</th>
+                <th className={th}>Doses</th>
+              </tr>
+            </thead>
+            <tbody>
+              {s.generics.map((g) => (
+                <tr key={g.slug}>
+                  <td className={td}>
+                    <Link
+                      className="text-primary underline"
+                      href={`/drugs/${g.slug}?species=${s.slug}`}
+                    >
+                      {g.name}
+                    </Link>
+                  </td>
+                  <td className={td}>{g.drug_class ?? ""}</td>
+                  <td className={td}>{g.dose_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        </section>
+      ) : (
+        <p className="text-sm text-muted">
+          No reviewed dose references for {s.name} yet. Doses are published only after sourcing and
+          veterinary review.
+        </p>
+      )}
+      {s.authorized_medicines.some((m) => m.countries.includes("GB")) && (
+        <p className="text-xs text-muted">
+          Sources: UK Veterinary Medicines Directorate Product Information Database. Contains public
+          sector information licensed under the{" "}
+          <a
+            className="underline"
+            href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+          >
+            Open Government Licence v3.0
+          </a>
+          .
+        </p>
       )}
     </div>
   );

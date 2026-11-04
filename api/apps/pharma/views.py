@@ -154,6 +154,10 @@ def product_detail(request, slug):
                     "number": r.registration_number,
                     "status": r.status,
                     "record_status": _status(r),
+                    "target_species": [
+                        {"label": t.label, "species": t.species.slug if t.species else None}
+                        for t in r.target_species.all()
+                    ],
                 }
                 for r in product.registrations.all()
             ],

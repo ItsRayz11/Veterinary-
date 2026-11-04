@@ -25,6 +25,7 @@ from apps.countries.models import Country
 from apps.ingestion import services
 from apps.ingestion.adapters import ca_dpd, common, uk_vmd
 from apps.ingestion.models import ImportBatch
+from apps.sources.models import Source
 
 from . import safe_http
 from .models import DataSource
@@ -236,9 +237,25 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
             stalled = stalled + 1 if (result["approved"] + result["skipped"]) == 0 else 0
             if stalled >= 3:
                 break
+    provenance = Source.objects.create(
+        source_type="regulatory",
+        title=f"{source.name} (synchronised {timezone.localdate():%Y-%m-%d})",
+        publisher=source.publisher,
+        url=source.landing_url,
+        license_note=source.licence_note,
+        country=country,
+        accessed_date=timezone.localdate(),
+        checksum=_sha(source.fingerprint or str(len(cleaned.rows))),
+    )
+    recon = services.reconcile_registrations(
+        country, provenance, cleaned.rows, cleaned.expired_numbers, user
+    )
+    totals.update(recon)
     summary = (
         f"{totals['staged']} new rows staged, {totals['approved']} approved as unreviewed, "
-        f"{totals['flagged']} flagged"
+        f"{totals['flagged']} flagged; {recon['status_changed']} status changes, "
+        f"{recon['species_added']} target species added, "
+        f"{recon['registrations_added']} extra authorisations"
     )
     source.imported_fingerprint = _fingerprint(headers) or source.fingerprint
     source.fingerprint = source.imported_fingerprint or source.fingerprint
@@ -260,6 +277,26 @@ def due_for_import() -> list[DataSource]:
         .exclude(importer="")
         .filter(Q(update_available=True) | Q(last_imported_at__isnull=True))
     )
+
+
+STALE_AFTER = timedelta(days=14)
+FAILURES_BEFORE_ALERT = 3
+
+
+def source_problems(now=None) -> list[str]:
+    """Human-readable alerts: sources failing repeatedly, or import-enabled ones gone stale."""
+    now = now or timezone.now()
+    out = []
+    for s in DataSource.objects.filter(enabled=True):
+        if s.consecutive_failures >= FAILURES_BEFORE_ALERT:
+            out.append(
+                f"{s.slug}: unreachable {s.consecutive_failures} checks in a row ({s.last_error})"
+            )
+        if s.import_enabled and (not s.last_imported_at or now - s.last_imported_at > STALE_AFTER):
+            out.append(f"{s.slug}: last successful import is older than {STALE_AFTER.days} days")
+        if s.last_import_result.startswith("failed"):
+            out.append(f"{s.slug}: last import failed ({s.last_import_result})")
+    return out
 
 
 __all__ = ["IMPORTERS", "check_data_sources", "check_source", "confirm_terms", "sync_source"]

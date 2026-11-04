@@ -18,7 +18,9 @@ def public_registrations():
     """Prefetch that only carries reviewed registrations (never leak unreviewed ones)."""
     return Prefetch(
         "registrations",
-        queryset=ProductRegistration.objects.listed().select_related("country"),
+        queryset=ProductRegistration.objects.listed()
+        .select_related("country")
+        .prefetch_related("target_species__species"),
     )
 
 

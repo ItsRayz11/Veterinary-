@@ -13,7 +13,7 @@ from apps.countries.models import Country
 from apps.species.models import Species
 
 from . import selectors
-from .models import DrugClass, Generic, Product, ProductRegistration
+from .models import DrugClass, Generic, Product, ProductRegistration, RegistrationSpecies
 from .serializers import GenericListSerializer, ProductBriefSerializer
 
 
@@ -24,6 +24,47 @@ def _descendant_ids(model, root) -> list[int]:
         frontier = list(model.objects.filter(parent_id__in=frontier).values_list("pk", flat=True))
         ids.extend(frontier)
     return ids
+
+
+def authorized_medicines(species_ids: list[int]) -> list[dict]:
+    """Medicines whose regulator-stated target species include this species (or a child of it).
+
+    Built from individual authorisations (product + country), never from the ingredient alone.
+    Shows reviewed registrations and, labelled, unreviewed imported ones (same rule as listings).
+    """
+    registrations = ProductRegistration.objects.listed().filter(
+        pk__in=RegistrationSpecies.objects.filter(species_id__in=species_ids).values("registration")
+    )
+    rows = registrations.values_list(
+        "product__generic__slug",
+        "product__generic__name",
+        "product__generic__drug_class__name",
+        "country__iso2",
+        "review_status",
+        "status",
+    )
+    by_generic: dict[str, dict] = {}
+    for slug, name, cls, iso2, review, status in rows:
+        g = by_generic.setdefault(
+            slug,
+            {
+                "slug": slug,
+                "name": name,
+                "drug_class": cls,
+                "authorizations": 0,
+                "countries": set(),
+                "unverified": False,
+                "in_force": 0,
+            },
+        )
+        g["authorizations"] += 1
+        g["countries"].add(iso2)
+        g["unverified"] = g["unverified"] or review == ReviewStatus.IMPORTED_UNVERIFIED
+        g["in_force"] += status == "registered"
+    return [
+        {**g, "countries": sorted(g["countries"])}
+        for g in sorted(by_generic.values(), key=lambda g: g["name"].lower())
+    ]
 
 
 @untyped_schema
@@ -42,6 +83,7 @@ def species_detail(request, slug):
     )
     return Response(
         {
+            "authorized_medicines": authorized_medicines(ids),
             "slug": species.slug,
             "name": species.name,
             "is_food_producing": species.is_food_producing,

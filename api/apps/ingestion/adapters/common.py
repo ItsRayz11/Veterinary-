@@ -24,6 +24,7 @@ COLUMNS = [
     "registration_status",
     "composition",
     "ingredients",
+    "target_species",
     "notes",
 ]
 SPACE = re.compile(r"\s+")
@@ -33,6 +34,8 @@ SPACE = re.compile(r"\s+")
 class Cleaned:
     rows: list[dict]
     report: dict = field(default_factory=dict)
+    # Registration numbers the source lists as expired (used to update existing registrations)
+    expired_numbers: list[str] = field(default_factory=list)
 
 
 def squash(value: str) -> str:

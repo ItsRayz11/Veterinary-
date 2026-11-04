@@ -12,6 +12,8 @@ from collections import Counter
 
 from defusedxml import ElementTree
 
+from apps.species.mapping import split_labels
+
 from .common import NAME_MAX, Cleaned, join_generic, squash
 
 SECTIONS = {"CurrentAuthorisedProducts": "registered", "SuspendedProducts": "suspended"}
@@ -51,6 +53,7 @@ def clean_snapshot(xml: bytes) -> Cleaned:
     rows: list[dict] = []
     report: Counter = Counter()
     seen: set[str] = set()
+    expired: set[str] = set()
     for _event, el in ElementTree.iterparse(io.BytesIO(xml)):
         tag = el.tag
         if tag not in SECTIONS and tag not in ("ExpiredProducts", "HomeopathicProducts"):
@@ -58,6 +61,10 @@ def clean_snapshot(xml: bytes) -> Cleaned:
         report["entries"] += 1
         if tag not in SECTIONS:
             report["skipped_" + tag] += 1
+            if tag == "ExpiredProducts":  # kept so existing registrations can be marked expired
+                number = squash(next((c.text or "" for c in el if c.tag == "VMNo"), ""))
+                if number:
+                    expired.add(number)
             el.clear()
             continue
         fields = {c.tag: squash(c.text or "") for c in el}
@@ -83,8 +90,12 @@ def clean_snapshot(xml: bytes) -> Cleaned:
                 "registration_number": number,
                 "registration_status": SECTIONS[tag],
                 "composition": ", ".join(substances),
+                "target_species": [
+                    {"label": x} for x in split_labels(fields.get("TargetSpecies", ""))
+                ],
                 "notes": _notes(fields),
             }
         )
         report["rows"] += 1
-    return Cleaned(rows, dict(report))
+    live = {r["registration_number"] for r in rows}
+    return Cleaned(rows, dict(report), expired_numbers=sorted(expired - live))

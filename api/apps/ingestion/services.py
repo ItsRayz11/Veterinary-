@@ -29,9 +29,12 @@ from apps.pharma.models import (
     ProductIngredient,
     ProductPack,
     ProductRegistration,
+    RegistrationSpecies,
 )
 from apps.pharma.models import RegistrationStatus as RegStatus
 from apps.sources.models import Source, SourceLink
+from apps.species.mapping import species_slug
+from apps.species.models import Species
 from apps.units.models import Unit
 
 from .models import ImportBatch, RowStatus, StagedRecord
@@ -44,7 +47,7 @@ OPTIONAL = ("registration_number", "registration_status")
 # Optional detail columns. `ingredients` and `packs` hold JSON lists inside their CSV cells:
 #   ingredients: [{"name", "value", "unit", "per_value", "per_unit"}]
 #   packs:       [{"size", "unit", "form"}]   (form = dosage form slug)
-JSON_COLUMNS = ("ingredients", "packs")
+JSON_COLUMNS = ("ingredients", "packs", "target_species")
 HEADER_ALIASES = {
     "brand": "brand_name",
     "product": "brand_name",
@@ -397,6 +400,24 @@ def _apply_details(product: Product, generic: Generic, generic_created: bool, ra
             )
 
 
+def set_target_species(reg: ProductRegistration, items: list[dict]) -> int:
+    """Attach the regulator's stated target species to a registration; returns the number added."""
+    existing = set(reg.target_species.values_list("label", flat=True))
+    by_slug = {s.slug: s for s in Species.objects.all()}
+    added = 0
+    for item in items:
+        label = str(item.get("label", "")).strip()[:120]
+        if not label or label in existing:
+            continue
+        slug = species_slug(label)
+        RegistrationSpecies.objects.create(
+            registration=reg, label=label, species=by_slug.get(slug) if slug else None
+        )
+        existing.add(label)
+        added += 1
+    return added
+
+
 @transaction.atomic
 def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> StagedRecord:
     """Create (or reuse) generic, company, product and registration as UNREVIEWED records."""
@@ -453,6 +474,7 @@ def approve_row(row: StagedRecord, by, *, check_complete: bool = True) -> Staged
             review_status=ReviewStatus.IMPORTED_UNVERIFIED,
         )
         _link(source, reg)
+        set_target_species(reg, (row.raw or {}).get("target_species") or [])
     row.matched_generic, row.matched_company, row.matched_product = generic, company, product
     row.status, row.message = RowStatus.APPROVED, ""
     row.resolved_by, row.resolved_at = by, timezone.now()
@@ -550,3 +572,75 @@ def import_user():
         user.set_unusable_password()
         user.save(update_fields=["password"])
     return user
+
+
+@transaction.atomic
+def reconcile_registrations(
+    country, source: Source, rows: list[dict], expired_numbers: list[str], by
+) -> dict:
+    """Bring existing, still-unreviewed registrations in line with a newer copy of the same source.
+
+    Idempotent. Updates a registration's status when the regulator's changed, adds target species
+    that are missing, records a second authorisation (another number) of a product already in the
+    catalogue, and marks numbers the source now lists as expired. Reviewed records are never
+    changed silently; they are counted so a person can look at them.
+    """
+    regs = {
+        r.registration_number: r
+        for r in ProductRegistration.objects.filter(country=country).select_related("product")
+    }
+    matcher = Matcher(country)
+    out = {"status_changed": 0, "species_added": 0, "registrations_added": 0, "needs_review": 0}
+
+    def record(action, reg, before, after):
+        AuditLog.objects.create(
+            actor=by,
+            action=action,
+            object_type=reg._meta.label,
+            object_id=str(reg.pk),
+            before=before,
+            after=after,
+            reason=f"Source: {source.title}",
+        )
+
+    def set_status(reg, status):
+        if reg.status == status:
+            return
+        if reg.review_status != ReviewStatus.IMPORTED_UNVERIFIED:
+            out["needs_review"] += 1
+            return
+        before = {"status": reg.status}
+        reg.status = status
+        reg.save(update_fields=["status", "updated_at"])
+        out["status_changed"] += 1
+        record("registration_status_changed", reg, before, {"status": status})
+
+    for row in rows:
+        number = str(row.get("registration_number", "")).strip()
+        if not number:
+            continue
+        reg = regs.get(number)
+        if reg is None:
+            company_id = matcher.company_id(str(row.get("manufacturer", "")))
+            product_id = company_id and matcher.product_id(company_id, str(row.get("brand_name")))
+            if not product_id:
+                continue  # a new product: the staging pipeline handles it
+            reg = ProductRegistration.objects.create(
+                product_id=product_id,
+                country=country,
+                registration_number=number,
+                status=row.get("registration_status") or RegStatus.UNKNOWN,
+                review_status=ReviewStatus.IMPORTED_UNVERIFIED,
+            )
+            _link(source, reg)
+            regs[number] = reg
+            out["registrations_added"] += 1
+        else:
+            set_status(reg, row.get("registration_status") or RegStatus.UNKNOWN)
+        out["species_added"] += set_target_species(reg, row.get("target_species") or [])
+    live = {str(r.get("registration_number", "")).strip() for r in rows}
+    for number in expired_numbers:
+        reg = regs.get(number) if number not in live else None
+        if reg is not None:
+            set_status(reg, RegStatus.EXPIRED)
+    return out

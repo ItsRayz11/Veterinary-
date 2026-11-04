@@ -226,6 +226,8 @@ class ProductRegistration(PublishableModel):
     registered_on = models.DateField(null=True, blank=True)
     expires_on = models.DateField(null=True, blank=True)
 
+    lists_unverified_imports = True
+
     history = HistoricalRecords()
 
     class Meta(PublishableModel.Meta):
@@ -238,3 +240,32 @@ class ProductRegistration(PublishableModel):
 
     def __str__(self):
         return f"{self.product} [{self.country.iso2} {self.registration_number}]"
+
+
+class RegistrationSpecies(models.Model):
+    """A target species explicitly named by the regulator on one authorisation.
+
+    Belongs to the registration (country, authorisation number, status, source, review state), never
+    to the generic: two products with the same ingredient may be authorised for different animals.
+    `label` is the regulator's own wording; `species` is set only when that wording maps exactly
+    to a species in our table, so unmapped labels (e.g. "Honey bees") are kept as text, not guessed.
+    """
+
+    registration = models.ForeignKey(
+        ProductRegistration, on_delete=models.CASCADE, related_name="target_species"
+    )
+    species = models.ForeignKey(
+        "species.Species", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    label = models.CharField(max_length=120)
+
+    class Meta:
+        verbose_name = "authorised target species"
+        verbose_name_plural = "authorised target species"
+        constraints = [
+            models.UniqueConstraint(fields=["registration", "label"], name="uniq_reg_species_label")
+        ]
+        indexes = [models.Index(fields=["species"])]
+
+    def __str__(self):
+        return f"{self.registration_id}: {self.label}"

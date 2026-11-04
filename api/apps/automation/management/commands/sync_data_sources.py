@@ -21,6 +21,11 @@ class Command(BaseCommand):
         parser.add_argument("--source", help="slug of one source")
         parser.add_argument("--check-only", action="store_true")
         parser.add_argument(
+            "--alert",
+            action="store_true",
+            help="exit with an error if a source is failing or stale (the scheduler then notifies)",
+        )
+        parser.add_argument(
             "--force", action="store_true", help="import even if the file has not changed"
         )
 
@@ -36,7 +41,13 @@ class Command(BaseCommand):
             state = "ok" if source.last_ok else (source.last_error or "unreachable")
             flag = " [update available]" if source.update_available else ""
             self.stdout.write(f"{source.slug}: {state}{flag}")
-        if opts["check_only"]:
+        if opts["alert"]:
+            problems = datasources.source_problems()
+            for line in problems:
+                self.stderr.write(self.style.WARNING(line))
+            if problems:
+                raise CommandError(f"{len(problems)} data source problem(s).")
+        if opts["check_only"] or opts["alert"]:
             return
         wanted = (
             [s for s in sources if s.importer and s.import_enabled]
