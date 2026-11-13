@@ -130,7 +130,7 @@ def check_data_sources(
     """Check enabled sources that are due, never-checked first, within the time budget."""
     started = clock()
     now = timezone.now()
-    due = DataSource.objects.filter(enabled=True).order_by(
+    due = DataSource.objects.filter(enabled=True, paused=False).order_by(
         F("last_checked_at").asc(nulls_first=True), "pk"
     )
     summary = {"checked": 0, "reachable": 0, "failed": 0, "changed": 0, "stopped_early": False}
@@ -171,6 +171,8 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
     importer = IMPORTERS.get(source.importer)
     if importer is None:
         raise SyncError(f"{source.name} has no importer (monitor only).")
+    if source.paused:
+        raise SyncError(f"{source.name} is paused by an admin.")
     if not source.import_enabled:
         raise SyncError(f"Import is not enabled for {source.name}.")
     if not source.terms_confirmed_at:
@@ -273,7 +275,9 @@ def _sha(text: str) -> str:
 def due_for_import() -> list[DataSource]:
     """Importable sources whose publisher file changed (or was never imported)."""
     return list(
-        DataSource.objects.filter(import_enabled=True, terms_confirmed_at__isnull=False)
+        DataSource.objects.filter(
+            import_enabled=True, terms_confirmed_at__isnull=False, paused=False
+        )
         .exclude(importer="")
         .filter(Q(update_available=True) | Q(last_imported_at__isnull=True))
     )

@@ -308,3 +308,148 @@ def automation_run(request, task):
     return Response(
         {"task": run.task, "status": run.status, "summary": run.summary, "error": run.error}
     )
+
+
+# ---------- source registry (admin only) ----------
+
+SOURCE_FIELDS = (
+    "slug name publisher country_iso2 kind landing_url data_url licence_note notes importer "
+    "enabled import_enabled check_interval_hours content_type geography method robots_status "
+    "extraction_scope credentials_ref import_destination priority rate_limit_per_hour paused"
+).split()
+SOURCE_BOOLS = {"enabled", "import_enabled", "paused"}
+SOURCE_INTS = {"check_interval_hours", "priority", "rate_limit_per_hour"}
+
+
+def _source_row(d: DataSource) -> dict:
+    row = {f: getattr(d, f) for f in SOURCE_FIELDS}
+    row.update(
+        id=d.pk,
+        reachable=d.last_ok,
+        last_error=d.last_error,
+        last_checked_at=d.last_checked_at,
+        last_changed_at=d.last_changed_at,
+        update_available=d.update_available,
+        consecutive_failures=d.consecutive_failures,
+        terms_confirmed=d.terms_confirmed_at is not None,
+        last_imported_at=d.last_imported_at,
+        last_import_result=d.last_import_result,
+        record_count=d.record_count,
+        can_import=bool(d.importer),
+    )
+    return row
+
+
+def _apply_source(d: DataSource, data: dict) -> list[str]:
+    changed = []
+    for f in SOURCE_FIELDS:
+        if f not in data:
+            continue
+        v = data[f]
+        if f in SOURCE_BOOLS:
+            v = bool(v)
+        elif f in SOURCE_INTS:
+            try:
+                v = int(v)
+            except (TypeError, ValueError):
+                raise ValidationError({f: "Must be a whole number."}) from None
+        else:
+            v = str(v).strip()
+        if getattr(d, f) != v:
+            setattr(d, f, v)
+            changed.append(f)
+    return changed
+
+
+@untyped_schema
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminRole])
+def sources(request):
+    if request.method == "GET":
+        return Response({"results": [_source_row(d) for d in DataSource.objects.all()]})
+    d = DataSource()
+    try:
+        _apply_source(d, request.data)
+        d.full_clean()
+    except ValidationError as exc:
+        return Response({"detail": "; ".join(exc.messages)}, status=http.HTTP_400_BAD_REQUEST)
+    d.save()
+    AuditLog.objects.create(
+        actor=request.user,
+        action="source_created",
+        object_type=d._meta.label,
+        object_id=str(d.pk),
+        after={f: str(getattr(d, f)) for f in SOURCE_FIELDS if f != "notes"},
+    )
+    return Response(_source_row(d), status=http.HTTP_201_CREATED)
+
+
+@untyped_schema
+@api_view(["PATCH"])
+@permission_classes([IsAdminRole])
+def source_update(request, pk):
+    d = DataSource.objects.filter(pk=pk).first()
+    if d is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    before = {f: str(getattr(d, f)) for f in SOURCE_FIELDS}
+    try:
+        changed = _apply_source(d, request.data)
+        d.full_clean()
+    except ValidationError as exc:
+        return Response({"detail": "; ".join(exc.messages)}, status=http.HTTP_400_BAD_REQUEST)
+    d.save()
+    if changed:
+        AuditLog.objects.create(
+            actor=request.user,
+            action="source_edited",
+            object_type=d._meta.label,
+            object_id=str(d.pk),
+            # credentials_ref is only a variable name, but never log values of secrets either way.
+            before={f: before[f] for f in changed},
+            after={f: str(getattr(d, f)) for f in changed},
+        )
+    return Response(_source_row(d))
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsAdminRole])
+def source_action(request, pk, action):
+    from apps.automation import datasources as ds
+
+    d = DataSource.objects.filter(pk=pk).first()
+    if d is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    if action in ("pause", "resume"):
+        d.paused = action == "pause"
+        d.save(update_fields=["paused", "updated_at"])
+    elif action in ("check", "retry"):
+        if d.paused:
+            return Response({"detail": "Source is paused."}, status=http.HTTP_409_CONFLICT)
+        ds.check_source(d)
+    elif action == "confirm-terms":
+        ds.confirm_terms(d, request.user)
+    elif action == "import":
+        try:
+            result = ds.sync_source(d)
+        except ds.SyncError as exc:
+            return Response({"detail": str(exc)}, status=http.HTTP_409_CONFLICT)
+        d.refresh_from_db()
+        AuditLog.objects.create(
+            actor=request.user,
+            action="source_import_run",
+            object_type=d._meta.label,
+            object_id=str(d.pk),
+            after={"result": str(result)[:300]},
+        )
+        return Response(_source_row(d))
+    else:
+        return Response({"detail": "Unknown action."}, status=http.HTTP_404_NOT_FOUND)
+    d.refresh_from_db()
+    AuditLog.objects.create(
+        actor=request.user,
+        action=f"source_{action.replace('-', '_')}",
+        object_type=d._meta.label,
+        object_id=str(d.pk),
+    )
+    return Response(_source_row(d))

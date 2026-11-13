@@ -15,12 +15,14 @@ import { Skeleton } from "@/components/ui/forms";
 import { Alert } from "@/components/ui/primitives";
 import { apiFetch } from "@/lib/client-api";
 import { STAFF_ROLES, useUser } from "@/lib/use-user";
+import { AiTab } from "./ai-tab";
 import { AutomationTab } from "./automation-tab";
 import { ErrorsTab } from "./errors-tab";
 import { ImportsTab } from "./imports-tab";
 import { ListingsTab } from "./listings-tab";
 import { NAV, canSee, parseSection, type SectionKey } from "./nav";
 import { Overview } from "./overview";
+import { SourcesTab } from "./sources-tab";
 import { AuditLogTab, PricesTab, QuestionReportsTab, ReviewQueueTab } from "./tabs";
 
 export interface Summary {
@@ -315,6 +317,8 @@ export function AdminPanel() {
             {tab === "listings" && isModerator && <ListingsTab onChanged={refresh} />}
             {tab === "prices" && isModerator && <PricesTab onChanged={refresh} />}
             {tab === "reports" && isModerator && <QuestionReportsTab onChanged={refresh} />}
+            {tab === "sources" && user.role === "admin" && <SourcesTab />}
+            {tab === "ai" && user.role === "admin" && <AiTab />}
             {tab === "automation" && <AutomationTab />}
             {tab === "errors" && <ErrorsTab />}
             {tab === "audit" && user.role === "admin" && <AuditLogTab />}

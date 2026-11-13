@@ -528,6 +528,10 @@ interface Report {
 
 export function QuestionReportsTab({ onChanged }: { onChanged: () => void }) {
   const list = useList<Report>("/staff/question-reports");
+  const triage = useList<{ id: number; category: string; escalate: boolean; reasons: string[] }>(
+    "/staff/ai/report-triage/",
+  );
+  const flags = new Map((triage.rows ?? []).map((t) => [t.id, t]));
   const [error, setError] = useState<string | null>(null);
 
   async function resolve(r: Report) {
@@ -549,6 +553,13 @@ export function QuestionReportsTab({ onChanged }: { onChanged: () => void }) {
             {rows.map((r) => (
               <li key={r.id} className="card p-3 text-sm">
                 <p className="font-medium">{r.question}</p>
+                {flags.get(r.id) && flags.get(r.id)!.category !== "ok" && (
+                  <p className="mt-1 text-xs text-warn">
+                    Triage: {flags.get(r.id)!.category.replaceAll("_", " ")}
+                    {flags.get(r.id)!.escalate ? " (veterinarian reviewer needed)" : ""} ·{" "}
+                    {flags.get(r.id)!.reasons.join("; ")}
+                  </p>
+                )}
                 <p className="mt-1">{r.message}</p>
                 <p className="mt-1 text-xs text-muted">
                   {r.reporter}, {fmt(r.created_at)}

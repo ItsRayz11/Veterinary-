@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -98,6 +100,21 @@ class SourceKind(models.TextChoices):
     PORTAL = "portal", "Search portal"
 
 
+class AccessMethod(models.TextChoices):
+    API = "api", "Official API"
+    FEED = "feed", "RSS / structured feed"
+    FILE = "file", "Published file download"
+    MANUAL = "manual", "Manual upload / entry"
+    PARTNER = "partner", "Supplier or partner feed"
+
+
+class RobotsStatus(models.TextChoices):
+    UNKNOWN = "unknown", "Not yet checked"
+    ALLOWED = "allowed", "Automated access allowed"
+    RESTRICTED = "restricted", "Automated access not allowed"
+    NOT_APPLICABLE = "n/a", "Not applicable (API, partner or manual)"
+
+
 class DataSource(TimeStampedModel):
     """An external data publisher we watch, and optionally import from.
 
@@ -149,8 +166,37 @@ class DataSource(TimeStampedModel):
     last_imported_at = models.DateTimeField(null=True, blank=True, editable=False)
     last_import_result = models.CharField(max_length=300, blank=True, editable=False)
 
+    # --- registry fields (admin-only; never exposed publicly) ---
+    content_type = models.CharField(
+        max_length=60, blank=True, help_text="What it supplies, e.g. product registrations, jobs"
+    )
+    geography = models.CharField(max_length=120, blank=True)
+    method = models.CharField(
+        max_length=10, choices=AccessMethod.choices, default=AccessMethod.FILE
+    )
+    robots_status = models.CharField(
+        max_length=12, choices=RobotsStatus.choices, default=RobotsStatus.UNKNOWN
+    )
+    extraction_scope = models.TextField(
+        blank=True, help_text="Exactly which fields/pages we are allowed to read"
+    )
+    credentials_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="NAME of the server environment variable holding the key. Never the key itself.",
+    )
+    import_destination = models.CharField(
+        max_length=60, blank=True, help_text="VetRef module the data feeds, e.g. pharma.product"
+    )
+    priority = models.PositiveSmallIntegerField(default=50, help_text="1 = most trusted")
+    rate_limit_per_hour = models.PositiveSmallIntegerField(default=60)
+    paused = models.BooleanField(
+        default=False, help_text="Admin pause: no checks or imports until resumed"
+    )
+    record_count = models.PositiveIntegerField(null=True, blank=True, editable=False)
+
     class Meta:
-        ordering = ["name"]
+        ordering = ["priority", "name"]
 
     def __str__(self):
         return self.name
@@ -160,6 +206,13 @@ class DataSource(TimeStampedModel):
         return self.data_url or self.landing_url
 
     def clean(self):
+        if self.credentials_ref and not re.fullmatch(r"[A-Z][A-Z0-9_]{2,63}", self.credentials_ref):
+            raise ValidationError(
+                "Credentials reference must be an environment variable NAME (A-Z, 0-9, _), "
+                "not a key."
+            )
+        if self.import_enabled and self.robots_status == RobotsStatus.RESTRICTED:
+            raise ValidationError("Robots/terms restrict automated access; import cannot be on.")
         if self.import_enabled and not self.importer:
             raise ValidationError("Choose an importer before enabling import.")
         if self.import_enabled and not self.terms_confirmed_at:

@@ -1,6 +1,8 @@
 import {
   AlertTriangle,
   Briefcase,
+  Bot,
+  Database,
   Download,
   LayoutDashboard,
   ListChecks,
@@ -18,7 +20,9 @@ export type SectionKey =
   | "prices"
   | "reports"
   | "imports"
+  | "sources"
   | "automation"
+  | "ai"
   | "errors"
   | "audit";
 
@@ -56,11 +60,17 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Data & sources",
-    items: [{ key: "imports", label: "Imports", icon: Download, access: "all" }],
+    items: [
+      { key: "imports", label: "Imports", icon: Download, access: "all" },
+      { key: "sources", label: "Source registry", icon: Database, access: "admin" },
+    ],
   },
   {
     label: "AI & automation",
-    items: [{ key: "automation", label: "Automation & sources", icon: Zap, access: "all" }],
+    items: [
+      { key: "automation", label: "Automation & sources", icon: Zap, access: "all" },
+      { key: "ai", label: "AI providers & usage", icon: Bot, access: "admin" },
+    ],
   },
   {
     label: "Operations",
