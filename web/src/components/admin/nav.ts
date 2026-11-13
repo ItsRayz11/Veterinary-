@@ -2,6 +2,9 @@ import {
   AlertTriangle,
   Briefcase,
   Bot,
+  Box,
+  Globe,
+  Newspaper,
   Database,
   Download,
   LayoutDashboard,
@@ -23,6 +26,9 @@ export type SectionKey =
   | "sources"
   | "automation"
   | "ai"
+  | "content"
+  | "market"
+  | "catalogs"
   | "errors"
   | "audit";
 
@@ -31,7 +37,7 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   /** Roles allowed to see it; "all" = any staff. */
-  access: "all" | "moderator" | "admin";
+  access: "all" | "editor" | "moderator" | "admin";
 }
 export interface NavGroup {
   label: string;
@@ -73,6 +79,17 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Content & knowledge",
+    items: [{ key: "content", label: "Articles & topics", icon: Newspaper, access: "editor" }],
+  },
+  {
+    label: "Catalogs & market",
+    items: [
+      { key: "market", label: "Retailers & prices", icon: Globe, access: "moderator" },
+      { key: "catalogs", label: "3D catalogs", icon: Box, access: "moderator" },
+    ],
+  },
+  {
     label: "Operations",
     items: [
       { key: "errors", label: "Errors", icon: AlertTriangle, access: "all" },
@@ -84,6 +101,7 @@ export const NAV: NavGroup[] = [
 export function canSee(item: NavItem, role: string): boolean {
   if (item.access === "all") return true;
   if (item.access === "admin") return role === "admin";
+  if (item.access === "editor") return true; // every staff role passes the API IsEditor check
   return role === "moderator" || role === "admin";
 }
 

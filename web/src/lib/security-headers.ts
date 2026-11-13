@@ -6,11 +6,12 @@ export function contentSecurityPolicy(production: boolean): string {
     // Next.js emits small inline bootstrap scripts; dev also needs eval for fast refresh.
     "script-src": ["'self'", "'unsafe-inline'", ...(production ? [] : ["'unsafe-eval'"])],
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "data:"],
+    "img-src": ["'self'", "data:", "blob:"],
     "font-src": ["'self'", "data:"],
     // The browser only talks to this origin; the API is reached through the /api/v1 rewrite.
-    "connect-src": ["'self'"],
-    "worker-src": ["'self'"],
+    // blob: lets the 3D viewer read the model it just fetched; no remote origin is allowed.
+    "connect-src": ["'self'", "blob:"],
+    "worker-src": ["'self'", "blob:"],
     "manifest-src": ["'self'"],
     "frame-ancestors": ["'none'"],
     "base-uri": ["'self'"],

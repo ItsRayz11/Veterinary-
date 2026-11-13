@@ -16,6 +16,9 @@ import { Alert } from "@/components/ui/primitives";
 import { apiFetch } from "@/lib/client-api";
 import { STAFF_ROLES, useUser } from "@/lib/use-user";
 import { AiTab } from "./ai-tab";
+import { CatalogsTab } from "./catalogs-tab";
+import { ContentTab } from "./content-tab";
+import { MarketTab } from "./market-tab";
 import { AutomationTab } from "./automation-tab";
 import { ErrorsTab } from "./errors-tab";
 import { ImportsTab } from "./imports-tab";
@@ -318,6 +321,9 @@ export function AdminPanel() {
             {tab === "prices" && isModerator && <PricesTab onChanged={refresh} />}
             {tab === "reports" && isModerator && <QuestionReportsTab onChanged={refresh} />}
             {tab === "sources" && user.role === "admin" && <SourcesTab />}
+            {tab === "content" && <ContentTab />}
+            {tab === "market" && isModerator && <MarketTab admin={user.role === "admin"} />}
+            {tab === "catalogs" && isModerator && <CatalogsTab admin={user.role === "admin"} />}
             {tab === "ai" && user.role === "admin" && <AiTab />}
             {tab === "automation" && <AutomationTab />}
             {tab === "errors" && <ErrorsTab />}

@@ -1,0 +1,97 @@
+# In-place upgrade: phases, rollout and rollback
+
+Everything here extends the running VetRef system: same repo, database, auth, routes and review
+workflow. `/admin-panel` remains the admin destination; Django admin remains the advanced editor.
+
+## Audit summary (what was reused)
+
+| Need | Reused |
+| --- | --- |
+| Admin shell | `web/src/components/admin/*`, `/staff/*` API in `apps/staff` |
+| Source registry | `automation.DataSource` (extended), `Feed`, `SourceHealth`, `JobRun`, `safe_http` |
+| Moderation | existing review statuses, `PriceSubmission`, `QuestionReport`, `AuditLog` |
+| Auth / roles | `accounts.Role`, `HasRole`, MFA for staff |
+| Prices | `pricing.PriceRecord` (append-only) |
+
+## Phase 1: sidebar admin (commit 82fbbe8)
+Collapsible, searchable, responsive sidebar; Dashboard with real counts; `?section=` deep links
+(old `?tab=` still works). No API change. Rollback: revert the commit.
+
+## Phase 2: source registry and automation foundation
+- `DataSource` gains registry fields (migration `automation/0004`): content type, geography,
+  method, robots status, extraction scope, credentials *reference* (env var name, validated),
+  import destination, priority, rate limit, `paused`. All additive with defaults.
+- `/staff/sources/` (admin only): create, edit, pause, resume, run now, retry, confirm terms,
+  import now. Every action writes `AuditLog`. Paused sources are skipped by the scheduler and
+  importer. Import cannot be enabled while robots status is "restricted" or terms are unconfirmed.
+- `automation/policy.py`: deterministic publish decision. Dosage, treatment, diagnosis,
+  regulatory, safety and unknown kinds are never auto-published; AI confidence is recorded but
+  never used to publish. Price-outlier helper is plain arithmetic.
+- Provenance states are defined in `policy.Provenance`; existing review statuses are unchanged.
+- Rollback: `migrate automation 0003` (drops only the new columns).
+
+## Phase 3: AI layer (new app `apps/ai`, migration `ai/0001`)
+- `AIProvider` (OpenAI, OpenRouter, AgentRouter), `AITaskRoute` (task to provider/model/fallback),
+  `AIUsage` (append-only ledger of sizes and estimated cost; prompts are not stored).
+- Keys are read from server environment variables named in the provider row. The API only ever
+  reports whether a key is present. Calls need https, a public address (SSRF guard), obey a
+  per-provider rate limit and monthly budget (0 = no spend), and fall back once.
+- **AgentRouter**: treated as a generic OpenAI-compatible endpoint with an admin-supplied https
+  base URL. Its API was not verified from this environment; confirm its documentation and your
+  account's capabilities before enabling. No scraping endpoint is assumed: AI only classifies,
+  drafts and suggests, never fetches websites.
+- Cost figures are planning estimates from token counts, not invoices.
+- `apps/ai/triage.py`: deterministic triage of question reports (spam, duplicate, clinical,
+  needs-citation); clinical items are flagged for a veterinarian reviewer. Shown in the
+  Question reports section; nothing is auto-resolved.
+- Env needed to use AI: e.g. `OPENAI_API_KEY`, `OPENROUTER_API_KEY`. None is required for the site.
+- Rollback: remove providers in admin or `migrate ai zero`.
+
+## Phase 4: content and market data
+- `apps/content` (migration `content/0001`): `Article`, `ArticleRevision`, `TopicSuggestion`.
+  Statuses draft, review, scheduled, published, rejected. Plain text with a small markdown
+  subset; HTML is stripped on save and never rendered; only https links and same-site images
+  render. Contributors submit (throttled, max 5 open); editors publish. Clinical articles (flagged
+  by the author/editor or auto-flagged by wording) need a veterinarian reviewer or admin and
+  cited references. Editing a published article returns it to review. Revisions are kept.
+- Editorial assistant: gap ideas from VetRef data (labelled "catalogue gap") and, if an AI route
+  exists, model ideas (labelled "general AI suggestion, not trend data"). VetRef has no trend feed,
+  so nothing is labelled as trend data. AI drafts are saved unpublished, AI-assisted and
+  clinical-flagged.
+- `apps/marketplace` (migration `marketplace/0001`): `Retailer`, `RetailerOffer` (history kept),
+  `FxRate`. Public `/products/<slug>/offers/` shows only approved + verified offers from approved
+  retailers; stock reads Unknown unless confirmed within 14 days. `/price-comparison/` compares
+  like-for-like per pack in local currency; conversion appears only when an admin entered rates,
+  with their date. No rates, stock or prices are invented or fetched.
+- Public pages: `/blog`, `/blog/[slug]`, `/blog/submit`; product page sections "Compare prices
+  by country" and "Where to buy".
+
+## Phase 5: 3D catalogs
+- `Supplier`, `Catalog3D` (GLB stored in the database, 8 MB, structure-validated glTF 2.0),
+  `CatalogPlan`, `Lead`. Suppliers must be approved; models are public only after moderator
+  approval and confirmed rights. Assets are served with `nosniff` from the API; the viewer
+  (`@google/model-viewer`, bundled) loads only on pages that show a model and falls back to an
+  image. CSP gained `blob:` for `img-src`, `connect-src` and `worker-src` (no remote origins).
+- **Payments are OFF.** Plans display a price but the only action is an enquiry (`Lead`). No
+  checkout, invoice or webhook exists. Enable only after provider, tax, invoicing and refund
+  rules are configured and tested.
+- **No malware scanning**: files are checked structurally only. Moderators must review each model
+  before approving; add a scanning service before opening uploads widely.
+
+## Rollout and rollback
+1. Take a Neon snapshot (see `ADMIN.md`). 2. Deploy to a preview/staging environment, run
+`migrate` (all migrations are additive: new tables and defaulted columns). 3. Verify:
+`/admin-panel` sections, review queue count unchanged, public search, calculators, study pages,
+universities, login. 4. Promote to production with explicit approval.
+Rollback: redeploy the previous Vercel deployment; restore the snapshot if data must be undone.
+Existing review-queue rows are never modified by these migrations.
+
+## Feature flags
+Nothing user-visible is on by default: AI providers are off until added and enabled, sources
+import only when terms are confirmed, plans are hidden until `active`, offers/articles/models are
+hidden until approved.
+
+## Known gaps (not implemented, by design or pending input)
+Automatic discovery/parsing beyond the existing importers and feeds; trend-data ingestion;
+retailer self-service offer sync (staff enter offers today); malware scanning; payments;
+screenshots and a staging deployment (need your environments).

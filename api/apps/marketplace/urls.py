@@ -11,6 +11,8 @@ urlpatterns = [
     path("catalog-leads/", views.lead_create),
     path("my/supplier/", views.my_supplier),
     path("my/catalogs-3d/", views.my_catalog_upload),
+    path("staff/lookups/countries/", views.lookup_countries),
+    path("staff/lookups/packs/", views.lookup_packs),
     path("staff/retailers/", views.retailers),
     path("staff/retailers/<int:pk>/", views.retailer_update),
     path("staff/offers/", views.offers),

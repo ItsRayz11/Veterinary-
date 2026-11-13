@@ -43,6 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     companies,
     products,
     universities,
+    articles,
   ] = await Promise.all([
     list<{ slug: string }>("/species/"),
     list<{ slug: string }>("/drug-classes/"),
@@ -54,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     list<{ slug: string; unverified?: boolean }>("/companies/"),
     list<{ slug: string; unverified?: boolean }>("/products/"),
     list<{ slug: string; status: { is_unverified_import?: boolean } }>("/universities/"),
+    list<{ slug: string }>("/articles/"),
   ]);
   const paths = [
     "/",
@@ -78,6 +80,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((u) => !u.status.is_unverified_import)
       .map((u) => `/universities/${u.slug}`),
     "/credits",
+    "/blog",
+    ...articles.map((a) => `/blog/${a.slug}`),
+    "/catalogs-3d",
     "/jobs",
     ...jobs.map((j) => `/jobs/${j.id}`),
     "/scholarships",

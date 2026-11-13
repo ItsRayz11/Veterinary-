@@ -5,6 +5,7 @@ import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { SourcesList } from "@/components/sources-list";
 import { PriceTrends } from "@/components/price-trends";
+import { PriceComparison, RetailerOffers } from "@/components/market-prices";
 import { PriceSubmitForm } from "@/components/price-submit-form";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
@@ -248,6 +249,14 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         <div className="mt-3">
           <PriceSubmitForm slug={p.slug} current={prices.current} />
         </div>
+      </Section>
+
+      <Section id="compare" title="Compare prices by country" category="countries">
+        <PriceComparison slug={p.slug} />
+      </Section>
+
+      <Section id="retailers" title="Where to buy" category="companies">
+        <RetailerOffers slug={p.slug} />
       </Section>
 
       <Section id="sources" title="Sources" category="regulatory">

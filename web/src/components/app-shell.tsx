@@ -43,6 +43,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         judgement or the product label.{" "}
         <Link href="/credits" className="underline">
           Credits
+        </Link>{" "}
+        ·{" "}
+        <Link href="/blog" className="underline">
+          Articles
+        </Link>{" "}
+        ·{" "}
+        <Link href="/catalogs-3d" className="underline">
+          3D catalogs
         </Link>
       </footer>
       <nav

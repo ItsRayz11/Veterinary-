@@ -378,3 +378,37 @@ def lead_status(request, pk, action):
         object_id=str(ld.pk),
     )  # fmt: skip
     return Response({"id": ld.pk, "status": ld.status, "at": timezone.now()})
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsModerator])
+def lookup_countries(request):
+    """Primary keys for staff pickers (the public country list does not expose them)."""
+    from apps.countries.models import Country
+
+    return Response(
+        {"results": [{"id": c.pk, "iso2": c.iso2, "name": c.name} for c in Country.objects.all()]}
+    )
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsModerator])
+def lookup_packs(request):
+    """Find a product pack ID by brand name for the offer form."""
+    from apps.pharma.models import ProductPack
+
+    q = (request.query_params.get("q") or "").strip()
+    if len(q) < 2:
+        return Response({"results": []})
+    packs = ProductPack.objects.filter(product__brand_name__icontains=q).select_related(
+        "product", "dosage_form", "pack_size_unit"
+    )[:20]
+    return Response(
+        {
+            "results": [
+                {"id": p.pk, "label": f"{p.product.brand_name}: {_pack_label(p)}"} for p in packs
+            ]
+        }
+    )
