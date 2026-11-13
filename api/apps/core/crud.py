@@ -64,8 +64,9 @@ def val(instance, name):
 
 
 def crud_views(
-    model, *, fields, perm, row, name, create_only=(), hidden=(), on_create=None, queryset=None
-):
+    model, *, fields, perm, row, name, create_only=(), hidden=(), on_create=None, after_save=None,
+    queryset=None,
+):  # fmt: skip
     """Returns (list_create_view, update_view); `name` prefixes the audit actions."""
 
     def audit(request, action, obj, before=None, after=None):
@@ -91,6 +92,8 @@ def crud_views(
         except ValidationError as exc:
             return Response({"detail": "; ".join(exc.messages)}, status=http.HTTP_400_BAD_REQUEST)
         obj.save()
+        if after_save:
+            after_save(obj, request, True)
         audit(request, "created", obj, after={f: val(obj, f) for f in fields})
         return Response(row(obj), status=http.HTTP_201_CREATED)
 
@@ -108,6 +111,8 @@ def crud_views(
         except ValidationError as exc:
             return Response({"detail": "; ".join(exc.messages)}, status=http.HTTP_400_BAD_REQUEST)
         obj.save()
+        if changed and after_save:
+            after_save(obj, request, False)
         if changed:
             audit(
                 request, "edited", obj,

@@ -96,6 +96,9 @@ class AIUsage(models.Model):
     class Meta:
         ordering = ["-at"]
 
+    def __str__(self):
+        return f"{self.task} via {self.model}"
+
     def save(self, *args, **kwargs):
         if self.pk:
             raise ValueError("AIUsage entries are immutable")

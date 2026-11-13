@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "apps.push",
     "apps.universities",
     "apps.ai",
+    "apps.content",
+    "apps.marketplace",
 ]
 
 MIDDLEWARE = [
