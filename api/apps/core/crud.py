@@ -76,9 +76,6 @@ def crud_views(
             object_id=str(obj.pk), before=mask(before) or None, after=mask(after) or None,
         )  # fmt: skip
 
-    @untyped_schema
-    @api_view(["GET", "POST"])
-    @permission_classes([perm])
     def list_create(request):
         if request.method == "GET":
             qs = queryset() if queryset else model.objects.all()
@@ -97,9 +94,6 @@ def crud_views(
         audit(request, "created", obj, after={f: val(obj, f) for f in fields})
         return Response(row(obj), status=http.HTTP_201_CREATED)
 
-    @untyped_schema
-    @api_view(["PATCH"])
-    @permission_classes([perm])
     def update(request, pk):
         obj = model.objects.filter(pk=pk).first()
         if obj is None:
@@ -121,7 +115,12 @@ def crud_views(
             )  # fmt: skip
         return Response(row(obj))
 
-    return list_create, update
+    # Distinct names keep OpenAPI operation ids unique (they derive from the view name).
+    list_create.__name__, update.__name__ = f"{name}_list", f"{name}_update"
+    wrap = lambda fn, methods: untyped_schema(  # noqa: E731
+        api_view(methods)(permission_classes([perm])(fn))
+    )
+    return wrap(list_create, ["GET", "POST"]), wrap(update, ["PATCH"])
 
 
 def simple_row(fields, extra=lambda o: {}):
