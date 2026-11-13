@@ -18,7 +18,7 @@ jobs:
     # Manual runs always work once the secrets exist; the daily schedule needs DATA_SYNC_ENABLED.
     if: github.event_name == 'workflow_dispatch' || vars.DATA_SYNC_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 340
     defaults: { run: { working-directory: api } }
     env:
       DEBUG: "false"
