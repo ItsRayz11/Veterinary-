@@ -36,12 +36,15 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       if (needsCode) {
         await apiSend("POST", "/auth/mfa/verify", { code: payload.code });
       } else {
-        const res = await apiSend<{ mfa_required?: boolean }>(
+        const res = await apiSend<{ id?: number; mfa_required?: boolean }>(
           "POST",
           register ? "/auth/register" : "/auth/login",
           payload,
         );
-        if (res?.mfa_required) {
+        // A pending second factor replies with only {mfa_required: true}. A signed-in user (which
+        // also carries mfa_required for staff who have not enrolled yet) has an id: let them in so
+        // they can enrol from their account page instead of being asked for a code they cannot have.
+        if (res?.mfa_required && res.id === undefined) {
           setNeedsCode(true);
           return;
         }
