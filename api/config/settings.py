@@ -173,8 +173,9 @@ CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
-# JSON bodies are small; the largest is a 2 MB CSV import wrapped in JSON.
-DATA_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024  # fits a 3 MB model as base64; Vercel caps bodies at 4.5 MB
+# JSON bodies are small; the largest are a 2 MB CSV import and a 3 MB 3D model (base64 inflates
+# it by a third). Vercel itself caps request bodies at 4.5 MB.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 200
 
 # Optional error monitoring for server errors; empty = off. Personal data is never sent.
