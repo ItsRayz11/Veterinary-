@@ -10,7 +10,7 @@ import { useUser } from "@/lib/use-user";
 interface Me {
   supplier: { id: number; name: string; status: string } | null;
 }
-const MAX = 8 * 1024 * 1024;
+const MAX = 3 * 1024 * 1024;
 
 function toBase64(buf: ArrayBuffer): string {
   let s = "";
@@ -71,13 +71,15 @@ export function SupplierArea() {
     const file = f.get("file");
     if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".glb"))
       return setMsg({ tone: "danger", text: "Choose a .glb file." });
-    if (file.size > MAX) return setMsg({ tone: "danger", text: "The file is larger than 8 MB." });
+    if (file.size > MAX) return setMsg({ tone: "danger", text: "The file is larger than 3 MB." });
     setBusy(true);
     try {
       await apiSend("POST", "/my/catalogs-3d/", {
         title: f.get("title"),
         description: f.get("description"),
         collection: f.get("collection"),
+        price_amount: f.get("price_amount") || null,
+        price_currency: f.get("price_currency"),
         rights_confirmed: f.get("rights") === "on",
         asset_base64: toBase64(await file.arrayBuffer()),
       });
@@ -118,8 +120,9 @@ export function SupplierArea() {
         <form onSubmit={upload} className="card space-y-3 p-4">
           <h2 className="font-semibold">Upload a model ({me.supplier.name})</h2>
           <p className="text-xs text-muted">
-            Binary glTF (.glb) up to 8 MB. Files are checked for structure, not scanned for malware,
-            and staff review each one before it is public.
+            Binary glTF (.glb) up to 3 MB, without compressed-mesh extensions. Every file is scanned
+            for unsafe content before it is accepted, and staff review each model before it is
+            public.
           </p>
           <Field id="c-title" label="Title">
             <TextInput id="c-title" name="title" required maxLength={160} />
@@ -127,6 +130,14 @@ export function SupplierArea() {
           <Field id="c-collection" label="Collection">
             <TextInput id="c-collection" name="collection" maxLength={100} />
           </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field id="c-price" label="Price (optional)">
+              <TextInput id="c-price" name="price_amount" type="number" min="0" step="0.01" />
+            </Field>
+            <Field id="c-ccy" label="Currency">
+              <TextInput id="c-ccy" name="price_currency" maxLength={3} placeholder="USD" />
+            </Field>
+          </div>
           <Field id="c-desc" label="Description">
             <TextInput id="c-desc" name="description" maxLength={2000} />
           </Field>

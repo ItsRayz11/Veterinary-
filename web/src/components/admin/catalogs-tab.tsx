@@ -18,6 +18,10 @@ interface Catalog extends Record<string, unknown> {
   asset_size: number;
   rights_confirmed: boolean;
   reject_reason: string;
+  scan_status: string;
+  scan_detail: string;
+  price_amount: string | null;
+  price_currency: string;
 }
 interface Plan extends Record<string, unknown> {
   id: number;
@@ -33,6 +37,7 @@ interface Lead extends Record<string, unknown> {
   email: string;
   company: string;
   plan: string;
+  catalog: string;
   message: string;
   status: string;
   created_at: string;
@@ -72,8 +77,9 @@ export function CatalogsTab({ admin }: { admin: boolean }) {
       <section className="space-y-2" aria-label="3D models">
         <h3 className="font-semibold">3D models</h3>
         <p className="text-sm text-muted">
-          Files are structure-checked (GLB 2.0, 8 MB limit) but not malware-scanned, so review each
-          one before approving. Approval needs the supplier&rsquo;s rights confirmation.
+          Uploads are scanned on arrival (structure, external links, scripts, compressed-mesh
+          extensions, plus ClamAV or VirusTotal when configured) and blocked if unsafe. Approval
+          needs a clean scan and the supplier&rsquo;s rights confirmation; still look at each model.
         </p>
         <CrudSection<Catalog>
           path="/staff/catalogs-3d"
@@ -86,6 +92,8 @@ export function CatalogsTab({ admin }: { admin: boolean }) {
             { name: "collection", label: "Collection" },
             { name: "fallback_image_path", label: "Fallback image path (e.g. /images/x.png)" },
             { name: "rights_confirmed", label: "Rights confirmed", type: "checkbox" },
+            { name: "price_amount", label: "Reference price", type: "number" },
+            { name: "price_currency", label: "Price currency (ISO 4217)" },
             { name: "status", label: "Status", type: "select", options: STATUS },
             { name: "reject_reason", label: "Reason if rejected" },
           ]}
@@ -103,7 +111,42 @@ export function CatalogsTab({ admin }: { admin: boolean }) {
             },
             {
               header: "Status",
-              render: (r) => `${r.status}${r.rights_confirmed ? "" : " (rights not confirmed)"}`,
+              render: (r) => (
+                <>
+                  {r.status}
+                  {r.rights_confirmed ? "" : " (rights not confirmed)"}
+                  {r.price_amount && (
+                    <p className="text-xs text-muted">
+                      {r.price_currency} {r.price_amount}
+                    </p>
+                  )}
+                </>
+              ),
+            },
+            {
+              header: "Safety scan",
+              render: (r) => (
+                <>
+                  <span className={r.scan_status === "clean" ? "" : "text-warn"}>
+                    {r.scan_status}
+                  </span>
+                  {r.scan_detail && <p className="text-xs text-muted">{r.scan_detail}</p>}
+                </>
+              ),
+            },
+          ]}
+          actions={[
+            {
+              label: "Rescan",
+              show: (r) => r.asset_size > 0,
+              run: async (r) => {
+                const out = await apiSend<{ scan_status: string; scan_detail: string }>(
+                  "POST",
+                  `/staff/catalogs-3d/${r.id}/rescan/`,
+                  {},
+                );
+                return `Scan result: ${out.scan_status}. ${out.scan_detail}`;
+              },
             },
           ]}
         />
@@ -174,7 +217,7 @@ export function CatalogsTab({ admin }: { admin: boolean }) {
               header: "Interest",
               render: (r) => (
                 <>
-                  {r.plan || "General"}
+                  {r.catalog || r.plan || "General"}
                   {r.message && <p className="text-xs text-muted">{r.message}</p>}
                 </>
               ),

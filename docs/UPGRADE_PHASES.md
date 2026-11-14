@@ -67,7 +67,7 @@ Collapsible, searchable, responsive sidebar; Dashboard with real counts; `?secti
   by country" and "Where to buy".
 
 ## Phase 5: 3D catalogs
-- `Supplier`, `Catalog3D` (GLB stored in the database, 8 MB, structure-validated glTF 2.0),
+- `Supplier`, `Catalog3D` (GLB stored in the database, 3 MB, structure-validated glTF 2.0),
   `CatalogPlan`, `Lead`. Suppliers must be approved; models are public only after moderator
   approval and confirmed rights. Assets are served with `nosniff` from the API; the viewer
   (`@google/model-viewer`, bundled) loads only on pages that show a model and falls back to an
@@ -75,8 +75,43 @@ Collapsible, searchable, responsive sidebar; Dashboard with real counts; `?secti
 - **Payments are OFF.** Plans display a price but the only action is an enquiry (`Lead`). No
   checkout, invoice or webhook exists. Enable only after provider, tax, invoicing and refund
   rules are configured and tested.
-- **No malware scanning**: files are checked structurally only. Moderators must review each model
-  before approving; add a scanning service before opening uploads widely.
+- **Upload scanning** (`marketplace/scan.py`, migration `marketplace/0002`): every upload is
+  hashed and scanned before it is stored. Built-in layer (always on): well-formed glTF 2.0, no
+  external or script-bearing URIs, only allow-listed extensions (Draco and meshopt are rejected
+  because their decoders would load from a remote CDN, which the CSP forbids), sane counts, no
+  script markers. Optional layers: ClamAV (`CLAMD_HOST`, `CLAMD_PORT`) and a VirusTotal hash lookup
+  (`VIRUSTOTAL_API_KEY`; the file itself is never uploaded and an unknown hash is not a
+  clearance). Unsafe files are rejected and the attempt is audited. A model can be approved only
+  with a clean scan and confirmed rights; staff can rescan. Nothing can prove a file safe, so
+  moderators still look at each model. The 3 MB limit comes from the 4.5 MB serverless body cap
+  (base64 adds a third) and `DATA_UPLOAD_MAX_MEMORY_SIZE` (now 4 MB).
+- **Prices**: a catalog can carry a reference price (amount + currency) shown on its card and
+  plans are listed with prices. Buying is still by enquiry (`Lead`, optionally naming the model);
+  no checkout exists.
+
+## Round 2: cross-check fixes and additions
+- Upload size limits fixed (8 MB could never pass the 3 MB body cap); rights confirmation is now
+  enforced on the server at upload, not just in the form.
+- Source registry: `robots_status` is now set to "allowed" when a check passes robots.txt;
+  imports refuse sources marked restricted; `record_count` is filled after each import.
+- Feeds: postings with payment-demand markers (fees, Western Union, etc.) are not created and are
+  counted in the feed result (`policy.looks_suspicious`).
+- Dashboard: tiles for articles, price records, retailer offers, 3D models/suppliers/enquiries and
+  (admins) AI calls and estimated spend, each linking to its section.
+- Admin UI: link-check results appear inline instead of a browser alert; article audit entries no
+  longer copy the whole body.
+- Trends: `content/trends.py` reads Wikimedia Pageviews (official, CC0). It is registered as a
+  disabled source (`wikimedia-pageviews`, migration `automation/0005`); an admin enables it and
+  confirms its terms in the registry, after which "Find new topic ideas" adds ideas labelled
+  "From a registered trend source" with the real 30-day numbers and a link. These are general
+  public-interest signals, not veterinary-specific demand.
+- Release gate: `.github/workflows/release.yml` (manual) runs all checks in the `staging`
+  environment, then waits for the required reviewer on the `production-approval` environment
+  before applying migrations to production (needs secrets `DATABASE_URL`, `SECRET_KEY`). Vercel
+  still builds every push to main; to make approval the only path to production, change the
+  Vercel project's production branch or ignored-build-step setting (a Vercel dashboard change).
+- AgentRouter: its official documentation could not be found, so no base URL is assumed.
+  Enter the base URL from your AgentRouter account docs, test the connection, then route tasks.
 
 ## Rollout and rollback
 1. Take a Neon snapshot (see `ADMIN.md`). 2. Deploy to a preview/staging environment, run
@@ -92,6 +127,6 @@ import only when terms are confirmed, plans are hidden until `active`, offers/ar
 hidden until approved.
 
 ## Known gaps (not implemented, by design or pending input)
-Automatic discovery/parsing beyond the existing importers and feeds; trend-data ingestion;
-retailer self-service offer sync (staff enter offers today); malware scanning; payments;
-screenshots and a staging deployment (need your environments).
+Automatic discovery/parsing beyond the existing importers and feeds; retailer self-service offer
+sync (staff enter offers today); payments; auto-publishing of feed items (the policy module only
+filters scams today; items stay pending for review); screenshots; Vercel-side deploy gating.

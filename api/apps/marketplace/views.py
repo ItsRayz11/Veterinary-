@@ -20,6 +20,7 @@ from apps.core.throttling import ClientIPMixin, UserThrottle
 from apps.pharma.models import Product
 from apps.pricing import selectors
 
+from . import scan
 from .models import (
     ApprovalStatus,
     Catalog3D,
@@ -162,6 +163,11 @@ def _catalog_row(c: Catalog3D, *, detail=False) -> dict:
         "supplier": c.supplier.name,
         "product": c.product.slug if c.product_id else None,
         "fallback_image": c.fallback_image_path,
+        "price": (
+            {"amount": str(c.price_amount), "currency": c.price_currency}
+            if c.price_amount
+            else None
+        ),
         "has_model": bool(c.asset_size),
         "asset_url": f"/api/v1/catalogs-3d/{c.pk}/asset/" if c.asset_size else None,
     }
@@ -225,10 +231,11 @@ def plan_list(request):
 def lead_create(request):
     d = request.data
     plan = CatalogPlan.objects.filter(pk=d.get("plan") or 0, active=True).first()
+    catalog = Catalog3D.objects.filter(pk=d.get("catalog") or 0, status="approved").first()
     lead = Lead(
         name=str(d.get("name", ""))[:120], email=str(d.get("email", ""))[:254],
         company=str(d.get("company", ""))[:160], message=str(d.get("message", ""))[:1000],
-        plan=plan,
+        plan=plan, catalog=catalog,
     )  # fmt: skip
     try:
         lead.full_clean()
@@ -278,17 +285,33 @@ def my_catalog_upload(request):
         collection=str(d.get("collection", ""))[:100],
         fallback_image_path=str(d.get("fallback_image_path", ""))[:200],
         rights_confirmed=bool(d.get("rights_confirmed")),
+        price_amount=d.get("price_amount") or None,
+        price_currency=str(d.get("price_currency", ""))[:3],
     )  # fmt: skip
     try:
+        if not c.rights_confirmed:
+            raise ValidationError("Confirm that you own or may license this model.")
         raw = base64.b64decode(str(d.get("asset_base64", "")), validate=True)
         validate_glb(raw)
         c.full_clean(exclude=["asset"])
     except (ValueError, ValidationError) as exc:
         msg = "; ".join(exc.messages) if isinstance(exc, ValidationError) else "Invalid upload."
         return Response({"detail": msg}, status=http.HTTP_400_BAD_REQUEST)
+    status, detail, digest = scan.scan(raw)
+    if status in (scan.INFECTED, scan.SUSPICIOUS):
+        AuditLog.objects.create(
+            actor=request.user, action="catalog3d_upload_blocked",
+            object_type="marketplace.Catalog3D", object_id="-",
+            after={"scan": status, "detail": detail, "sha256": digest},
+        )  # fmt: skip
+        return Response(
+            {"detail": f"The file was blocked by the safety scan: {detail}"},
+            status=http.HTTP_400_BAD_REQUEST,
+        )
     c.asset, c.asset_size = raw, len(raw)
+    c.sha256, c.scan_status, c.scan_detail, c.scanned_at = digest, status, detail, timezone.now()
     c.save()  # status stays pending until staff approve it
-    return Response({"id": c.pk, "status": c.status}, status=201)
+    return Response({"id": c.pk, "status": c.status, "scan": c.scan_status}, status=201)
 
 
 # ---------- staff ----------
@@ -336,16 +359,37 @@ suppliers, supplier_update = crud_views(
 
 CATALOG_FIELDS = [
     "title", "description", "collection", "fallback_image_path", "rights_confirmed", "status",
-    "reject_reason",
+    "reject_reason", "price_amount", "price_currency",
 ]  # fmt: skip
 catalogs, catalog_update = crud_views(
     Catalog3D, fields=CATALOG_FIELDS, perm=IsModerator, name="catalog3d",
     row=simple_row(
         CATALOG_FIELDS,
-        lambda c: {"supplier_name": c.supplier.name, "asset_size": c.asset_size},
+        lambda c: {
+            "supplier_name": c.supplier.name, "asset_size": c.asset_size,
+            "scan_status": c.scan_status, "scan_detail": c.scan_detail,
+            "scanned_at": c.scanned_at, "sha256": c.sha256,
+        },
     ),
     queryset=lambda: Catalog3D.objects.select_related("supplier").defer("asset"),
 )  # fmt: skip
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsModerator])
+def catalog_rescan(request, pk):
+    c = get_object_or_404(Catalog3D, pk=pk)
+    if not c.asset_size:
+        return Response({"detail": "This record has no model file."}, status=409)
+    status, detail, digest = scan.scan(bytes(c.asset))
+    c.scan_status, c.scan_detail, c.sha256, c.scanned_at = status, detail, digest, timezone.now()
+    c.save(update_fields=["scan_status", "scan_detail", "sha256", "scanned_at", "updated_at"])
+    AuditLog.objects.create(
+        actor=request.user, action="catalog3d_rescanned", object_type=c._meta.label,
+        object_id=str(c.pk), after={"scan": status},
+    )  # fmt: skip
+    return Response({"id": c.pk, "scan_status": status, "scan_detail": detail})
 
 
 @untyped_schema
@@ -356,9 +400,10 @@ def leads(request):
         {
             "results": [
                 {"id": ld.pk, "name": ld.name, "email": ld.email, "company": ld.company,
-                 "plan": ld.plan.name if ld.plan else "", "message": ld.message,
+                 "plan": ld.plan.name if ld.plan else "",
+                 "catalog": ld.catalog.title if ld.catalog else "", "message": ld.message,
                  "status": ld.status, "created_at": ld.created_at}
-                for ld in Lead.objects.select_related("plan")[:200]
+                for ld in Lead.objects.select_related("plan", "catalog")[:200]
             ]
         }
     )  # fmt: skip

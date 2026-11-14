@@ -33,6 +33,15 @@ export interface Summary {
   price_submissions_pending: number;
   question_reports_open: number;
   listings_pending?: number;
+  articles_in_review?: number;
+  articles_published?: number;
+  prices_recent_7d?: number;
+  catalogs_pending?: number;
+  suppliers_pending?: number;
+  offers_pending?: number;
+  leads_new?: number;
+  ai_month_calls?: number;
+  ai_month_cost_usd?: string;
   admin_url?: string; // from the API, so a private ADMIN_URL never ships in the public bundle
   role: string;
   can_approve_clinical: boolean;
@@ -115,6 +124,9 @@ export function AdminPanel() {
     listings: summary?.listings_pending,
     prices: summary?.price_submissions_pending,
     reports: summary?.question_reports_open,
+    content: summary?.articles_in_review,
+    market: summary?.offers_pending,
+    catalogs: (summary?.catalogs_pending ?? 0) + (summary?.suppliers_pending ?? 0) || undefined,
   };
   const refresh = () => setVersion((v) => v + 1);
   const setTab = (k: SectionKey) => {

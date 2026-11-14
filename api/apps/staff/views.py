@@ -22,12 +22,49 @@ class IsAdminRole(HasRole):
     roles = frozenset({Role.ADMIN})
 
 
+def _extras(user) -> dict:
+    """Counts for the dashboard from the newer modules (all plain database counts)."""
+    from datetime import timedelta
+
+    from django.db.models import Sum
+    from django.utils import timezone
+
+    from apps.ai.models import AIUsage
+    from apps.content.models import Article, ArticleStatus
+    from apps.marketplace.models import ApprovalStatus, Catalog3D, Lead, RetailerOffer, Supplier
+    from apps.pricing.models import PriceRecord
+
+    now = timezone.now()
+    out = {
+        "articles_in_review": Article.objects.filter(status=ArticleStatus.REVIEW).count(),
+        "articles_published": Article.objects.public().count(),
+        "prices_recent_7d": PriceRecord.objects.published()
+        .filter(created_at__gte=now - timedelta(days=7))
+        .count(),
+    }
+    if user.role in (Role.MODERATOR, Role.ADMIN) or user.is_superuser:
+        out |= {
+            "catalogs_pending": Catalog3D.objects.filter(status=ApprovalStatus.PENDING).count(),
+            "suppliers_pending": Supplier.objects.filter(status=ApprovalStatus.PENDING).count(),
+            "offers_pending": RetailerOffer.objects.filter(status=ApprovalStatus.PENDING).count(),
+            "leads_new": Lead.objects.filter(status="new").count(),
+        }
+    if user.role == Role.ADMIN or user.is_superuser:
+        month = AIUsage.objects.filter(at__gte=now.replace(day=1, hour=0, minute=0, second=0))
+        out |= {
+            "ai_month_calls": month.count(),
+            "ai_month_cost_usd": str(month.aggregate(t=Sum("cost_usd"))["t"] or 0),
+        }
+    return out
+
+
 @untyped_schema
 @api_view(["GET"])
 @permission_classes([IsEditor])
 def summary(request):
     return Response(
-        {
+        _extras(request.user)
+        | {
             "review_queue": services.queue_counts(),
             "price_submissions_pending": PriceSubmission.objects.filter(
                 status=SubmissionStatus.PENDING

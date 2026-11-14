@@ -156,13 +156,11 @@ export function ContentTab() {
                   {},
                 );
                 const bad = out.results.filter((x) => !x.ok);
-                window.alert(
-                  out.results.length === 0
-                    ? "No outbound links."
-                    : bad.length
-                      ? `Broken or unreachable:\n${bad.map((b) => b.url).join("\n")}`
-                      : `All ${out.results.length} links respond.`,
-                );
+                return out.results.length === 0
+                  ? "No outbound links."
+                  : bad.length
+                    ? `Broken or unreachable: ${bad.map((b) => b.url).join(", ")}`
+                    : `All ${out.results.length} links respond.`;
               },
             },
           ]}
@@ -172,9 +170,10 @@ export function ContentTab() {
       <section className="space-y-2" aria-label="Topic ideas">
         <h3 className="font-semibold">Editorial assistant: topic ideas</h3>
         <p className="text-sm text-muted">
-          Ideas are labelled by what they rest on. VetRef has no trend feed registered, so none are
-          labelled as trend data. Accepting an idea with &ldquo;Draft with AI&rdquo; creates an
-          unpublished, AI-assisted, clinical-flagged draft and needs a configured AI provider.
+          Ideas are labelled by what they rest on. Trend ideas use real Wikipedia page-view counts
+          and appear only after an admin approves the Wikimedia source in the source registry.
+          Accepting an idea with &ldquo;Draft with AI&rdquo; creates an unpublished, AI-assisted,
+          clinical-flagged draft and needs a configured AI provider.
         </p>
         <Button variant="secondary" loading={busy} onClick={suggest}>
           Find new topic ideas

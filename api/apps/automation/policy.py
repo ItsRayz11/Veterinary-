@@ -79,3 +79,15 @@ def is_price_outlier(amount: float, reference: list[float]) -> bool:
     ref = sorted(reference)
     median = ref[len(ref) // 2]
     return amount > median * PRICE_OUTLIER_FACTOR or amount < median / PRICE_OUTLIER_FACTOR
+
+
+SCAM_MARKERS = (
+    "registration fee", "processing fee", "pay to apply", "application fee", "western union",
+    "moneygram", "send money", "advance fee", "pay a fee", "deposit required",
+)  # fmt: skip
+
+
+def looks_suspicious(text: str) -> bool:
+    """Payment-demand and similar scam markers in a posting (plain substring checks)."""
+    t = (text or "").lower()
+    return any(m in t for m in SCAM_MARKERS)

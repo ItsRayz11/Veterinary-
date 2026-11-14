@@ -10,7 +10,9 @@ from simple_history.models import HistoricalRecords
 from apps.core.models import TimeStampedModel
 
 STOCK_STALE_AFTER = timedelta(days=14)
-MAX_GLB_BYTES = 8 * 1024 * 1024
+MAX_GLB_BYTES = (
+    3 * 1024 * 1024
+)  # base64 of this fits the 4 MB request cap and Vercel's 4.5 MB limit
 
 
 class ApprovalStatus(models.TextChoices):
@@ -176,6 +178,12 @@ class Catalog3D(TimeStampedModel):
     rights_confirmed = models.BooleanField(
         default=False, help_text="Supplier confirms it owns or may license the asset"
     )
+    price_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price_currency = models.CharField(max_length=3, blank=True)
+    sha256 = models.CharField(max_length=64, blank=True, editable=False)
+    scan_status = models.CharField(max_length=10, default="pending", editable=False)
+    scan_detail = models.CharField(max_length=300, blank=True, editable=False)
+    scanned_at = models.DateTimeField(null=True, blank=True, editable=False)
     status = models.CharField(
         max_length=10, choices=ApprovalStatus.choices, default=ApprovalStatus.PENDING
     )
@@ -192,8 +200,18 @@ class Catalog3D(TimeStampedModel):
             self.fallback_image_path.startswith("/") and "//" not in self.fallback_image_path
         ):
             raise ValidationError("The fallback image must be a same-site path starting with /.")
-        if self.status == ApprovalStatus.APPROVED and not self.rights_confirmed:
-            raise ValidationError("Asset rights must be confirmed before approval.")
+        self.price_currency = (self.price_currency or "").upper()
+        if bool(self.price_amount) != bool(self.price_currency):
+            raise ValidationError("Give both a price and its currency, or neither.")
+        if self.price_amount is not None and self.price_amount <= 0:
+            raise ValidationError("The price must be positive.")
+        if self.status == ApprovalStatus.APPROVED:
+            if not self.rights_confirmed:
+                raise ValidationError("Asset rights must be confirmed before approval.")
+            if self.asset_size and self.scan_status != "clean":
+                raise ValidationError(
+                    f"The upload scan result is '{self.scan_status}'; it must be clean to approve."
+                )
 
 
 class PlanKind(models.TextChoices):
@@ -234,6 +252,7 @@ class Lead(TimeStampedModel):
     email = models.EmailField()
     company = models.CharField(max_length=160, blank=True)
     plan = models.ForeignKey(CatalogPlan, null=True, blank=True, on_delete=models.SET_NULL)
+    catalog = models.ForeignKey(Catalog3D, null=True, blank=True, on_delete=models.SET_NULL)
     message = models.CharField(max_length=1000, blank=True)
     status = models.CharField(max_length=10, choices=LeadStatus.choices, default=LeadStatus.NEW)
 

@@ -22,6 +22,7 @@ interface Catalog {
   product: string | null;
   fallback_image: string;
   asset_url: string | null;
+  price: { amount: string; currency: string } | null;
 }
 interface Plans {
   results: {
@@ -68,6 +69,14 @@ export default async function Page() {
                 <img src={c.fallback_image} alt={c.title} className="w-full rounded-lg" />
               ) : null}
               <h2 className="font-semibold">{c.title}</h2>
+              {c.price && (
+                <p className="text-sm font-medium">
+                  {c.price.currency} {c.price.amount}{" "}
+                  <span className="text-xs font-normal text-muted">
+                    reference price, buy by enquiry
+                  </span>
+                </p>
+              )}
               <p className="text-xs text-muted">
                 {c.supplier}
                 {c.collection && ` · ${c.collection}`}
@@ -101,7 +110,10 @@ export default async function Page() {
           </ul>
         )}
         <p className="text-sm text-muted">{plans.note}</p>
-        <CatalogLeadForm plans={plans.results.map((p) => ({ id: p.id, name: p.name }))} />
+        <CatalogLeadForm
+          plans={plans.results.map((p) => ({ id: p.id, name: p.name }))}
+          catalogs={results.map((c) => ({ id: c.id, title: c.title }))}
+        />
       </section>
     </div>
   );

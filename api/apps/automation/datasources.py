@@ -28,7 +28,7 @@ from apps.ingestion.models import ImportBatch
 from apps.sources.models import Source
 
 from . import safe_http
-from .models import DataSource
+from .models import DataSource, RobotsStatus
 
 CHECK_BUDGET = 12  # seconds for the whole scheduled run (Vercel stops functions at 30 s)
 CHECK_LIMIT = 10
@@ -81,6 +81,8 @@ def check_source(source: DataSource, robots_cache: dict | None = None) -> DataSo
         ):
             error = "skipped: robots.txt forbids automated access or could not be read"
         else:
+            if source.robots_status in (RobotsStatus.UNKNOWN, RobotsStatus.ALLOWED):
+                source.robots_status = RobotsStatus.ALLOWED  # observed, not assumed
             status, _, _, headers = safe_http.fetch_full(
                 url, method="HEAD", timeout=PROBE_TIMEOUT, deadline=deadline
             )
@@ -173,6 +175,8 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
         raise SyncError(f"{source.name} has no importer (monitor only).")
     if source.paused:
         raise SyncError(f"{source.name} is paused by an admin.")
+    if source.robots_status == RobotsStatus.RESTRICTED:
+        raise SyncError(f"{source.name} is marked as not open to automated access.")
     if not source.import_enabled:
         raise SyncError(f"Import is not enabled for {source.name}.")
     if not source.terms_confirmed_at:
@@ -264,6 +268,7 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
     source.update_available = False
     source.last_imported_at = timezone.now()
     source.last_import_result = summary[:300]
+    source.record_count = len(cleaned.rows)
     source.save()
     return {**totals, "report": cleaned.report}
 

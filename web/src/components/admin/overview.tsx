@@ -97,6 +97,46 @@ export function Overview({
         </div>
       </section>
 
+      <section aria-label="Content, market and catalogs">
+        <h2 className="mb-2 text-sm font-semibold">Content, market and catalogs</h2>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat
+            label="Articles in review"
+            value={summary.articles_in_review ?? 0}
+            go={() => go("content")}
+            hint={`${summary.articles_published ?? 0} published`}
+          />
+          <Stat
+            label="Price records added (7 days)"
+            value={summary.prices_recent_7d ?? 0}
+            go={() => go("market")}
+          />
+          {isModerator && (
+            <>
+              <Stat
+                label="Retailer offers to review"
+                value={summary.offers_pending ?? 0}
+                go={() => go("market")}
+              />
+              <Stat
+                label="3D models and suppliers pending"
+                value={(summary.catalogs_pending ?? 0) + (summary.suppliers_pending ?? 0)}
+                go={() => go("catalogs")}
+                hint={`${summary.leads_new ?? 0} new enquiries`}
+              />
+            </>
+          )}
+          {summary.ai_month_calls !== undefined && (
+            <Stat
+              label="AI calls this month"
+              value={summary.ai_month_calls}
+              go={() => go("ai")}
+              hint={`about $${summary.ai_month_cost_usd} (estimate)`}
+            />
+          )}
+        </div>
+      </section>
+
       <section aria-label="Sources and automation">
         <h2 className="mb-2 text-sm font-semibold">Sources and automation</h2>
         {auto === undefined ? (

@@ -18,6 +18,7 @@ from apps.core.schema import untyped_schema
 from apps.core.throttling import UserThrottle
 from apps.species.models import Species
 
+from . import trends
 from .models import (
     Article,
     ArticleRevision,
@@ -168,6 +169,7 @@ def _set_author(article, request):
 
 articles, article_update = crud_views(
     Article, fields=FIELDS, perm=IsEditor, name="article", row=_row, on_create=_set_author,
+    hidden=("body",),
     after_save=_revise, queryset=lambda: Article.objects.select_related("author", "reviewed_by"),
 )  # fmt: skip
 
@@ -277,6 +279,31 @@ def suggest_topics(request):
                 rationale=f"VetRef tracks {sp.name} but no article or idea mentions it yet.",
             )
         )
+    trend_note = ""
+    src, why = trends.source_ready()
+    if src is None:
+        trend_note = f"Trend ideas skipped: {why}"
+    else:
+        names = list(
+            Species.objects.filter(parent__isnull=True).values_list("name", flat=True)[:25]
+        )
+        for t in trends.trending(names):
+            title = f"{t['topic']}: a practical guide for veterinary learners"
+            if _similar(title, existing + [m.title for m in made]):
+                skipped += 1
+                continue
+            made.append(
+                TopicSuggestion.objects.create(
+                    title=title,
+                    basis=TopicBasis.VERIFIED_TREND,
+                    rationale=(
+                        f"Wikipedia views for '{t['topic']}': {t['recent']:,} in the last 30 days "
+                        f"vs {t['prior']:,} in the 30 before (+{t['growth_pct']}%). "
+                        "General public interest, not veterinary-specific."
+                    )[:400],
+                    evidence_url=t["evidence_url"],
+                )
+            )
     ai_note = ""
     try:
         text = ai.run_task(
@@ -299,7 +326,12 @@ def suggest_topics(request):
     except ai.AIError as exc:
         ai_note = f"AI suggestions skipped: {exc}"
     return Response(
-        {"created": len(made), "duplicates_skipped": skipped, "note": ai_note}, status=201
+        {
+            "created": len(made),
+            "duplicates_skipped": skipped,
+            "note": " ".join(n for n in (trend_note, ai_note) if n),
+        },
+        status=201,
     )
 
 

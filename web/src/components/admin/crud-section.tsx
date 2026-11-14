@@ -24,6 +24,7 @@ export interface RowAction<R> {
   label: string;
   /** Posts to `${path}/${id}/${post}/`. */
   post?: string;
+  /** May return a short message to show to the admin. */
   run?: (row: R) => Promise<unknown>;
   show?: (row: R) => boolean;
   danger?: boolean;
@@ -66,6 +67,7 @@ export function CrudSection<R extends Row>({
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   function open(row: R | "new") {
     setError(null);
@@ -97,9 +99,12 @@ export function CrudSection<R extends Row>({
     if (a.confirm && !window.confirm(a.confirm)) return;
     setBusy(`${a.label}-${row.id}`);
     setError(null);
+    setNotice(null);
     try {
-      if (a.run) await a.run(row);
-      else if (a.post) await apiSend("POST", `${path}/${row.id}/${a.post}/`, {});
+      if (a.run) {
+        const out = await a.run(row);
+        if (typeof out === "string") setNotice(out);
+      } else if (a.post) await apiSend("POST", `${path}/${row.id}/${a.post}/`, {});
       list.reload();
     } catch (e) {
       setError(errText(e));
@@ -112,6 +117,7 @@ export function CrudSection<R extends Row>({
     <div className="space-y-3">
       {intro && <div className="text-sm text-muted">{intro}</div>}
       {error && !editing && <Alert tone="danger">{error}</Alert>}
+      {notice && <Alert tone="info">{notice}</Alert>}
       {canCreate && newLabel && (
         <Button onClick={() => open("new")} variant="secondary">
           {newLabel}

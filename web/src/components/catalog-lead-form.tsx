@@ -5,7 +5,13 @@ import { Button, Field, Select, TextInput } from "@/components/ui/forms";
 import { Alert } from "@/components/ui/primitives";
 import { ClientApiError, apiSend } from "@/lib/client-api";
 
-export function CatalogLeadForm({ plans }: { plans: { id: number; name: string }[] }) {
+export function CatalogLeadForm({
+  plans,
+  catalogs = [],
+}: {
+  plans: { id: number; name: string }[];
+  catalogs?: { id: number; title: string }[];
+}) {
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -18,6 +24,7 @@ export function CatalogLeadForm({ plans }: { plans: { id: number; name: string }
       await apiSend("POST", "/catalog-leads/", {
         ...body,
         plan: body.plan ? Number(body.plan) : null,
+        catalog: body.catalog ? Number(body.catalog) : null,
       });
       setState("done");
     } catch (err) {
@@ -40,6 +47,18 @@ export function CatalogLeadForm({ plans }: { plans: { id: number; name: string }
       <Field id="lead-company" label="Company">
         <TextInput id="lead-company" name="company" maxLength={160} />
       </Field>
+      {catalogs.length > 0 && (
+        <Field id="lead-catalog" label="Model of interest">
+          <Select id="lead-catalog" name="catalog" defaultValue="">
+            <option value="">Any</option>
+            {catalogs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
       {plans.length > 0 && (
         <Field id="lead-plan" label="Plan of interest">
           <Select id="lead-plan" name="plan" defaultValue="">

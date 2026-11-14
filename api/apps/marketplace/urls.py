@@ -25,6 +25,7 @@ urlpatterns = [
     path("staff/suppliers/<int:pk>/", views.supplier_update),
     path("staff/catalogs-3d/", views.catalogs),
     path("staff/catalogs-3d/<int:pk>/", views.catalog_update),
+    path("staff/catalogs-3d/<int:pk>/rescan/", views.catalog_rescan),
     path("staff/leads/", views.leads),
     path("staff/leads/<int:pk>/<str:action>/", views.lead_status),
 ]

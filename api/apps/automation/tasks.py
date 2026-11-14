@@ -17,6 +17,7 @@ from apps.sources.models import Source
 from . import safe_http
 from .datasources import check_data_sources
 from .models import Feed, FeedKind, JobRun, RunStatus, SourceHealth
+from .policy import looks_suspicious
 
 # Vercel stops a function after 30 s (api/vercel.json). Each probe is capped at PROBE_TIMEOUT and
 # the loop stops starting new probes after LINK_CHECK_BUDGET seconds, so a run finishes in time;
@@ -162,7 +163,7 @@ def parse_feed(body: bytes) -> list[dict]:
 
 def run_feed(feed: Feed) -> dict:
     """Fetch one enabled feed and create PENDING listings for items not seen before."""
-    result = {"created": 0, "duplicates": 0, "skipped": ""}
+    result = {"created": 0, "duplicates": 0, "suspicious": 0, "skipped": ""}
 
     def finish(msg: str):
         feed.last_run_at, feed.last_result = timezone.now(), msg[:300]
@@ -215,6 +216,9 @@ def run_feed(feed: Feed) -> dict:
         if model.objects.filter(apply_url=item["link"]).exists():
             result["duplicates"] += 1
             continue
+        if looks_suspicious(f"{item['title']} {item['summary']}"):
+            result["suspicious"] += 1  # payment-demand postings are never created, but counted
+            continue
         model.objects.create(
             title=item["title"],
             organization=feed.organization,
@@ -226,7 +230,10 @@ def run_feed(feed: Feed) -> dict:
         )
         result["created"] += 1
     feed.last_checksum = checksum
-    return finish(f"created {result['created']}, duplicates {result['duplicates']}")
+    return finish(
+        f"created {result['created']}, duplicates {result['duplicates']}, "
+        f"suspicious skipped {result['suspicious']}"
+    )
 
 
 def run_all_feeds(budget_seconds: float = LINK_CHECK_BUDGET, clock=time.monotonic) -> dict:
