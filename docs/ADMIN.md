@@ -2,7 +2,7 @@
 
 ## Where
 - **Django admin** (all models, review actions, history, audit log): `https://veterinaryapi.vercel.app/<ADMIN_URL>` (default `/admin/`; set `ADMIN_URL` on the API project to move it). Login is required; staff must enrol two-factor (`REQUIRE_STAFF_MFA`, on in production). Nothing in it is reachable without a staff account.
-- **Review panel** (queue, imports, automation, sources): `https://veterinary-alpha.vercel.app/admin-panel` for signed-in staff.
+- **Review panel** (queue, imports, automation, sources): `https://vetsphere.xyz/admin-panel` for signed-in staff.
 - Roles: reviewer / editor / admin groups; reviewers cannot approve their own edits (see `CLINICAL_GOVERNANCE.md`).
 
 ## Create the first administrator (secure procedure)

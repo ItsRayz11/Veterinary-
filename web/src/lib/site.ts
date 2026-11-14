@@ -1,11 +1,12 @@
 /**
- * Public origin of the web app. Set NEXT_PUBLIC_SITE_URL in production; on Vercel the production
- * domain is used when it is unset, so canonical/OG/sitemap URLs are never `localhost`.
+ * Official public origin of the web app. NEXT_PUBLIC_SITE_URL overrides it (e.g. for previews);
+ * otherwise production builds use the official domain so canonical/OG/sitemap URLs are never
+ * `localhost` or a *.vercel.app address.
  */
+export const OFFICIAL_SITE_URL = "https://vetsphere.xyz";
+
 const configured =
   process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000");
+  (process.env.NODE_ENV === "development" ? "http://localhost:3000" : OFFICIAL_SITE_URL);
 
 export const SITE_URL = configured.replace(/\/$/, "");
