@@ -150,6 +150,10 @@ body {
     transform: translateY(-2px);
     border-color: var(--primary);
   }
+  .card-link:active {
+    transform: translateY(0) scale(0.985);
+    transition-duration: 80ms;
+  }
   .neo {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -246,6 +250,35 @@ body {
   }
 }
 
+/* Entrance motion. CSS-only (compositor-friendly, no JS, no hydration flash): opacity and
+   transform only. Content is fully visible where scroll-driven animation is unsupported. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@layer utilities {
+  /* Page-load entrance for above-the-fold blocks; --rise-delay staggers siblings. */
+  .rise {
+    animation: rise-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--rise-delay, 0ms);
+  }
+  /* Below-the-fold blocks reveal as they scroll into view. */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
 @media (prefers-reduced-transparency: reduce) {
   .glass {
     background: var(--surface);
@@ -266,8 +299,13 @@ body {
   .neo {
     transition: none;
   }
-  .card-link:hover {
+  .card-link:hover,
+  .card-link:active {
     transform: none;
+  }
+  .rise,
+  .reveal {
+    animation: none !important;
   }
 }
 

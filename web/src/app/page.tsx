@@ -96,7 +96,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-10 pt-4">
-      <section className="glass space-y-4 rounded-[var(--radius-xl)] p-5 sm:p-10">
+      <section className="glass rise space-y-4 rounded-[var(--radius-xl)] p-5 sm:p-10">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Veterinary drug reference
         </h1>
@@ -114,7 +114,7 @@ export default async function Home() {
       </section>
 
       {topSpecies.length > 0 && (
-        <section aria-labelledby="species-h">
+        <section aria-labelledby="species-h" className="reveal">
           <SectionHeader
             id="species-h"
             title="Browse by species"
@@ -136,7 +136,7 @@ export default async function Home() {
         </section>
       )}
 
-      <section aria-labelledby="tools-h">
+      <section aria-labelledby="tools-h" className="reveal">
         <SectionHeader id="tools-h" title="Clinical tools" category="calculators" />
         <ul className="bento">
           {TOOLS.map((t) => (
@@ -154,7 +154,7 @@ export default async function Home() {
       </section>
 
       {countries.length > 0 && (
-        <section aria-labelledby="countries-h">
+        <section aria-labelledby="countries-h" className="reveal">
           <SectionHeader
             id="countries-h"
             title="Country catalogues"
@@ -177,7 +177,7 @@ export default async function Home() {
         </section>
       )}
 
-      <section aria-labelledby="learn-h">
+      <section aria-labelledby="learn-h" className="reveal">
         <SectionHeader id="learn-h" title="Study and careers" category="study" />
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {LEARN.map((t) => (
