@@ -45,7 +45,7 @@ const PROVIDER_FIELDS: FieldDef[] = [
     options: [
       ["openai", "OpenAI API"],
       ["openrouter", "OpenRouter"],
-      ["agentrouter", "AgentRouter (OpenAI-compatible; check its docs first)"],
+      ["agentrouter", "AgentRouter (free coding-tool service; see warning above)"],
     ],
   },
   {
@@ -94,6 +94,13 @@ export function AiTab() {
         Keys are read from the server environment and are never shown here. AI only assists: drafts
         and suggestions stay unpublished, and dosages, treatments and regulatory claims always go to
         a qualified reviewer. Spend figures are estimates from token counts, not provider invoices.
+      </Alert>
+      <Alert tone="warn" title="AgentRouter: check its terms before using it here">
+        As we read agentrouter.org/docs, it is a free service for developer coding tools and its
+        terms restrict batch or synthetic content, bulk marketing/SEO text and general single-turn
+        Q&A, with quotas and suspension at its discretion. VetRef's server-side tasks may fall under
+        those limits, so prefer OpenAI or OpenRouter for production unless AgentRouter confirms in
+        writing that this use is allowed.
       </Alert>
 
       <section className="space-y-2" aria-label="Providers">

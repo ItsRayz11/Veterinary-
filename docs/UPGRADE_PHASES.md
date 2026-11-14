@@ -110,8 +110,14 @@ Collapsible, searchable, responsive sidebar; Dashboard with real counts; `?secti
   before applying migrations to production (needs secrets `DATABASE_URL`, `SECRET_KEY`). Vercel
   still builds every push to main; to make approval the only path to production, change the
   Vercel project's production branch or ignored-build-step setting (a Vercel dashboard change).
-- AgentRouter: its official documentation could not be found, so no base URL is assumed.
-  Enter the base URL from your AgentRouter account docs, test the connection, then route tasks.
+- AgentRouter (agentrouter.org): the site home is a script-only page, but /docs is readable
+  (Chinese; our translation, unverified). It presents a free service for developer coding tools
+  (Claude Code and similar) with an OpenAI-compatible path ending in /v1 for some models, keys
+  and the live model list in a separate console, and terms that restrict batch/synthetic content,
+  bulk marketing or SEO text, mostly single-turn general Q&A, and rate-limit bypassing, with
+  quotas and suspension at its discretion. VetRef's server-side tasks may breach those terms, so
+  it is NOT enabled and no base URL is preset. Use OpenAI or OpenRouter for production unless
+  AgentRouter confirms in writing that this use is allowed.
 
 ## Rollout and rollback
 1. Take a Neon snapshot (see `ADMIN.md`). 2. Deploy to a preview/staging environment, run
