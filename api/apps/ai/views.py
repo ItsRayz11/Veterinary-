@@ -69,6 +69,17 @@ def provider_test(request, pk):
     return Response(_row(p) | {"detail": msg})
 
 
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsAdminRole])
+def provider_models(request, pk):
+    p = AIProvider.objects.filter(pk=pk).first()
+    if p is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    ok, ids, msg = client.list_models(p)
+    return Response({"ok": ok, "models": ids, "detail": msg})
+
+
 def _row(p):
     return simple_row(PROVIDER_FIELDS, _provider_extra)(p)
 

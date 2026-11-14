@@ -151,3 +151,29 @@ def test_connection_test_falls_back_to_a_tiny_call_when_models_is_missing(monkey
     ok, msg = client.check_connection(p)
     assert ok and "1-token" in msg
     assert AIUsage.objects.filter(task="conn-test", ok=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_list_models_reads_ids(monkeypatch, settings):
+    import io
+    import json as _json
+
+    from apps.ai import client
+    from apps.ai.models import AIProvider
+
+    monkeypatch.setenv("K_TEST", "k")
+    monkeypatch.setattr(client.safe_http, "assert_public_url", lambda u: None)
+    p = AIProvider.objects.create(
+        kind="openai", enabled=True, base_url="https://api.openai.com/v1", api_key_env="K_TEST"
+    )
+    body = _json.dumps({"data": [{"id": "b"}, {"id": "a"}]}).encode()
+
+    class R(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(client.urllib.request, "urlopen", lambda *a, **k: R(body))
+    assert client.list_models(p) == (True, ["a", "b"], "")

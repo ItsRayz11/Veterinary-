@@ -13,6 +13,8 @@ export interface FieldDef {
   type?: "text" | "textarea" | "number" | "select" | "checkbox" | "url";
   options?: readonly (readonly [string, string])[];
   hint?: string;
+  /** Suggested values for a text field (free text is still allowed). */
+  suggestions?: readonly string[];
   /** Only editable when creating. */
   createOnly?: boolean;
 }
@@ -215,12 +217,22 @@ export function CrudSection<R extends Row>({
                       className="neo-inset w-full rounded-lg border border-border px-3 py-2 text-sm"
                     />
                   ) : (
-                    <TextInput
-                      id={id}
-                      type={f.type === "number" ? "number" : f.type === "url" ? "url" : "text"}
-                      value={String(v ?? "")}
-                      onChange={(e) => set(e.target.value)}
-                    />
+                    <>
+                      <TextInput
+                        id={id}
+                        type={f.type === "number" ? "number" : f.type === "url" ? "url" : "text"}
+                        value={String(v ?? "")}
+                        list={f.suggestions ? `${id}-list` : undefined}
+                        onChange={(e) => set(e.target.value)}
+                      />
+                      {f.suggestions && (
+                        <datalist id={`${id}-list`}>
+                          {f.suggestions.map((m) => (
+                            <option key={m} value={m} />
+                          ))}
+                        </datalist>
+                      )}
+                    </>
                   )}
                 </Field>
               );

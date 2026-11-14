@@ -120,6 +120,35 @@ def run_task(task: str, prompt: str, *, system: str = "", actor=None) -> str:
     raise AIError(last)
 
 
+def list_models(provider: AIProvider) -> tuple[bool, list[str], str]:
+    """Model ids from the provider /models endpoint (no user data sent); some gateways lack it."""
+    try:
+        if not provider.enabled:
+            raise AIError("Enable the provider first.")
+        url = provider.base_url.rstrip("/") + "/models"
+        safe_http.assert_public_url(url)
+        req = urllib.request.Request(  # noqa: S310
+            url, headers={"Authorization": f"Bearer {_key(provider)}"}
+        )
+        with urllib.request.urlopen(req, timeout=provider.timeout_seconds) as resp:  # noqa: S310
+            data = json.loads(resp.read(2_000_000))
+        ids = sorted(
+            {str(m["id"]) for m in data.get("data", []) if isinstance(m, dict) and m.get("id")}
+        )
+        return True, ids[:500], ""
+    except (AIError, safe_http.FetchError) as exc:
+        return False, [], str(exc)
+    except urllib.error.HTTPError as exc:
+        hint = (
+            " This provider does not publish a model list; type the name from its console."
+            if exc.code in (404, 405)
+            else ""
+        )
+        return False, [], f"HTTP {exc.code} from provider.{hint}"
+    except Exception as exc:  # noqa: BLE001
+        return False, [], f"Could not connect ({type(exc).__name__})."
+
+
 def check_connection(provider: AIProvider) -> tuple[bool, str]:
     """Authenticated call to the models endpoint; never sends user data."""
     try:

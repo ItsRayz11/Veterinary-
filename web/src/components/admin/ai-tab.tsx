@@ -36,6 +36,21 @@ interface Usage {
   recent: { at: string; task: string; model: string; ok: boolean; error: string }[];
 }
 
+/** Seen in an AgentRouter token's model list; its console is the source of truth. */
+const AGENTROUTER_MODELS = [
+  "deepseek-v3.2",
+  "glm-4.6",
+  "gpt-6-astra",
+  "gpt-6.1-sol",
+  "gpt-5.6-sol",
+];
+
+function providerFields(models: string[]): FieldDef[] {
+  return PROVIDER_FIELDS.map((f) =>
+    f.name === "default_model" ? { ...f, suggestions: models } : f,
+  );
+}
+
 const PROVIDER_FIELDS: FieldDef[] = [
   {
     name: "kind",
@@ -84,6 +99,9 @@ export function AiTab() {
       .then((u) => setUsage(u ?? null))
       .catch(() => setUsage(null));
   }, []);
+  // Model names to suggest: AgentRouter's list plus whatever "List models" fetched from providers.
+  const [fetched, setFetched] = useState<string[]>([]);
+  const modelNames = [...new Set([...AGENTROUTER_MODELS, ...fetched])].sort();
   const provOptions: [string, string][] = (providers.rows ?? []).flatMap((p) => [
     [String(p.id), p.kind] as [string, string],
   ]);
@@ -111,7 +129,7 @@ export function AiTab() {
           empty="No provider configured. AI features stay off until you add one."
           newLabel="Add a provider"
           defaults={{ monthly_budget_usd: 0, timeout_seconds: 20, rate_limit_per_minute: 30 }}
-          fields={PROVIDER_FIELDS}
+          fields={providerFields(modelNames)}
           columns={[
             { header: "Provider", render: (r) => `${r.kind}${r.enabled ? "" : " (off)"}` },
             {
@@ -134,6 +152,17 @@ export function AiTab() {
             },
           ]}
           actions={[
+            {
+              label: "List models",
+              run: async (r) => {
+                const res = await apiFetch<{ ok: boolean; models: string[]; detail: string }>(
+                  `/staff/ai/providers/${r.id}/models/`,
+                );
+                if (!res?.ok) return res?.detail || "Could not load models.";
+                setFetched((f) => [...new Set([...f, ...res.models])]);
+                return `${res.models.length} models loaded; they now appear as suggestions below.`;
+              },
+            },
             {
               label: "Test connection",
               run: async (r) => {
@@ -163,9 +192,9 @@ export function AiTab() {
           fields={[
             { name: "task", label: "Task", type: "select", options: TASKS, createOnly: true },
             { name: "provider", label: "Provider", type: "select" },
-            { name: "model", label: "Model" },
+            { name: "model", label: "Model", suggestions: modelNames },
             { name: "fallback_provider", label: "Fallback provider", type: "select" },
-            { name: "fallback_model", label: "Fallback model" },
+            { name: "fallback_model", label: "Fallback model", suggestions: modelNames },
             { name: "max_tokens", label: "Max tokens", type: "number" },
             { name: "enabled", label: "Enabled", type: "checkbox" },
           ]}
