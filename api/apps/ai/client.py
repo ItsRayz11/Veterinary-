@@ -136,7 +136,23 @@ def check_connection(provider: AIProvider) -> tuple[bool, str]:
     except (AIError, safe_http.FetchError) as exc:
         ok, msg = False, str(exc)
     except urllib.error.HTTPError as exc:
-        ok, msg = False, f"HTTP {exc.code} from provider."
+        if exc.code in (404, 405) and provider.default_model:
+            # Some gateways (e.g. AgentRouter) do not document /models: try one tiny completion.
+            try:
+                data = _call(
+                    provider, provider.default_model, [{"role": "user", "content": "ping"}], 1
+                )
+                _record(provider, provider.default_model, "conn-test", None, data)
+                ok, msg = True, "Connected (models list not available; a 1-token call worked)."
+            except AIError as inner:
+                ok, msg = False, str(inner)
+        elif exc.code in (404, 405):
+            ok, msg = (
+                False,
+                "No /models endpoint; set a preferred model so a 1-token call can test it.",
+            )
+        else:
+            ok, msg = False, f"HTTP {exc.code} from provider."
     except Exception as exc:  # noqa: BLE001
         ok, msg = False, f"Could not connect ({type(exc).__name__})."
     provider.last_test_at, provider.last_test_ok = timezone.now(), ok

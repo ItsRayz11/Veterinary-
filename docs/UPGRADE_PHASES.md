@@ -116,7 +116,11 @@ Collapsible, searchable, responsive sidebar; Dashboard with real counts; `?secti
   and the live model list in a separate console, and terms that restrict batch/synthetic content,
   bulk marketing or SEO text, mostly single-turn general Q&A, and rate-limit bypassing, with
   quotas and suspension at its discretion. VetRef's server-side tasks may breach those terms, so
-  it is NOT enabled and no base URL is preset. Use OpenAI or OpenRouter for production unless
+  it is NOT enabled and no base URL is preset. Technically it fits: the OpenAI-compatible base is
+  `https://agentrouter.org/v1` (`POST /v1/chat/completions`, `Authorization: Bearer`), keys and the
+  live model list come from its console, and `/models` is undocumented, so "Test connection"
+  falls back to a one-token call using the preferred model. Model names must match its list exactly
+  (a wrong name returns 503). Use OpenAI or OpenRouter for production unless
   AgentRouter confirms in writing that this use is allowed.
 
 ## Rollout and rollback

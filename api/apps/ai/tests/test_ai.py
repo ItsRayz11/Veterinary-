@@ -126,3 +126,28 @@ def test_triage_rules():
     assert t.category == "clinical" and t.escalate_to_clinician
     assert triage_report("Typo in option B", has_citation=False).category == "ok"
     assert triage_report("x", has_citation=False, duplicates_open=2).category == "duplicate"
+
+
+@pytest.mark.django_db
+def test_connection_test_falls_back_to_a_tiny_call_when_models_is_missing(monkeypatch):
+    import urllib.error
+
+    monkeypatch.setenv("AGENT_KEY", "k")
+    p = make_provider(
+        kind="agentrouter", base_url="https://agentrouter.org/v1", api_key_env="AGENT_KEY",
+        default_model="m",
+    )  # fmt: skip
+
+    def no_models(*a, **k):
+        raise urllib.error.HTTPError("u", 404, "nf", {}, None)
+
+    monkeypatch.setattr(client.urllib.request, "urlopen", no_models)
+    monkeypatch.setattr(client.safe_http, "assert_public_url", lambda u: None)
+    reply = {
+        "choices": [{"message": {"content": "pong"}}],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+    }
+    monkeypatch.setattr(client, "_call", lambda *a, **k: reply)
+    ok, msg = client.check_connection(p)
+    assert ok and "1-token" in msg
+    assert AIUsage.objects.filter(task="conn-test", ok=True).count() == 1

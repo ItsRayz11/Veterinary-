@@ -52,7 +52,7 @@ const PROVIDER_FIELDS: FieldDef[] = [
     name: "base_url",
     label: "Base URL (https)",
     type: "url",
-    hint: "e.g. https://api.openai.com/v1",
+    hint: "OpenAI: https://api.openai.com/v1 · AgentRouter: https://agentrouter.org/v1",
   },
   {
     name: "api_key_env",
