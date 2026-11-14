@@ -195,11 +195,77 @@ class DataSource(TimeStampedModel):
     )
     record_count = models.PositiveIntegerField(null=True, blank=True, editable=False)
 
+    # --- publication governance (docs/PUBLICATION_TIERS.md) ---
+    regulator_name = models.CharField(
+        max_length=200, blank=True, help_text="Shown publicly as the origin of each record"
+    )
+    attribution_text = models.CharField(
+        max_length=400,
+        blank=True,
+        help_text="Attribution the licence requires, shown on every record from this source",
+    )
+    licence_url = models.URLField(max_length=500, blank=True)
+    mapping_approved_at = models.DateTimeField(null=True, blank=True, editable=False)
+    mapping_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    first_batch_approved_at = models.DateTimeField(null=True, blank=True, editable=False)
+    first_batch_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    auto_publish = models.BooleanField(
+        default=False,
+        help_text="Routine factual updates publish as official listings without a person. "
+        "Only effective once terms, field mapping and the first batch are approved.",
+    )
+    max_removal_pct = models.PositiveSmallIntegerField(
+        default=15,
+        help_text="A sync that would drop more than this % of known records is held for review",
+    )
+    max_growth_pct = models.PositiveSmallIntegerField(
+        default=60,
+        help_text="A sync that grows the source by more than this % is held for review",
+    )
+    held_reason = models.CharField(max_length=300, blank=True, editable=False)
+    guard_bypass_once = models.BooleanField(
+        default=False, editable=False, help_text="Set when an admin releases a held sync"
+    )
+
     class Meta:
         ordering = ["priority", "name"]
 
     def __str__(self):
         return self.name
+
+    @property
+    def publication_state(self) -> str:
+        if not self.importer:
+            return "monitor_only"
+        if not self.terms_confirmed_at:
+            return "awaiting_terms"
+        if not self.mapping_approved_at:
+            return "awaiting_mapping_approval"
+        if not self.first_batch_approved_at:
+            return "awaiting_first_batch_approval"
+        if self.held_reason:
+            return "held_for_review"
+        return "auto_publishing" if self.auto_publish else "approved_manual"
+
+    @property
+    def may_auto_publish(self) -> bool:
+        return (
+            self.publication_state == "auto_publishing" and self.import_enabled and not self.paused
+        )
 
     @property
     def check_url(self) -> str:

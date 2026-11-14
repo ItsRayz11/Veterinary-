@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { adsConfig } from "./src/lib/ads";
 import { securityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
@@ -12,7 +13,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      { source: "/:path*", headers: securityHeaders(process.env.NODE_ENV === "production") },
+      {
+        source: "/:path*",
+        headers: securityHeaders(process.env.NODE_ENV === "production", adsConfig().enabled),
+      },
       // The worker must always be revalidated so updates reach users promptly.
       {
         source: "/sw.js",

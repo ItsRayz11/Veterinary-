@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from apps.clinical.models import DoseRegimen
 from apps.core.models import ReviewStatus
 from apps.core.schema import untyped_schema
+from apps.countries.coverage import coverage_report
 from apps.countries.models import Country
 from apps.species.models import Species
 
@@ -185,6 +186,7 @@ def country_detail(request, iso2):
             "name": country.name,
             "currency": country.currency_code,
             "regulator": country.regulator_name,
+            "coverage": next(r for r in coverage_report() if r["iso2"] == country.iso2),
             "products": ProductBriefSerializer(products, many=True).data,
         }
     )

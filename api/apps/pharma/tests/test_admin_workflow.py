@@ -27,6 +27,7 @@ def imported(db):
 
 
 def test_reviewer_finds_inspects_edits_and_approves(imported, settings, client):
+    settings.SHOW_UNVERIFIED_IMPORTS = True
     settings.REQUIRE_STAFF_MFA = False
     reviewer = User.objects.create_user("rev", password="x" * 14, role=Role.VET_REVIEWER)
     reviewer.is_staff = True

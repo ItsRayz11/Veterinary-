@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AdsProvider } from "@/components/ads";
 import { AppShell } from "@/components/app-shell";
 import { ErrorReporter } from "@/components/error-reporter";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { adsConfig } from "@/lib/ads";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -32,7 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <AppShell>{children}</AppShell>
+        <AdsProvider config={adsConfig()}>
+          <AppShell>{children}</AppShell>
+        </AdsProvider>
         <ServiceWorkerRegister />
         <ErrorReporter />
       </body>

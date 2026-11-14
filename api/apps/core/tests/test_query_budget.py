@@ -20,11 +20,11 @@ from apps.units.models import Unit
 BUDGET = {
     "/api/v1/generics/": 4,
     "/api/v1/generics/enrofloxacin/": 16,
-    "/api/v1/products/dev-enro-1/": 14,
+    "/api/v1/products/dev-enro-1/": 16,  # +2: indexing coverage (cached ids, provenance)
     "/api/v1/products/dev-enro-1/prices/": 4,
     "/api/v1/search/?q=enro": 6,
     "/api/v1/countries/": 3,
-    "/api/v1/countries/PK/": 5,
+    "/api/v1/countries/PK/": 6,  # +1: coverage report
     "/api/v1/species/": 3,
     "/api/v1/species/dog/": 6,
     "/api/v1/drug-classes/": 4,

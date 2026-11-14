@@ -56,7 +56,25 @@ export interface Status {
   label: string;
   is_development_data: boolean;
   is_unverified_import?: boolean;
+  /** official_listing | clinically_reviewed | manufacturer_supplied | pending */
+  tier?: string;
+  tier_label?: string;
+  clinically_reviewed?: boolean;
+  /** Detail pages only: false keeps the page out of search engines (country coverage). */
+  indexable?: boolean;
   reviewed_at: string | null;
+}
+
+export interface Provenance {
+  regulator: string;
+  jurisdiction: string;
+  jurisdiction_code: string;
+  regulatory_status: string;
+  source_url: string;
+  attribution: string;
+  licence_url: string;
+  last_checked_at: string | null;
+  clinical_review: string;
 }
 
 export interface SourceRef {
@@ -130,6 +148,8 @@ export interface ProductDetail extends Brand {
   category: string;
   description: string;
   is_biologic: boolean;
+  listing_kind?: "unspecified" | "registered" | "application";
+  listing_kind_label?: string;
   marketing_holder: string | null;
   ingredients: {
     name: string;
@@ -139,7 +159,13 @@ export interface ProductDetail extends Brand {
     per_value: string;
   }[];
   packs: { form: string; size: string; unit: string }[];
-  registrations: { country: string; number: string; status: string; record_status: Status }[];
+  registrations: {
+    country: string;
+    number: string;
+    status: string;
+    record_status: Status;
+    provenance?: Provenance;
+  }[];
   withdrawal_periods: {
     country: string;
     species: string;

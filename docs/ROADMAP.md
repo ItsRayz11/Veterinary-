@@ -207,3 +207,15 @@ Verification after all three rounds: 262 API tests (CI-equivalent environment, `
 - [x] axe sweep (phone/desktop, light/dark) clean for the new pages after fixing a `<dl>` structure error
 - [ ] Run `import_universities` on the deployed database; review the imported schools
 - [ ] Verified product packaging images: none with a reusable licence
+
+## Phase 17: Official listings, source governance, indexing, ads (2026-11-14, owner-approved design)
+- [x] Three publication tiers + application separation (`docs/PUBLICATION_TIERS.md`); factual tier limited to catalogue models, tested
+- [x] Per-source governance: terms, field mapping, first batch, auto-publish switch, hold guards, inconsistency log, audit trail; admin actions + staff API + admin panel buttons
+- [x] Provenance on every registration (regulator, jurisdiction, status, link, last checked, clinical-review state, licence attribution)
+- [x] Zero-result search logging, better matching/fallback, admin report (Failed searches tab)
+- [x] Country coverage controls (thresholds as data), noindex + sitemap exclusion, admin Country coverage tab
+- [x] Ad infrastructure, disabled by default: consent banner, labelled slots, CSP only when enabled, ads.txt, no clinical zone
+- [x] DailyMed animal-label adapter (listing facts only, US-specific); openFDA animal endpoints are adverse events only, no label adapter
+- [x] SHOW_UNVERIFIED_IMPORTS default now off (pending records are not public)
+- [ ] Staging validation of UK VMD / Health Canada on a throwaway database, then owner approval before any production import, publication or ad activation
+- [ ] DailyMed terms to confirm; Green Book, EMA, CDSCO adapters

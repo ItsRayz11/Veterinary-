@@ -59,6 +59,9 @@ class Command(BaseCommand):
             self.stdout.write(f"Importing {source.slug} ...")
             try:
                 result = datasources.sync_source(source, log=self.stdout.write)
+            except datasources.SyncHeld as exc:
+                self.stderr.write(self.style.WARNING(f"  {source.slug}: {exc}"))
+                continue
             except datasources.SyncError as exc:
                 failures += 1
                 source.last_import_result = f"failed: {exc}"[:300]

@@ -47,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ] = await Promise.all([
     list<{ slug: string }>("/species/"),
     list<{ slug: string }>("/drug-classes/"),
-    list<{ iso2: string }>("/countries/"),
+    list<{ iso2: string; indexable?: boolean }>("/countries/"),
     list<{ slug: string; unverified?: boolean }>("/generics/"),
     list<{ slug: string }>("/study/lessons/"),
     list<{ id: number }>("/listings/jobs/"),
@@ -68,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/classes",
     ...classes.map((c) => `/classes/${c.slug}`),
     "/countries",
-    ...countries.map((c) => `/countries/${c.iso2}`),
+    ...countries.filter((c) => c.indexable).map((c) => `/countries/${c.iso2}`),
     "/interactions",
     "/study",
     "/study/past-papers",

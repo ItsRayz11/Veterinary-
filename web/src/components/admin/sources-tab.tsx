@@ -1,6 +1,7 @@
 "use client";
 
 import { CrudSection, type FieldDef } from "./crud-section";
+import { apiSend } from "@/lib/client-api";
 import { fmt } from "./tabs";
 
 interface SourceRow extends Record<string, unknown> {
@@ -22,6 +23,32 @@ interface SourceRow extends Record<string, unknown> {
   last_error: string;
   last_import_result: string;
   robots_status: string;
+  publication_state: string;
+  held_reason: string;
+  mapping_approved_at: string | null;
+  first_batch_approved_at: string | null;
+}
+
+const PUBLICATION: Record<string, string> = {
+  monitor_only: "Monitor only",
+  awaiting_terms: "1. Confirm terms",
+  awaiting_mapping_approval: "2. Approve field mapping",
+  awaiting_first_batch_approval: "3. Approve first batch",
+  held_for_review: "Held: needs a person",
+  approved_manual: "Approved, publishes on request",
+  auto_publishing: "Auto-publishing official listings",
+};
+
+interface Validation {
+  valid: number;
+  rejected: number;
+  problems: Record<string, number>;
+}
+function describe(v: Validation): string {
+  const why = Object.entries(v.problems)
+    .map(([k, n]) => `${k}: ${n}`)
+    .join("; ");
+  return `${v.valid} valid, ${v.rejected} rejected${v.rejected ? ` (${why})` : ""}.`;
 }
 
 const FIELDS: FieldDef[] = [
@@ -86,6 +113,21 @@ const FIELDS: FieldDef[] = [
     type: "checkbox",
     hint: "needs importer and confirmed terms",
   },
+  { name: "regulator_name", label: "Regulator shown publicly" },
+  {
+    name: "attribution_text",
+    label: "Licence attribution shown on every record",
+    type: "textarea",
+  },
+  { name: "licence_url", label: "Licence URL", type: "url" },
+  {
+    name: "auto_publish",
+    label: "Auto-publish routine factual updates",
+    type: "checkbox",
+    hint: "Only takes effect after terms, field mapping and the first batch are approved",
+  },
+  { name: "max_removal_pct", label: "Hold a sync that removes more than (%)", type: "number" },
+  { name: "max_growth_pct", label: "Hold a sync that grows by more than (%)", type: "number" },
   { name: "notes", label: "Internal notes", type: "textarea" },
 ];
 
@@ -143,6 +185,15 @@ export function SourcesTab() {
           ),
         },
         {
+          header: "Publication",
+          render: (r) => (
+            <>
+              {PUBLICATION[r.publication_state] ?? r.publication_state}
+              {r.held_reason && <p className="text-xs text-danger">{r.held_reason}</p>}
+            </>
+          ),
+        },
+        {
           header: "Terms",
           render: (r) =>
             `${r.terms_confirmed ? "Confirmed" : "Not confirmed"} · robots ${r.robots_status}`,
@@ -158,6 +209,47 @@ export function SourcesTab() {
           post: "confirm-terms",
           show: (r) => !r.terms_confirmed,
           confirm: "Confirm you have read the publisher's terms and automated access is permitted?",
+        },
+        {
+          label: "Check staged records",
+          show: (r) => r.can_import && r.terms_confirmed,
+          run: async (r) => {
+            const out = await apiSend<{ validation: Validation }>(
+              "POST",
+              `/staff/sources/${r.id}/validate/`,
+              {},
+            );
+            return `Staged records: ${describe(out.validation)}`;
+          },
+        },
+        {
+          label: "Approve field mapping",
+          post: "approve-mapping",
+          show: (r) => r.terms_confirmed && !r.mapping_approved_at && r.can_import,
+          confirm: "You have compared a sample of staged records with the source file?",
+        },
+        {
+          label: "Approve first batch and publish",
+          show: (r) => !!r.mapping_approved_at && !r.first_batch_approved_at,
+          confirm:
+            "Publish the valid staged records as official listings (not clinically reviewed)? " +
+            "Later routine updates may then publish automatically if auto-publish is on.",
+          run: async (r) => {
+            const out = await apiSend<{
+              validation: Validation;
+              published: Record<string, number>;
+            }>("POST", `/staff/sources/${r.id}/approve-first-batch/`, {});
+            const done = Object.entries(out.published)
+              .map(([k, n]) => `${n} ${k}`)
+              .join(", ");
+            return `Published ${done}. ${describe(out.validation)}`;
+          },
+        },
+        {
+          label: "Release held sync",
+          post: "release-hold",
+          show: (r) => !!r.held_reason,
+          confirm: "Accept the new file even though it differs a lot from the last one?",
         },
         {
           label: "Import now",

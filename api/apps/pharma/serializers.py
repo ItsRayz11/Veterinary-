@@ -2,18 +2,44 @@ from rest_framework import serializers
 
 from apps.clinical.models import ClinicalNote, DoseRegimen, WithdrawalPeriod
 from apps.companies.models import Company
-from apps.core.models import ReviewStatus
+from apps.core.models import PublicationTier, ReviewStatus, publication_tier
 
 from .models import Generic, Product
 
 
 def _status(obj) -> dict:
+    tier = publication_tier(obj.review_status)
     return {
+        "tier": tier.value,
+        "tier_label": tier.label,
+        "clinically_reviewed": tier == PublicationTier.CLINICALLY_REVIEWED,
         "code": obj.review_status,
         "label": ReviewStatus(obj.review_status).label,
         "is_development_data": obj.is_development_data,
         "is_unverified_import": obj.review_status == ReviewStatus.IMPORTED_UNVERIFIED,
         "reviewed_at": obj.reviewed_at,
+    }
+
+
+def provenance(reg) -> dict:
+    """Who says so: regulator, jurisdiction, status, link, freshness and review state."""
+    ds, tier = reg.data_source, publication_tier(reg.review_status)
+    return {
+        "regulator": (
+            ds.regulator_name if ds and ds.regulator_name else reg.country.regulator_name
+        ),
+        "jurisdiction": reg.country.name,
+        "jurisdiction_code": reg.country.iso2,
+        "regulatory_status": reg.status,
+        "source_url": ds.landing_url if ds else "",
+        "attribution": ds.attribution_text if ds else "",
+        "licence_url": ds.licence_url if ds else "",
+        "last_checked_at": reg.last_checked_at,
+        "clinical_review": (
+            "Clinically reviewed"
+            if tier == PublicationTier.CLINICALLY_REVIEWED
+            else "Not clinically reviewed"
+        ),
     }
 
 
@@ -49,6 +75,9 @@ class SlugStampSerializer(serializers.Serializer):
     unverified = serializers.SerializerMethodField()
 
     def get_unverified(self, obj) -> bool:
+        """True when the page must stay out of the sitemap (not indexable)."""
+        if hasattr(obj, "indexable"):
+            return not obj.indexable
         return obj.review_status == ReviewStatus.IMPORTED_UNVERIFIED
 
 
@@ -176,6 +205,8 @@ class GenericListSerializer(serializers.ModelSerializer):
         fields = ("name", "slug", "drug_class", "unverified")
 
     def get_unverified(self, obj) -> bool:
+        if hasattr(obj, "indexable"):
+            return not obj.indexable
         return obj.review_status == ReviewStatus.IMPORTED_UNVERIFIED
 
 

@@ -20,7 +20,9 @@ export function StatusLine({ status }: { status: Status }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <StatusBadge status={key} />
-      {!status.is_development_data && !status.is_unverified_import && (
+      {!status.is_development_data &&
+        !status.is_unverified_import &&
+        status.tier !== "official_listing" && (
         <span className="text-xs text-muted">Reviewed {formatDate(status.reviewed_at)}</span>
       )}
     </span>

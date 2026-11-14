@@ -17,7 +17,7 @@ export async function generateMetadata({
   return {
     title: c.name,
     alternates: { canonical: `/companies/${c.slug}` },
-    robots: { index: !c.status.is_unverified_import },
+    robots: { index: c.status.indexable ?? !c.status.is_unverified_import },
   };
 }
 
@@ -26,7 +26,8 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[slu
   const c = await apiGet<CompanyDetail>(`/companies/${slug}/`);
   const generics = [...new Map(c.products.map((p) => [p.generic, p.generic_name])).entries()];
 
-  const indexable = !c.status.is_unverified_import && !c.status.is_development_data;
+  const indexable =
+    (c.status.indexable ?? !c.status.is_unverified_import) && !c.status.is_development_data;
 
   return (
     <div className="space-y-6">

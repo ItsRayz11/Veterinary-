@@ -212,9 +212,9 @@ WEB_PROXY_SECRET = env("WEB_PROXY_SECRET", default="")
 CRON_SECRET = env("CRON_SECRET", default="")
 
 SHOW_DEVELOPMENT_DATA = env.bool("SHOW_DEVELOPMENT_DATA", default=DEBUG)
-# Catalogue records imported from public lists but not yet reviewed are listed, clearly labelled.
-# Clinical data is never affected. Set false to hide them until a reviewer signs off.
-SHOW_UNVERIFIED_IMPORTS = env.bool("SHOW_UNVERIFIED_IMPORTS", default=True)
+# Hidden by default: unreviewed imports are "pending" and not public. Official listings (see
+# docs/PUBLICATION_TIERS.md) are published through the source-approval workflow instead.
+SHOW_UNVERIFIED_IMPORTS = env.bool("SHOW_UNVERIFIED_IMPORTS", default=False)
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"])
 # The web app proxies /api/v1 to this API, so state-changing requests carry the web origin.

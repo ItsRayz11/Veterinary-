@@ -104,6 +104,12 @@ class DosageForm(models.Model):
         return self.name
 
 
+class ListingKind(models.TextChoices):
+    UNSPECIFIED = "unspecified", "Listed (status not stated)"
+    REGISTERED = "registered", "Authorised / registered product"
+    APPLICATION = "application", "Application for registration (not an approval)"
+
+
 class Product(PublishableModel):
     """A brand/product from one manufacturer. Prices attach to ProductPack, not here."""
 
@@ -122,6 +128,12 @@ class Product(PublishableModel):
         related_name="marketed_products",
     )
     category = models.CharField(max_length=100, blank=True)
+    listing_kind = models.CharField(
+        max_length=12,
+        choices=ListingKind.choices,
+        default=ListingKind.UNSPECIFIED,
+        help_text="An application for registration is never presented as an approved product",
+    )
     is_biologic = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 
@@ -225,6 +237,17 @@ class ProductRegistration(PublishableModel):
     )
     registered_on = models.DateField(null=True, blank=True)
     expires_on = models.DateField(null=True, blank=True)
+    data_source = models.ForeignKey(
+        "automation.DataSource",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="registrations",
+        help_text="The registered feed this row came from (provenance shown publicly)",
+    )
+    last_checked_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the regulator's data last confirmed this row"
+    )
 
     lists_unverified_imports = True
 

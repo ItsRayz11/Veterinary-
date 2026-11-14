@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: PageProps<"/drugs/[slug]">): 
     title: g.name,
     description: `${g.name}: species doses, safety notes, brands and sources.`,
     alternates: { canonical: `/drugs/${g.slug}` },
-    robots: { index: !g.status.is_unverified_import },
+    robots: { index: g.status.indexable ?? !g.status.is_unverified_import },
   };
 }
 
@@ -57,7 +57,8 @@ export default async function DrugPage({ params, searchParams }: PageProps<"/dru
     .map(([kind, label]) => ({ label, items: g.notes.filter((n) => n.kind === kind) }))
     .filter((k) => k.items.length);
 
-  const indexable = !g.status.is_unverified_import && !g.status.is_development_data;
+  const indexable =
+    (g.status.indexable ?? !g.status.is_unverified_import) && !g.status.is_development_data;
 
   return (
     <div className="space-y-6">

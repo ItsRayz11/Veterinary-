@@ -7,6 +7,8 @@ import {
   Newspaper,
   Database,
   Download,
+  Flag,
+  SearchX,
   LayoutDashboard,
   ListChecks,
   MessageSquareWarning,
@@ -24,6 +26,8 @@ export type SectionKey =
   | "reports"
   | "imports"
   | "sources"
+  | "coverage"
+  | "misses"
   | "automation"
   | "ai"
   | "content"
@@ -69,6 +73,8 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "imports", label: "Imports", icon: Download, access: "all" },
       { key: "sources", label: "Source registry", icon: Database, access: "admin" },
+      { key: "coverage", label: "Country coverage", icon: Flag, access: "all" },
+      { key: "misses", label: "Failed searches", icon: SearchX, access: "all" },
     ],
   },
   {

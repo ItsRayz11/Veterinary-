@@ -354,8 +354,17 @@ SOURCE_FIELDS = (
     "enabled import_enabled check_interval_hours content_type geography method robots_status "
     "extraction_scope credentials_ref import_destination priority rate_limit_per_hour paused"
 ).split()
-SOURCE_BOOLS = {"enabled", "import_enabled", "paused"}
-SOURCE_INTS = {"check_interval_hours", "priority", "rate_limit_per_hour"}
+SOURCE_FIELDS += (
+    "regulator_name attribution_text licence_url auto_publish max_removal_pct max_growth_pct"
+).split()
+SOURCE_BOOLS = {"enabled", "import_enabled", "paused", "auto_publish"}
+SOURCE_INTS = {
+    "check_interval_hours",
+    "priority",
+    "rate_limit_per_hour",
+    "max_removal_pct",
+    "max_growth_pct",
+}
 
 
 def _source_row(d: DataSource) -> dict:
@@ -373,6 +382,10 @@ def _source_row(d: DataSource) -> dict:
         last_import_result=d.last_import_result,
         record_count=d.record_count,
         can_import=bool(d.importer),
+        publication_state=d.publication_state,
+        mapping_approved_at=d.mapping_approved_at,
+        first_batch_approved_at=d.first_batch_approved_at,
+        held_reason=d.held_reason,
     )
     return row
 
@@ -453,6 +466,7 @@ def source_update(request, pk):
 @permission_classes([IsAdminRole])
 def source_action(request, pk, action):
     from apps.automation import datasources as ds
+    from apps.automation import publishing
 
     d = DataSource.objects.filter(pk=pk).first()
     if d is None:
@@ -466,6 +480,20 @@ def source_action(request, pk, action):
         ds.check_source(d)
     elif action == "confirm-terms":
         ds.confirm_terms(d, request.user)
+    elif action == "approve-mapping":
+        publishing.approve_mapping(d, request.user)
+    elif action == "validate":
+        report = publishing.validate_registrations(d).as_dict()
+        return Response({**_source_row(d), "validation": report})
+    elif action == "approve-first-batch":
+        try:
+            result = publishing.approve_first_batch(d, request.user)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=http.HTTP_409_CONFLICT)
+        d.refresh_from_db()
+        return Response({**_source_row(d), **result})
+    elif action == "release-hold":
+        publishing.release_hold(d, request.user)
     elif action == "import":
         try:
             result = ds.sync_source(d)
@@ -490,3 +518,43 @@ def source_action(request, pk, action):
         object_id=str(d.pk),
     )
     return Response(_source_row(d))
+
+
+# ---------- search misses ----------
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def search_misses(request):
+    from apps.search.misses import top_misses
+
+    try:
+        limit = min(int(request.query_params.get("limit", 50)), 200)
+    except ValueError:
+        limit = 50
+    include = request.query_params.get("resolved") == "1"
+    return Response({"results": top_misses(limit, include)})
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def search_miss_resolve(request, pk):
+    from apps.search.models import SearchMiss
+
+    miss = SearchMiss.objects.filter(pk=pk).first()
+    if miss is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    miss.resolved = bool(request.data.get("resolved", True))
+    miss.save(update_fields=["resolved", "last_seen"])
+    return Response({"id": miss.pk, "resolved": miss.resolved})
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def country_coverage(request):
+    from apps.countries.coverage import coverage_report
+
+    return Response({"results": coverage_report()})

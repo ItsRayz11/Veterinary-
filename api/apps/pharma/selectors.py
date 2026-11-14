@@ -19,7 +19,7 @@ def public_registrations():
     return Prefetch(
         "registrations",
         queryset=ProductRegistration.objects.listed()
-        .select_related("country")
+        .select_related("country", "data_source")
         .prefetch_related("target_species__species"),
     )
 

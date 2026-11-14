@@ -9,6 +9,7 @@ import { PriceComparison, RetailerOffers } from "@/components/market-prices";
 import { PriceSubmitForm } from "@/components/price-submit-form";
 import { StatusLine } from "@/components/status-line";
 import { UnverifiedNotice } from "@/components/unverified-notice";
+import { OfficialListingNotice, ProvenanceList } from "@/components/official-listing";
 import { ProductArt } from "@/components/ui/product-art";
 import { MetadataBadge } from "@/components/ui/visual";
 import { Breadcrumbs, DataTable, EmptyState, Section, td, th } from "@/components/ui/primitives";
@@ -21,7 +22,7 @@ export async function generateMetadata({
   return {
     title: `${p.brand_name} (${p.generic_name})`,
     alternates: { canonical: `/products/${p.slug}` },
-    robots: { index: !p.status.is_unverified_import },
+    robots: { index: p.status.indexable ?? !p.status.is_unverified_import },
   };
 }
 
@@ -30,7 +31,8 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   const p = await apiGet<ProductDetail>(`/products/${slug}/`);
   const prices = await apiGet<Prices>(`/products/${slug}/prices/`);
 
-  const indexable = !p.status.is_unverified_import && !p.status.is_development_data;
+  const indexable =
+    (p.status.indexable ?? !p.status.is_unverified_import) && !p.status.is_development_data;
 
   return (
     <div className="space-y-6">
@@ -78,6 +80,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         </div>
       </header>
       <UnverifiedNotice status={p.status} what="product" />
+      <OfficialListingNotice status={p.status} listingKind={p.listing_kind} what="product" />
 
       <Section id="composition" title="Composition and presentations" category="medicines">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -152,7 +155,9 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
                     {r.country}
                   </th>
                   <td className={td}>{r.number}</td>
-                  <td className={td}>{r.status}</td>
+                  <td className={td}>
+                    {p.listing_kind === "application" ? "Application (not approved)" : r.status}
+                  </td>
                   <td className={td}>
                     <StatusLine status={r.record_status} />
                   </td>
@@ -163,6 +168,9 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         ) : (
           <EmptyState title="No registration records" />
         )}
+        <ProvenanceList
+          items={p.registrations.flatMap((r) => (r.provenance ? [r.provenance] : []))}
+        />
       </Section>
 
       <Section id="withdrawal" title="Withdrawal periods" category="regulatory">

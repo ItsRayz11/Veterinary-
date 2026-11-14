@@ -13,8 +13,10 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def imported(db):
+def imported(db, settings):
     from django.core.management import call_command
+
+    settings.SHOW_UNVERIFIED_IMPORTS = True  # legacy opt-in; the default is now off
 
     call_command("seed_reference")
     pk = Country.objects.get(iso2="PK")

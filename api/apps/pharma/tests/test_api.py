@@ -53,7 +53,8 @@ def test_country_filter_on_generic(api):
 def test_search_grouped_and_typo_tolerant(api):
     r = api.get("/api/v1/search/?q=enrofloxacin").json()
     assert r["generics"][0]["slug"] == "enrofloxacin"
-    assert {p["name"] for p in r["products"]} == set()  # brands are DEV-Enro N, not matching
+    # brands of the matched generic are offered too (DEV-Enro N)
+    assert {p["name"] for p in r["products"]} == {"DEV-Enro 1", "DEV-Enro 2"}
     assert api.get("/api/v1/search/?q=DEV-Enro").json()["products"]
     typo = api.get("/api/v1/search/?q=enrofloxacine").json()
     assert typo["did_you_mean"] == ["Enrofloxacin"]

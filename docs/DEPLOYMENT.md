@@ -27,7 +27,8 @@ Config is in `api/pyproject.toml` (`[tool.vercel] entrypoint`) and `api/vercel.j
 1. Create a Vercel project from the repo with **Root Directory = `api`** (Python 3.12).
 2. Env vars: `DEBUG=false`, `SECRET_KEY`, `DATABASE_URL` (Neon pooled), `ALLOWED_HOSTS=<api-host>`, `CORS_ALLOWED_ORIGINS=https://vetsphere.xyz`, `CSRF_TRUSTED_ORIGINS=https://vetsphere.xyz` (official web origin; add any preview origins too), `CACHE_URL=dbcache://django_cache`, `SHOW_DEVELOPMENT_DATA=false`, `WEB_PROXY_SECRET=<random string, identical on the web project>`.
 3. Every push to `main` deploys both projects automatically. The API build runs `migrate` and `createcachetable` against the production database first, only when `VERCEL_ENV=production` (preview builds never touch it); if a migration fails the build fails and the previous deployment stays live. One-off, from a machine with the same env: `python manage.py seed_reference`, `python manage.py createsuperuser`.
-4. `SHOW_UNVERIFIED_IMPORTS` (default true) lists catalogue records imported from public regulator lists and not yet reviewed, labelled "Imported, not reviewed" (see `CLINICAL_GOVERNANCE.md`). Set it to false to hide them again.
+4. `SHOW_UNVERIFIED_IMPORTS` now defaults to **false**: imported records stay hidden until a source's first batch is approved and they become *official listings* (see `PUBLICATION_TIERS.md`). Setting it true shows raw unreviewed imports again.
+   Advertising stays off unless `ADS_ENABLED=true` on the web project. Large first imports (UK VMD) run from a trusted machine with the production `DATABASE_URL`, not inside a 30 s function.
 4. On the web project set `API_URL=https://<api-host>`.
 - `requirements.txt` is runtime only; tests/lint use `requirements-dev.txt`.
 - Throttling needs the shared DB cache (`CACHE_URL`); the default in-memory cache is per serverless instance and would not enforce limits.

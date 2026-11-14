@@ -13,7 +13,10 @@ export type ReviewStatus =
 const STYLES: Record<ReviewStatus, { label: string; cls: string }> = {
   verified: { label: "Verified", cls: "bg-ok-bg text-ok" },
   expert_reviewed: { label: "Expert reviewed", cls: "bg-ok-bg text-ok" },
-  official_regulatory: { label: "Official regulatory source", cls: "bg-info-bg text-info" },
+  official_regulatory: {
+    label: "Official listing, not clinically reviewed",
+    cls: "bg-info-bg text-info",
+  },
   manufacturer_supplied: { label: "Manufacturer supplied", cls: "bg-info-bg text-info" },
   pending_review: { label: "Pending review", cls: "bg-warn-bg text-warn" },
   needs_verification: { label: "Needs verification", cls: "bg-warn-bg text-warn" },

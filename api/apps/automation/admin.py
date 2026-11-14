@@ -2,7 +2,7 @@ from django.contrib import admin, messages
 
 from apps.accounts.models import Role
 
-from . import datasources
+from . import datasources, publishing
 from .models import DataSource, Feed, JobRun, SourceHealth
 
 
@@ -24,6 +24,7 @@ class DataSourceAdmin(admin.ModelAdmin):
         "last_checked_at",
         "importer",
         "import_enabled",
+        "publication_state",
         "terms_confirmed_at",
         "last_imported_at",
         "last_import_result",
@@ -45,8 +46,57 @@ class DataSourceAdmin(admin.ModelAdmin):
         "imported_fingerprint",
         "last_imported_at",
         "last_import_result",
+        "mapping_approved_at",
+        "mapping_approved_by",
+        "first_batch_approved_at",
+        "first_batch_approved_by",
+        "held_reason",
+        "guard_bypass_once",
+        "publication_state",
     )
-    actions = ["check_now", "confirm_terms_checked", "acknowledge_update"]
+    actions = [
+        "check_now",
+        "confirm_terms_checked",
+        "approve_field_mapping",
+        "approve_first_batch_and_publish",
+        "release_held_sync",
+        "acknowledge_update",
+    ]
+
+    @staticmethod
+    def _is_admin(user) -> bool:
+        return user.is_superuser or user.role == Role.ADMIN
+
+    @admin.action(description="Approve the field mapping (after reading a staged sample)")
+    def approve_field_mapping(self, request, queryset):
+        if not self._is_admin(request.user):
+            self.message_user(request, "Only admins can approve a mapping.", messages.ERROR)
+            return
+        for source in queryset:
+            publishing.approve_mapping(source, request.user)
+        self.message_user(request, f"Mapping approved for {queryset.count()} source(s).")
+
+    @admin.action(description="Approve the first batch and publish it as official listings")
+    def approve_first_batch_and_publish(self, request, queryset):
+        if not self._is_admin(request.user):
+            self.message_user(request, "Only admins can approve a first batch.", messages.ERROR)
+            return
+        for source in queryset:
+            try:
+                result = publishing.approve_first_batch(source, request.user)
+            except ValueError as exc:
+                self.message_user(request, f"{source.slug}: {exc}", messages.ERROR)
+                continue
+            self.message_user(request, f"{source.slug}: {result}")
+
+    @admin.action(description="Release a held sync (accept the change once)")
+    def release_held_sync(self, request, queryset):
+        if not self._is_admin(request.user):
+            self.message_user(request, "Only admins can release a hold.", messages.ERROR)
+            return
+        for source in queryset.exclude(held_reason=""):
+            publishing.release_hold(source, request.user)
+        self.message_user(request, "Released. The next sync will import the new file.")
 
     @admin.display(boolean=True, description="Reachable")
     def reachable(self, obj):

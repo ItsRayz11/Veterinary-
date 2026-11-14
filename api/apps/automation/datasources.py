@@ -23,11 +23,11 @@ from django.utils import timezone
 
 from apps.countries.models import Country
 from apps.ingestion import services
-from apps.ingestion.adapters import ca_dpd, common, uk_vmd
+from apps.ingestion.adapters import ca_dpd, common, uk_vmd, us_dailymed
 from apps.ingestion.models import ImportBatch
 from apps.sources.models import Source
 
-from . import safe_http
+from . import publishing, safe_http
 from .models import DataSource, RobotsStatus
 
 CHECK_BUDGET = 12  # seconds for the whole scheduled run (Vercel stops functions at 30 s)
@@ -35,7 +35,7 @@ CHECK_LIMIT = 10
 PROBE_TIMEOUT = 5
 PROBE_DEADLINE = 8
 DOWNLOAD_MAX_BYTES = 40_000_000
-DOWNLOAD_DEADLINE = 120
+DOWNLOAD_DEADLINE = 300
 
 
 @dataclass(frozen=True)
@@ -48,6 +48,7 @@ class Importer:
 IMPORTERS: dict[str, Importer] = {
     "uk-vmd": Importer("UK VMD Product Information Database", "GB", uk_vmd.clean_snapshot),
     "ca-dpd": Importer("Health Canada Drug Product Database", "CA", ca_dpd.clean_extract),
+    "us-dailymed": Importer("DailyMed animal drug labels", "US", us_dailymed.clean_listing),
 }
 
 _LAST_UPDATED = re.compile(r'"last_updated"\s*:\s*"([^"]+)"')
@@ -168,6 +169,10 @@ class SyncError(Exception):
     """A sync that cannot or should not run; the message is safe to show staff."""
 
 
+class SyncHeld(SyncError):
+    """The file looks unlike the last one (size or layout); a person must release it."""
+
+
 def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: None) -> dict:
     """Download the source's file and push it through the reviewed import pipeline."""
     importer = IMPORTERS.get(source.importer)
@@ -189,7 +194,7 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
         raise SyncError("robots.txt does not allow automated access to this file.")
     try:
         status, body, _final, headers = safe_http.fetch_full(
-            source.data_url, max_bytes=DOWNLOAD_MAX_BYTES, timeout=60, deadline=deadline
+            source.data_url, max_bytes=DOWNLOAD_MAX_BYTES, timeout=120, deadline=deadline
         )
     except safe_http.FetchError as exc:
         raise SyncError(f"Download failed: {exc}") from exc
@@ -203,6 +208,13 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
         ) from exc
     if not cleaned.rows:
         raise SyncError("The file produced no usable rows; refusing to import.")
+
+    held = publishing.sync_guard(source, cleaned)
+    if held:
+        source.held_reason = held[:300]
+        source.last_import_result = f"held for review: {held}"[:300]
+        source.save(update_fields=["held_reason", "last_import_result", "updated_at"])
+        raise SyncHeld(f"{source.name}: held for review ({held}).")
 
     user = services.import_user()
     parts = common.chunks(cleaned.rows)
@@ -254,23 +266,50 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
         checksum=_sha(source.fingerprint or str(len(cleaned.rows))),
     )
     recon = services.reconcile_registrations(
-        country, provenance, cleaned.rows, cleaned.expired_numbers, user
+        country,
+        provenance,
+        cleaned.rows,
+        cleaned.expired_numbers,
+        user,
+        auto_source=source if source.may_auto_publish else None,
     )
     totals.update(recon)
+    _tag_registrations(source, country, cleaned.rows)
+    published = publishing.publish_after_sync(source, user)
+    totals["published"] = published
     summary = (
         f"{totals['staged']} new rows staged, {totals['approved']} approved as unreviewed, "
         f"{totals['flagged']} flagged; {recon['status_changed']} status changes, "
         f"{recon['species_added']} target species added, "
-        f"{recon['registrations_added']} extra authorisations"
+        f"{recon['registrations_added']} extra authorisations; "
+        f"{recon['inconsistent']} inconsistencies left for review; "
+        f"published {sum(published['published'].values())} records "
+        f"({published.get('held_back', 0)} held back awaiting source approval)"
     )
     source.imported_fingerprint = _fingerprint(headers) or source.fingerprint
     source.fingerprint = source.imported_fingerprint or source.fingerprint
     source.update_available = False
+    source.held_reason, source.guard_bypass_once = "", False
     source.last_imported_at = timezone.now()
     source.last_import_result = summary[:300]
     source.record_count = len(cleaned.rows)
     source.save()
     return {**totals, "report": cleaned.report}
+
+
+def _tag_registrations(source: DataSource, country, rows: list[dict]) -> None:
+    """Record which feed each registration came from and when the regulator last confirmed it."""
+    from apps.pharma.models import ProductRegistration
+
+    numbers = [str(r.get("registration_number", "")).strip() for r in rows]
+    numbers = [n for n in numbers if n]
+    now = timezone.now()
+    for i in range(0, len(numbers), 1000):
+        ProductRegistration.objects.filter(
+            country=country, registration_number__in=numbers[i : i + 1000]
+        ).filter(Q(data_source__isnull=True) | Q(data_source=source)).update(
+            data_source=source, last_checked_at=now
+        )
 
 
 def _sha(text: str) -> str:
@@ -308,4 +347,11 @@ def source_problems(now=None) -> list[str]:
     return out
 
 
-__all__ = ["IMPORTERS", "check_data_sources", "check_source", "confirm_terms", "sync_source"]
+__all__ = [
+    "IMPORTERS",
+    "SyncHeld",
+    "check_data_sources",
+    "check_source",
+    "confirm_terms",
+    "sync_source",
+]

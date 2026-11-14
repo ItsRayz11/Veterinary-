@@ -16,6 +16,9 @@ urlpatterns = [
     path("staff/sources/", views.sources),
     path("staff/sources/<int:pk>/", views.source_update),
     path("staff/sources/<int:pk>/<str:action>/", views.source_action),
+    path("staff/country-coverage/", views.country_coverage),
+    path("staff/search-misses/", views.search_misses),
+    path("staff/search-misses/<int:pk>/resolve/", views.search_miss_resolve),
     path("staff/automation/", views.automation_status),
     path("staff/automation/run/<str:task>/", views.automation_run),
 ]

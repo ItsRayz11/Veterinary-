@@ -95,6 +95,7 @@ def test_researched_sources_are_registered_but_cannot_import_yet():
     assert set(sources.exclude(importer="").values_list("importer", flat=True)) == {
         "uk-vmd",
         "ca-dpd",
+        "us-dailymed",
     }
 
 

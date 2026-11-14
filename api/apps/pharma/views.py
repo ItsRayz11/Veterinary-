@@ -8,12 +8,14 @@ from apps.clinical.models import ClinicalNote, DoseRegimen, WithdrawalPeriod
 from apps.companies.models import Company
 from apps.core.schema import untyped_schema
 from apps.core.text import normalize_name
+from apps.countries.coverage import coverage_report
 from apps.countries.models import Country
 from apps.sources.models import sources_for
 from apps.sources.selectors import sources_map
 from apps.species.models import Species
 
 from . import selectors
+from .indexing import annotate_indexable, is_indexable
 from .models import Generic, Product
 from .serializers import (
     CompanyBriefSerializer,
@@ -25,6 +27,7 @@ from .serializers import (
     SlugStampSerializer,
     WithdrawalSerializer,
     _status,
+    provenance,
     source_payload,
 )
 
@@ -34,7 +37,7 @@ class GenericList(ListAPIView):
     serializer_class = GenericListSerializer
 
     def get_queryset(self):
-        qs = Generic.objects.listed().select_related("drug_class")
+        qs = annotate_indexable(Generic.objects.listed().select_related("drug_class"))
         q = normalize_name(self.request.query_params.get("q", ""))
         if q:
             qs = qs.filter(normalized_name__contains=q)
@@ -48,7 +51,10 @@ class ProductSlugList(ListAPIView):
     serializer_class = SlugStampSerializer
 
     def get_queryset(self):
-        return Product.objects.listed().only("slug", "updated_at", "review_status").order_by("slug")
+        qs = Product.objects.listed().only(
+            "slug", "updated_at", "review_status", "is_development_data"
+        )
+        return annotate_indexable(qs).order_by("slug")
 
 
 class CompanySlugList(ListAPIView):
@@ -56,7 +62,10 @@ class CompanySlugList(ListAPIView):
     serializer_class = SlugStampSerializer
 
     def get_queryset(self):
-        return Company.objects.listed().only("slug", "updated_at", "review_status").order_by("slug")
+        qs = Company.objects.listed().only(
+            "slug", "updated_at", "review_status", "is_development_data"
+        )
+        return annotate_indexable(qs).order_by("slug")
 
 
 @untyped_schema
@@ -86,9 +95,11 @@ def generic_detail(request, slug):
     brands = selectors.brands_for_generic(generic, country)
 
     ctx = {"sources": sources_map(doses), "note_sources": sources_map(notes)}
+    detail = GenericDetailSerializer(generic).data
+    detail["status"] = {**detail["status"], "indexable": is_indexable(generic)}
     return Response(
         {
-            **GenericDetailSerializer(generic).data,
+            **detail,
             "sources": source_payload([(s, "") for s in sources_for(generic)]),
             "doses": DoseSerializer(doses, many=True, context=ctx).data,
             "notes": NoteSerializer(notes, many=True, context=ctx).data,
@@ -123,12 +134,16 @@ def product_detail(request, slug):
         .filter(product=product)
         .select_related("product", "country", "species", "commodity", "route")
     )
+    brief = ProductBriefSerializer(product).data
+    brief["status"] = {**brief["status"], "indexable": is_indexable(product)}
     return Response(
         {
-            **ProductBriefSerializer(product).data,
+            **brief,
             "category": product.category,
             "description": product.description,
             "is_biologic": product.is_biologic,
+            "listing_kind": product.listing_kind,
+            "listing_kind_label": product.get_listing_kind_display(),
             "marketing_holder": product.marketing_holder.name if product.marketing_holder else None,
             "ingredients": [
                 {
@@ -154,6 +169,7 @@ def product_detail(request, slug):
                     "number": r.registration_number,
                     "status": r.status,
                     "record_status": _status(r),
+                    "provenance": provenance(r),
                     "target_species": [
                         {"label": t.label, "species": t.species.slug if t.species else None}
                         for t in r.target_species.all()
@@ -192,7 +208,7 @@ def company_detail(request, slug):
                 if on
             ],
             "verified_profile": company.is_verified_profile,
-            "status": _status(company),
+            "status": {**_status(company), "indexable": is_indexable(company)},
             "products": ProductBriefSerializer(products, many=True).data,
         }
     )
@@ -203,9 +219,17 @@ def company_detail(request, slug):
 @permission_classes([AllowAny])
 def countries(request):
     rows = Country.objects.filter(is_active=True)
+    cover = {r["iso2"]: r for r in coverage_report()}
     return Response(
         [
-            {"iso2": c.iso2, "slug": c.slug, "name": c.name, "currency": c.currency_code}
+            {
+                "iso2": c.iso2,
+                "slug": c.slug,
+                "name": c.name,
+                "currency": c.currency_code,
+                "indexable": cover[c.iso2]["indexable"],
+                "registrations": cover[c.iso2]["registrations"],
+            }
             for c in rows
         ]
     )

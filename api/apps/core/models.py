@@ -67,6 +67,30 @@ PUBLIC_STATUSES = frozenset(
 SIGNED_OFF_STATUSES = (ReviewStatus.EXPERT_REVIEWED, ReviewStatus.VERIFIED)
 
 
+class PublicationTier(models.TextChoices):
+    """What a visitor is told about a public record (see docs/PUBLICATION_TIERS.md).
+
+    Three classes, derived from `review_status` (never stored twice, so they cannot disagree):
+    official listing (regulator facts, no clinical review), clinically reviewed (a qualified
+    person signed off) and pending (not eligible for publication).
+    """
+
+    OFFICIAL_LISTING = "official_listing", "Official regulatory listing, not clinically reviewed"
+    CLINICALLY_REVIEWED = "clinically_reviewed", "Clinically reviewed"
+    MANUFACTURER = "manufacturer_supplied", "Manufacturer supplied, not clinically reviewed"
+    PENDING = "pending", "Pending / unverified"
+
+
+def publication_tier(review_status: str) -> PublicationTier:
+    if review_status in (ReviewStatus.EXPERT_REVIEWED, ReviewStatus.VERIFIED):
+        return PublicationTier.CLINICALLY_REVIEWED
+    if review_status == ReviewStatus.OFFICIAL_REGULATORY:
+        return PublicationTier.OFFICIAL_LISTING
+    if review_status == ReviewStatus.MANUFACTURER_SUPPLIED:
+        return PublicationTier.MANUFACTURER
+    return PublicationTier.PENDING
+
+
 class PublishableQuerySet(models.QuerySet):
     def public(self):
         """Publicly visible rows; dev/seed rows only when SHOW_DEVELOPMENT_DATA is on."""
@@ -121,6 +145,10 @@ class PublishableModel(TimeStampedModel):
                 name="%(app_label)s_%(class)s_no_signoff_on_dev_data",
             )
         ]
+
+    @property
+    def publication_tier(self) -> PublicationTier:
+        return publication_tier(self.review_status)
 
     @property
     def is_unverified_import(self) -> bool:

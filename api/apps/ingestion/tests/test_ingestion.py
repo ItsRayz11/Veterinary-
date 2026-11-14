@@ -127,6 +127,7 @@ def api_client(role):
 
 
 def test_import_api_permissions_and_flow(env, settings):
+    settings.SHOW_UNVERIFIED_IMPORTS = True
     payload = {"country": "PK", "source": SOURCE, "csv_text": CSV, "file_name": "x.csv"}
     assert APIClient().post("/api/v1/staff/imports/", payload, format="json").status_code in (
         401,

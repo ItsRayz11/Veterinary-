@@ -1,3 +1,4 @@
+import { AdSlot } from "@/components/ads";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiGet, type Brand, type Page, type UniversityBrief } from "@/lib/api";
@@ -11,6 +12,7 @@ interface CountryDetail {
   currency: string;
   regulator: string;
   products: Brand[];
+  coverage?: { indexable: boolean; registrations: number; blockers: string[] };
 }
 
 export async function generateMetadata({
@@ -24,6 +26,7 @@ export async function generateMetadata({
       c.regulator ? `, with regulator ${c.regulator}` : ""
     }. Imported entries are labelled until reviewed.`,
     alternates: { canonical: `/countries/${c.iso2}` },
+    robots: { index: c.coverage?.indexable ?? false },
   };
 }
 
@@ -68,6 +71,13 @@ export default async function CountryPage({
           reviewer.
         </Alert>
       )}
+      {c.coverage && !c.coverage.indexable && c.products.length > 0 && (
+        <Alert tone="info" title="This country collection is still being built">
+          Entries come from {c.regulator || "the national regulator"}&apos;s public data and are not
+          clinically reviewed. The collection is not yet complete, so it is kept out of search
+          engines until it is.
+        </Alert>
+      )}
       {c.products.length === 0 ? (
         <EmptyState title={`No reviewed registrations for ${c.name} yet.`}>
           Products appear here only when a reviewed registration exists for this country.
@@ -96,6 +106,7 @@ export default async function CountryPage({
               )}
             </nav>
           )}
+          <AdSlot zone="directory" />
         </>
       )}
     </div>

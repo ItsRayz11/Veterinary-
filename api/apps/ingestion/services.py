@@ -576,7 +576,7 @@ def import_user():
 
 @transaction.atomic
 def reconcile_registrations(
-    country, source: Source, rows: list[dict], expired_numbers: list[str], by
+    country, source: Source, rows: list[dict], expired_numbers: list[str], by, auto_source=None
 ) -> dict:
     """Bring existing, still-unreviewed registrations in line with a newer copy of the same source.
 
@@ -584,13 +584,23 @@ def reconcile_registrations(
     that are missing, records a second authorisation (another number) of a product already in the
     catalogue, and marks numbers the source now lists as expired. Reviewed records are never
     changed silently; they are counted so a person can look at them.
+
+    `auto_source` (an approved, auto-publishing DataSource) also lets official listings that came
+    from that same source follow the regulator's status changes. A row whose brand no longer
+    matches its registration number is a material inconsistency: it is logged and left unchanged.
     """
     regs = {
         r.registration_number: r
         for r in ProductRegistration.objects.filter(country=country).select_related("product")
     }
     matcher = Matcher(country)
-    out = {"status_changed": 0, "species_added": 0, "registrations_added": 0, "needs_review": 0}
+    out = {
+        "status_changed": 0,
+        "species_added": 0,
+        "registrations_added": 0,
+        "needs_review": 0,
+        "inconsistent": 0,
+    }
 
     def record(action, reg, before, after):
         AuditLog.objects.create(
@@ -606,7 +616,12 @@ def reconcile_registrations(
     def set_status(reg, status):
         if reg.status == status:
             return
-        if reg.review_status != ReviewStatus.IMPORTED_UNVERIFIED:
+        follows_source = (
+            auto_source is not None
+            and reg.review_status == ReviewStatus.OFFICIAL_REGULATORY
+            and reg.data_source_id == auto_source.pk
+        )
+        if reg.review_status != ReviewStatus.IMPORTED_UNVERIFIED and not follows_source:
             out["needs_review"] += 1
             return
         before = {"status": reg.status}
@@ -636,6 +651,15 @@ def reconcile_registrations(
             regs[number] = reg
             out["registrations_added"] += 1
         else:
+            if normalize_name(reg.product.brand_name) != normalize_name(str(row.get("brand_name"))):
+                out["inconsistent"] += 1
+                record(
+                    "source_inconsistency",
+                    reg,
+                    {"brand": reg.product.brand_name},
+                    {"source_brand": str(row.get("brand_name"))},
+                )
+                continue
             set_status(reg, row.get("registration_status") or RegStatus.UNKNOWN)
         out["species_added"] += set_target_species(reg, row.get("target_species") or [])
     live = {str(r.get("registration_number", "")).strip() for r in rows}

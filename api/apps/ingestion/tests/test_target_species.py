@@ -45,7 +45,8 @@ def test_adapter_reads_target_species_and_expired():
 
 
 @pytest.mark.django_db
-def test_import_attaches_species_per_authorisation_and_reconciles():
+def test_import_attaches_species_per_authorisation_and_reconciles(settings):
+    settings.SHOW_UNVERIFIED_IMPORTS = True
     call_command("seed_reference")
     country = Country.objects.get(iso2="GB")
     user = services.import_user()
@@ -85,12 +86,14 @@ def test_import_attaches_species_per_authorisation_and_reconciles():
         "species_added": 0,
         "registrations_added": 0,
         "needs_review": 0,
+        "inconsistent": 0,
     }
     assert RegistrationSpecies.objects.count() == 3
 
 
 @pytest.mark.django_db
-def test_species_endpoint_lists_authorised_medicines_not_by_ingredient_alone(client):
+def test_species_endpoint_lists_authorised_medicines_not_by_ingredient_alone(client, settings):
+    settings.SHOW_UNVERIFIED_IMPORTS = True
     call_command("seed_reference")
     country = Country.objects.get(iso2="GB")
     user = services.import_user()
