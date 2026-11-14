@@ -10,11 +10,12 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/forms";
 import { Alert } from "@/components/ui/primitives";
-import { apiFetch } from "@/lib/client-api";
-import { STAFF_ROLES, useUser } from "@/lib/use-user";
+import { apiFetch, apiSend } from "@/lib/client-api";
+import { STAFF_ROLES, notifyAuthChanged, useUser } from "@/lib/use-user";
 import { AiTab } from "./ai-tab";
 import { CatalogsTab } from "./catalogs-tab";
 import { ContentTab } from "./content-tab";
@@ -49,6 +50,7 @@ export interface Summary {
 
 export function AdminPanel() {
   const user = useUser();
+  const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [tab, setTabState] = useState<SectionKey>("overview");
   const [collapsed, setCollapsed] = useState(false);
@@ -234,6 +236,13 @@ export function AdminPanel() {
     </nav>
   );
 
+  const signOut = async () => {
+    await apiSend("POST", "/auth/logout");
+    notifyAuthChanged();
+    router.push("/login?next=/admin-panel");
+    router.refresh();
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -255,13 +264,20 @@ export function AdminPanel() {
               " · clinical sign-off needs a veterinarian reviewer"}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={signOut}
+          className="ml-auto min-h-10 rounded-md border border-border px-3 text-sm hover:bg-black/5"
+        >
+          Sign out
+        </button>
       </div>
 
       <div className="flex items-start gap-4">
         <aside
-          className={`sticky top-2 hidden max-h-[calc(100vh-1rem)] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-surface lg:flex ${collapsed ? "w-14" : "w-60"}`}
+          className={`sticky top-2 hidden h-[calc(100vh-1rem)] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-surface lg:flex ${collapsed ? "w-14" : "w-60"}`}
         >
-          <div className="min-h-0 flex-1">{nav(collapsed)}</div>
+          <div className="min-h-0 flex-1 overflow-hidden">{nav(collapsed)}</div>
           <button
             type="button"
             onClick={toggleCollapsed}
