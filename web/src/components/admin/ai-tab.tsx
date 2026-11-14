@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/forms";
+import { Button, Field, Select, Skeleton, TextInput } from "@/components/ui/forms";
+import { Modal } from "@/components/ui/modal";
 import { Alert, DataTable, td, th } from "@/components/ui/primitives";
 import { apiFetch, apiSend } from "@/lib/client-api";
 import { CrudSection, type FieldDef } from "./crud-section";
@@ -13,6 +14,7 @@ interface Provider extends Record<string, unknown> {
   enabled: boolean;
   base_url: string;
   key_present: boolean;
+  key_source: string;
   last_test_ok: boolean | null;
   last_test_message: string;
   last_test_at: string | null;
@@ -71,8 +73,8 @@ const PROVIDER_FIELDS: FieldDef[] = [
   },
   {
     name: "api_key_env",
-    label: "Key reference",
-    hint: "Name of the server environment variable, e.g. OPENAI_API_KEY. Never paste a key.",
+    label: "Key reference (optional)",
+    hint: "Optional. Leave empty and use the row action API key and model to enter the key.",
   },
   { name: "default_model", label: "Preferred model" },
   { name: "monthly_budget_usd", label: "Monthly budget (USD, 0 = off)", type: "number" },
@@ -91,6 +93,138 @@ const TASKS = [
   ["suggestions", "Topic suggestions"],
 ] as const;
 
+/** Enter/replace/remove a provider's key (write-only) and pick its model from the live list. */
+function KeyDialog({
+  provider,
+  onClose,
+  onChanged,
+  onModels,
+}: {
+  provider: Provider;
+  onClose: () => void;
+  onChanged: () => void;
+  onModels: (m: string[]) => void;
+}) {
+  const [key, setKey] = useState("");
+  const [models, setModels] = useState<string[] | null>(null);
+  const [model, setModel] = useState(provider.default_model);
+  const [msg, setMsg] = useState<{ tone: "info" | "danger"; text: string } | null>(null);
+  const [busy, setBusy] = useState("");
+
+  async function run(name: string, fn: () => Promise<string | void>) {
+    setBusy(name);
+    setMsg(null);
+    try {
+      const text = await fn();
+      if (text) setMsg({ tone: "info", text });
+    } catch (e) {
+      setMsg({ tone: "danger", text: e instanceof Error ? e.message : "Something went wrong." });
+    } finally {
+      setBusy("");
+    }
+  }
+  const load = () =>
+    run("models", async () => {
+      const res = await apiFetch<{ ok: boolean; models: string[]; detail: string }>(
+        `/staff/ai/providers/${provider.id}/models/`,
+      );
+      if (!res?.ok) return res?.detail || "Could not load models.";
+      setModels(res.models);
+      onModels(res.models);
+      return `${res.models.length} models available.`;
+    });
+
+  return (
+    <Modal open title={`${provider.kind}: API key and model`} onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-xs text-muted">
+          {provider.key_present
+            ? `A key is set (${provider.key_source}). For safety it is never shown again.`
+            : "No key is set yet."}{" "}
+          Keys are stored encrypted on the server and can be replaced or removed at any time.
+        </p>
+        {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
+        <Field id="ai-key" label={provider.key_present ? "Replace key" : "API key"}>
+          <TextInput
+            id="ai-key"
+            type="password"
+            autoComplete="off"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder="Paste the key from the provider"
+          />
+        </Field>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            loading={busy === "save"}
+            disabled={!key.trim()}
+            onClick={() =>
+              run("save", async () => {
+                await apiSend("PUT", `/staff/ai/providers/${provider.id}/key/`, {
+                  api_key: key.trim(),
+                });
+                setKey("");
+                onChanged();
+                return "Key saved. Now load the models and pick one.";
+              })
+            }
+          >
+            Save key
+          </Button>
+          {provider.key_present && provider.key_source === "admin panel" && (
+            <Button
+              variant="secondary"
+              loading={busy === "del"}
+              onClick={() =>
+                run("del", async () => {
+                  await apiSend("DELETE", `/staff/ai/providers/${provider.id}/key/`);
+                  onChanged();
+                  return "Key removed.";
+                })
+              }
+            >
+              Remove key
+            </Button>
+          )}
+        </div>
+        <hr className="border-border" />
+        <Button variant="secondary" loading={busy === "models"} onClick={load}>
+          Load models from provider
+        </Button>
+        {models && (
+          <Field id="ai-model" label="Model">
+            <Select id="ai-model" value={model} onChange={(e) => setModel(e.target.value)}>
+              <option value="">Choose a model</option>
+              {models.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+        {models && (
+          <Button
+            disabled={!model}
+            loading={busy === "use"}
+            onClick={() =>
+              run("use", async () => {
+                await apiSend("PATCH", `/staff/ai/providers/${provider.id}/`, {
+                  default_model: model,
+                });
+                onChanged();
+                return `Preferred model set to ${model}.`;
+              })
+            }
+          >
+            Use this model
+          </Button>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 export function AiTab() {
   const providers = useList<Provider>("/staff/ai/providers/");
   const [usage, setUsage] = useState<Usage | null | undefined>(undefined);
@@ -102,6 +236,8 @@ export function AiTab() {
   // Model names to suggest: AgentRouter's list plus whatever "List models" fetched from providers.
   const [fetched, setFetched] = useState<string[]>([]);
   const modelNames = [...new Set([...AGENTROUTER_MODELS, ...fetched])].sort();
+  const [tick, setTick] = useState(0);
+  const [keyFor, setKeyFor] = useState<Provider | null>(null);
   const provOptions: [string, string][] = (providers.rows ?? []).flatMap((p) => [
     [String(p.id), p.kind] as [string, string],
   ]);
@@ -124,6 +260,7 @@ export function AiTab() {
       <section className="space-y-2" aria-label="Providers">
         <h3 className="font-semibold">Providers</h3>
         <CrudSection<Provider>
+          key={tick}
           path="/staff/ai/providers"
           caption="AI providers"
           empty="No provider configured. AI features stay off until you add one."
@@ -136,7 +273,7 @@ export function AiTab() {
               header: "Key / connection",
               render: (r) => (
                 <>
-                  {r.key_present ? "Key present on server" : "No key set on server"}
+                  {r.key_present ? "Key set" : "No key set"}
                   {r.last_test_at && (
                     <p className="text-xs text-muted">
                       {r.last_test_ok ? "Connected" : `Failed: ${r.last_test_message}`} ·{" "}
@@ -152,6 +289,12 @@ export function AiTab() {
             },
           ]}
           actions={[
+            {
+              label: "API key and model",
+              run: async (r) => {
+                setKeyFor(r);
+              },
+            },
             {
               label: "List models",
               run: async (r) => {
@@ -172,6 +315,18 @@ export function AiTab() {
           ]}
         />
       </section>
+
+      {keyFor && (
+        <KeyDialog
+          provider={keyFor}
+          onClose={() => setKeyFor(null)}
+          onChanged={() => {
+            providers.reload();
+            setTick((t) => t + 1);
+          }}
+          onModels={(m) => setFetched((f) => [...new Set([...f, ...m])])}
+        />
+      )}
 
       <section className="space-y-2" aria-label="Task routing">
         <h3 className="font-semibold">Task routing</h3>

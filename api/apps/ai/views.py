@@ -34,9 +34,11 @@ ROUTE_FIELDS = [
 def _provider_extra(p):
     import os
 
+    stored = bool(p.api_key_enc and p.get_key())
     return {
-        # Only whether a key is present: never the key or any part of it.
-        "key_present": bool(os.environ.get(p.api_key_env)),
+        # Only whether a key is present and where it lives: never the key or any part of it.
+        "key_present": stored or bool(os.environ.get(p.api_key_env or "")),
+        "key_source": "admin panel" if stored else ("environment" if p.api_key_env else ""),
         "last_test_ok": p.last_test_ok,
         "last_test_at": p.last_test_at,
         "last_test_message": p.last_test_message,
@@ -67,6 +69,34 @@ def provider_test(request, pk):
         object_id=str(p.pk), after={"ok": ok},
     )  # fmt: skip
     return Response(_row(p) | {"detail": msg})
+
+
+@untyped_schema
+@api_view(["PUT", "DELETE"])
+@permission_classes([IsAdminRole])
+def provider_key(request, pk):
+    """Set, replace or remove the stored key. Write-only: the key is never returned or logged."""
+    p = AIProvider.objects.filter(pk=pk).first()
+    if p is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    if request.method == "DELETE":
+        p.set_key("")
+        action = "ai_key_removed"
+    else:
+        value = str(request.data.get("api_key", "")).strip()
+        if not 8 <= len(value) <= 400 or any(c.isspace() for c in value):
+            return Response(
+                {"detail": "Enter the API key exactly as the provider shows it."},
+                status=http.HTTP_400_BAD_REQUEST,
+            )
+        p.set_key(value)
+        action = "ai_key_set"
+    p.last_test_at, p.last_test_ok, p.last_test_message = None, None, ""
+    p.save(update_fields=["api_key_enc", "last_test_at", "last_test_ok", "last_test_message"])
+    AuditLog.objects.create(
+        actor=request.user, action=action, object_type=p._meta.label, object_id=str(p.pk)
+    )
+    return Response(_row(p))
 
 
 @untyped_schema

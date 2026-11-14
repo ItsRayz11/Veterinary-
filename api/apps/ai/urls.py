@@ -6,6 +6,7 @@ urlpatterns = [
     path("staff/ai/providers/", views.providers),
     path("staff/ai/providers/<int:pk>/", views.provider_update),
     path("staff/ai/providers/<int:pk>/test/", views.provider_test),
+    path("staff/ai/providers/<int:pk>/key/", views.provider_key),
     path("staff/ai/providers/<int:pk>/models/", views.provider_models),
     path("staff/ai/routes/", views.routes),
     path("staff/ai/routes/<int:pk>/", views.route_update),

@@ -177,3 +177,25 @@ def test_list_models_reads_ids(monkeypatch, settings):
 
     monkeypatch.setattr(client.urllib.request, "urlopen", lambda *a, **k: R(body))
     assert client.list_models(p) == (True, ["a", "b"], "")
+
+
+@pytest.mark.django_db
+def test_stored_key_is_encrypted_write_only_and_used(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    p = make_provider(api_key_env="")
+    c = api(Role.ADMIN)
+    secret = "sk-test-1234567890abcdef"
+    url = f"/api/v1/staff/ai/providers/{p.id}/key/"
+    assert api(Role.EDITOR).put(url, {"api_key": secret}, format="json").status_code == 403
+    assert c.put(url, {"api_key": "a b"}, format="json").status_code == 400
+    r = c.put(url, {"api_key": secret}, format="json")
+    assert r.status_code == 200 and r.json()["key_present"] is True
+    assert r.json()["key_source"] == "admin panel"
+    p.refresh_from_db()
+    assert secret not in p.api_key_enc and p.get_key() == secret and client._key(p) == secret
+    listing = c.get("/api/v1/staff/ai/providers/").content.decode()
+    assert secret not in listing and "api_key_enc" not in listing
+    assert not any(secret in str(a.after) for a in AuditLog.objects.all())
+    assert c.delete(url).json()["key_present"] is False
+    with pytest.raises(client.AIError):
+        client._key(AIProvider.objects.get(pk=p.pk))

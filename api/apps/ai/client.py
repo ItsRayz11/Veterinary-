@@ -42,9 +42,9 @@ def month_spend(provider: AIProvider) -> Decimal:
 
 
 def _key(provider: AIProvider) -> str:
-    key = os.environ.get(provider.api_key_env, "")
+    key = provider.get_key() or os.environ.get(provider.api_key_env or "", "")
     if not key:
-        raise AIError(f"The server has no key set for {provider}.")
+        raise AIError(f"No API key is set for {provider}. Add one in the admin panel.")
     return key
 
 
@@ -123,8 +123,6 @@ def run_task(task: str, prompt: str, *, system: str = "", actor=None) -> str:
 def list_models(provider: AIProvider) -> tuple[bool, list[str], str]:
     """Model ids from the provider /models endpoint (no user data sent); some gateways lack it."""
     try:
-        if not provider.enabled:
-            raise AIError("Enable the provider first.")
         url = provider.base_url.rstrip("/") + "/models"
         safe_http.assert_public_url(url)
         req = urllib.request.Request(  # noqa: S310

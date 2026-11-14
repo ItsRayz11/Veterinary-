@@ -140,3 +140,11 @@ hidden until approved.
 Automatic discovery/parsing beyond the existing importers and feeds; retailer self-service offer
 sync (staff enter offers today); payments; auto-publishing of feed items (the policy module only
 filters scams today; items stay pending for review); screenshots; Vercel-side deploy gating.
+
+## AI keys managed in the admin panel
+Admins can paste, replace or remove a provider's API key from `/admin-panel` (AI providers, row
+action "API key and model"). Keys are stored encrypted in the database (Fernet, derived from
+`AI_KEY_ENCRYPTION_SECRET`, or `SECRET_KEY` if unset), are write-only (no API ever returns them),
+and set/remove events are audited without the value. A stored key wins over an environment
+variable reference. If `SECRET_KEY` is rotated, stored keys stop decrypting and must be re-entered.
+"Load models from provider" lists the provider's real model ids so one can be selected.

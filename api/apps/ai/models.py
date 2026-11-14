@@ -1,6 +1,9 @@
+import base64
+import hashlib
 import re
 from decimal import Decimal
 
+from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -28,8 +31,11 @@ class AIProvider(TimeStampedModel):
     enabled = models.BooleanField(default=False)
     base_url = models.URLField(max_length=300, help_text="OpenAI-compatible base, https only")
     api_key_env = models.CharField(
-        max_length=64, help_text="NAME of the server environment variable holding the key"
-    )
+        max_length=64, blank=True,
+        help_text="Optional: NAME of a server environment variable holding the key",
+    )  # fmt: skip
+    # Key entered in the admin panel, encrypted at rest. Never returned by any API.
+    api_key_enc = models.TextField(blank=True, editable=False)
     default_model = models.CharField(max_length=120, blank=True)
     timeout_seconds = models.PositiveSmallIntegerField(default=20)
     rate_limit_per_minute = models.PositiveSmallIntegerField(default=30)
@@ -43,8 +49,24 @@ class AIProvider(TimeStampedModel):
     def __str__(self):
         return self.get_kind_display()
 
+    @staticmethod
+    def _fernet() -> Fernet:
+        secret = getattr(settings, "AI_KEY_ENCRYPTION_SECRET", "") or settings.SECRET_KEY
+        return Fernet(base64.urlsafe_b64encode(hashlib.sha256(secret.encode()).digest()))
+
+    def set_key(self, value: str) -> None:
+        self.api_key_enc = self._fernet().encrypt(value.encode()).decode() if value else ""
+
+    def get_key(self) -> str:
+        if not self.api_key_enc:
+            return ""
+        try:
+            return self._fernet().decrypt(self.api_key_enc.encode()).decode()
+        except InvalidToken:
+            return ""  # secret rotated: the key must be entered again
+
     def clean(self):
-        if not ENV_NAME.fullmatch(self.api_key_env or ""):
+        if self.api_key_env and not ENV_NAME.fullmatch(self.api_key_env):
             raise ValidationError("Key reference must be an environment variable NAME, not a key.")
         if not self.base_url.startswith("https://"):
             raise ValidationError("The base URL must use https.")
