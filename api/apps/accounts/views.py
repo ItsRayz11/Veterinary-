@@ -40,6 +40,7 @@ def register(request):
     s = RegisterSerializer(data=request.data)
     s.is_valid(raise_exception=True)
     user = s.save()
+    roles.promote_if_listed(user)
     login(request, user)
     return Response(
         UserSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED

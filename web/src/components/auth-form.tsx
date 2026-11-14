@@ -55,7 +55,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       const next = new URLSearchParams(window.location.search).get("next");
       let dest = safeNext(next, window.location.origin);
       // Staff accounts land in the admin panel unless they were sent here from another page.
-      if (!register && dest === "/") {
+      if (dest === "/") {
         const me = await apiFetch<{ role?: string }>("/auth/me");
         if (me?.role && STAFF_ROLES.includes(me.role)) dest = "/admin-panel";
       }

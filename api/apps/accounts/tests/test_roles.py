@@ -31,3 +31,15 @@ def test_admin_emails_bootstrap(settings):
     assert owner.role == Role.ADMIN and owner.is_staff
     assert promote_if_listed(owner) is False
     assert AuditLog.objects.filter(action="admin_bootstrap").count() == 1
+
+
+@pytest.mark.django_db
+def test_admin_emails_promote_on_register(settings, client):
+    settings.ADMIN_EMAILS = ["owner@example.com"]
+    r = client.post(
+        "/api/v1/auth/register/",
+        {"username": "newowner", "email": "owner@example.com", "password": "Str0ng-pass-123!"},
+        content_type="application/json",
+    )
+    assert r.status_code == 201
+    assert r.json()["role"] == "admin"
