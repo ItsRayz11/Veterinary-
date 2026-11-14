@@ -220,6 +220,14 @@ CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localho
 # The web app proxies /api/v1 to this API, so state-changing requests carry the web origin.
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost:3000"])
 
+# The official public origin is always trusted (not a secret), so a missing or mistyped
+# environment variable cannot lock staff out of signed-in actions.
+OFFICIAL_ORIGIN = "https://vetsphere.xyz"
+for _origins in (CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS):
+    _origins[:] = [o.strip().rstrip("/") for o in _origins]
+    if OFFICIAL_ORIGIN not in _origins:
+        _origins.append(OFFICIAL_ORIGIN)
+
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
