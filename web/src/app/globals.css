@@ -23,6 +23,9 @@
   --glow-a: rgba(70, 185, 142, 0.22);
   --glow-b: rgba(8, 126, 121, 0.16);
 
+  /* Motion: strong ease-out for entrances and press feedback (built-in easings are too weak). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
   --ok: #1b7a3d;
   --ok-bg: #e5f4ea;
   --warn: #8a5a00;
@@ -142,17 +145,19 @@ body {
   }
   .card-link {
     transition:
-      transform 160ms ease,
+      transform 160ms var(--ease-out),
       border-color 160ms ease,
       box-shadow 160ms ease;
   }
-  .card-link:hover {
-    transform: translateY(-2px);
-    border-color: var(--primary);
+  /* Hover lift only for real pointers: touch fires sticky false hovers on tap. */
+  @media (hover: hover) and (pointer: fine) {
+    .card-link:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
   }
   .card-link:active {
-    transform: translateY(0) scale(0.985);
-    transition-duration: 80ms;
+    transform: scale(0.98);
   }
   .neo {
     background: var(--surface);
@@ -255,7 +260,7 @@ body {
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -263,18 +268,53 @@ body {
   }
 }
 
-@layer utilities {
-  /* Page-load entrance for above-the-fold blocks; --rise-delay staggers siblings. */
-  .rise {
-    animation: rise-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: var(--rise-delay, 0ms);
+/* Scroll reveal never starts fully transparent, so content stays readable in no-JS renders,
+   full-page captures and crawler snapshots. */
+@keyframes reveal-in {
+  from {
+    opacity: 0.45;
+    transform: translateY(12px);
   }
-  /* Below-the-fold blocks reveal as they scroll into view. */
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0.45;
+  }
+}
+
+@layer utilities {
+  /* Page-load entrance for the hero: its children fade up in a short stagger. The glass
+     container itself is never animated (opacity on a backdrop-filter element flickers). */
+  .rise > * {
+    animation: rise-in 280ms var(--ease-out) both;
+  }
+  .rise > :nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .rise > :nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .rise > :nth-child(n + 4) {
+    animation-delay: 120ms;
+  }
+  /* Below-the-fold blocks reveal as they scroll into view. The range is a fixed distance so
+     tall sections do not stay faded while their top is already on screen. */
   @supports (animation-timeline: view()) {
     .reveal {
-      animation: rise-in linear both;
+      animation: reveal-in linear both;
       animation-timeline: view();
-      animation-range: entry 0% entry 40%;
+      animation-range: entry 0% entry 160px;
+    }
+  }
+  @media print {
+    .rise > *,
+    .reveal {
+      animation: none;
     }
   }
 }
@@ -303,9 +343,12 @@ body {
   .card-link:active {
     transform: none;
   }
-  .rise,
+  /* Gentler, not zero: keep the fade, drop the movement. */
+  .rise > * {
+    animation: fade-in 0.01ms both;
+  }
   .reveal {
-    animation: none !important;
+    animation-name: fade-in;
   }
 }
 
