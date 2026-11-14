@@ -98,9 +98,9 @@ export function AiTab() {
       <Alert tone="warn" title="AgentRouter: check its terms before using it here">
         As we read agentrouter.org/docs, it is a free service for developer coding tools and its
         terms restrict batch or synthetic content, bulk marketing/SEO text and general single-turn
-        Q&A, with quotas and suspension at its discretion. VetRef&apos;s server-side tasks may fall under
-        those limits, so prefer OpenAI or OpenRouter for production unless AgentRouter confirms in
-        writing that this use is allowed.
+        Q&A, with quotas and suspension at its discretion. VetRef&apos;s server-side tasks may fall
+        under those limits, so prefer OpenAI or OpenRouter for production unless AgentRouter
+        confirms in writing that this use is allowed.
       </Alert>
 
       <section className="space-y-2" aria-label="Providers">
