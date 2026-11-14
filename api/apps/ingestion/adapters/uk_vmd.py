@@ -46,7 +46,12 @@ def _notes(fields: dict[str, str]) -> str:
         ("Territory", "Territory"),
         ("SPC_Link", "Summary of product characteristics"),
     ]
-    return "; ".join(f"{label}: {fields[key]}" for key, label in labels if fields.get(key))[:900]
+    parts = [f"{label}: {fields[key]}" for key, label in labels if fields.get(key)]
+    if fields.get("VMDProductNo"):  # the regulator's own identifier, kept for traceability
+        parts.insert(
+            0, f"Source: VMD Product Information Database, VMDProductNo {fields['VMDProductNo']}"
+        )
+    return "; ".join(parts)[:900]
 
 
 def clean_snapshot(xml: bytes) -> Cleaned:

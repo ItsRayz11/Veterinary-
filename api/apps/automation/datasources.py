@@ -173,6 +173,30 @@ class SyncHeld(SyncError):
     """The file looks unlike the last one (size or layout); a person must release it."""
 
 
+RETRY_BACKOFF = (2, 6)  # seconds before the 2nd and 3rd attempt; the download is a plain GET
+
+
+def _download(url: str, deadline: float, log: Callable[[str], None]) -> tuple[int, bytes, dict]:
+    """GET with a few retries for network errors and 5xx/429; other statuses return at once."""
+    attempts = len(RETRY_BACKOFF) + 1
+    for attempt in range(attempts):
+        last = attempt == attempts - 1
+        try:
+            status, body, _final, headers = safe_http.fetch_full(
+                url, max_bytes=DOWNLOAD_MAX_BYTES, timeout=120, deadline=deadline
+            )
+        except safe_http.FetchError as exc:
+            if last or time.monotonic() > deadline:
+                raise SyncError(f"Download failed: {exc}") from exc
+            log(f"  download attempt {attempt + 1} failed ({exc}); retrying")
+        else:
+            if not (status == 429 or status >= 500) or last:
+                return status, body, headers
+            log(f"  download attempt {attempt + 1} returned HTTP {status}; retrying")
+        time.sleep(RETRY_BACKOFF[attempt])
+    raise SyncError("Download failed")  # unreachable; keeps the type checker honest
+
+
 def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: None) -> dict:
     """Download the source's file and push it through the reviewed import pipeline."""
     importer = IMPORTERS.get(source.importer)
@@ -192,12 +216,7 @@ def sync_source(source: DataSource, *, log: Callable[[str], None] = lambda _m: N
     deadline = time.monotonic() + DOWNLOAD_DEADLINE
     if not safe_http.allowed_by_robots(source.data_url, deadline=deadline):
         raise SyncError("robots.txt does not allow automated access to this file.")
-    try:
-        status, body, _final, headers = safe_http.fetch_full(
-            source.data_url, max_bytes=DOWNLOAD_MAX_BYTES, timeout=120, deadline=deadline
-        )
-    except safe_http.FetchError as exc:
-        raise SyncError(f"Download failed: {exc}") from exc
+    status, body, headers = _download(source.data_url, deadline, log)
     if status != 200:
         raise SyncError(f"Download failed: HTTP {status}")
     try:

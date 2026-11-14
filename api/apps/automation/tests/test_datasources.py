@@ -1,4 +1,5 @@
 import io
+import time
 import zipfile
 from datetime import timedelta
 
@@ -59,12 +60,22 @@ def _dpd_zip() -> bytes:
         + csv_line("2", "", "9", "HUMAN CO", "DIN_OWNER"),
         "ingred.txt": csv_line("1", "5", "ACEPROMAZINE MALEATE", "I", "10", "MG")
         + csv_line("2", "6", "ASPIRIN", "I", "81", "MG"),
+        "vet.txt": csv_line("1", "Dogs", "Puppies")
+        + csv_line("1", "Cats", "")
+        + csv_line("2", "Humans", ""),
+        "route.txt": csv_line("1", "9", "ORAL", "x") + csv_line("1", "10", "INTRAVENOUS", "x"),
+        "form.txt": csv_line("1", "3", "TABLET", "x"),
     }
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for name, text in files.items():
             z.writestr(name, text)
     return buffer.getvalue()
+
+
+@pytest.fixture(autouse=True)
+def _no_retry_delay(monkeypatch):
+    monkeypatch.setattr(datasources, "RETRY_BACKOFF", (0, 0))
 
 
 @pytest.fixture
@@ -227,6 +238,114 @@ def test_canada_adapter_keeps_only_veterinary_and_current_status():
     assert row["registration_number"] == "00000001"
     assert row["registration_status"] == "registered"  # the Y (current) row, not the old one
     assert row["composition"] == "Acepromazine Maleate 10 MG"
+    # joined by DRUG_CODE: species (never the human row's), routes, form, provenance, status date
+    assert row["target_species"] == [{"label": "Dogs (Puppies)"}, {"label": "Cats"}]
+    assert "Route: Oral, Intravenous." in row["notes"]
+    assert "Form: Tablet." in row["notes"]
+    assert "Health Canada status: Marketed (since 01-JAN-2001)." in row["notes"]
+    assert "DRUG_CODE 1" in row["notes"]
+
+
+def _zip(files: dict[str, str]) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        for name, text in files.items():
+            z.writestr(name, text)
+    return buffer.getvalue()
+
+
+def _vet_files(**extra) -> dict[str, str]:
+    files = {
+        "drug.txt": '"1","","Veterinary","111","VETONE","","N","1","1","02-NOV-2026"\n',
+        "status.txt": '"1","Y","CANCELLED POST MARKET","05-MAY-2020","x","",""\n',
+        "comp.txt": '"1","","9","ACME VET"\n',
+        "ingred.txt": '"1","5","TILMICOSIN","I","300","MG"\n',
+    }
+    files.update(extra)
+    return files
+
+
+def test_canada_adapter_keeps_original_status_and_dates_and_flags_missing_species():
+    cleaned = ca_dpd.clean_extract(_zip(_vet_files()))
+    row = cleaned.rows[0]
+    assert row["registration_status"] == "withdrawn"
+    assert "Cancelled Post Market (since 05-MAY-2020)" in row["notes"]
+    assert "record updated 02-NOV-2026" in row["notes"]
+    assert row["target_species"] == []  # optional files absent: nothing invented
+    assert cleaned.report["rows_without_species"] == 1
+
+
+def test_canada_adapter_accepts_header_rows_and_variant_file_names():
+    files = {
+        "drug_ap.txt": '"DRUG_CODE","X"\n' + _vet_files()["drug.txt"],
+        "status_ap.txt": _vet_files()["status.txt"].replace("CANCELLED POST MARKET", "APPROVED"),
+        "comp_ap.txt": _vet_files()["comp.txt"],
+        "ingred_ap.txt": _vet_files()["ingred.txt"],
+    }
+    cleaned = ca_dpd.clean_extract(_zip(files))
+    assert cleaned.rows[0]["registration_status"] == "registered"
+
+
+def test_canada_adapter_prevents_duplicates_and_unknown_status_stays_unknown():
+    files = _vet_files(
+        **{
+            "drug.txt": _vet_files()["drug.txt"]
+            + '"1","","Veterinary","111","DUP CODE","","N","1","1","x"\n'
+            + '"2","","Veterinary","111","DUP DIN","","N","1","1","x"\n',
+            "status.txt": _vet_files()["status.txt"].replace(
+                "CANCELLED POST MARKET", "SOMETHING NEW"
+            )
+            + '"2","Y","MARKETED","x","x"\n',
+            "comp.txt": _vet_files()["comp.txt"] + '"2","","9","ACME"\n',
+            "ingred.txt": _vet_files()["ingred.txt"] + '"2","5","X","I","1","MG"\n',
+        }
+    )
+    cleaned = ca_dpd.clean_extract(_zip(files))
+    assert len(cleaned.rows) == 1
+    assert cleaned.rows[0]["registration_status"] == "unknown"
+    assert cleaned.report["skipped_duplicate_drug_code"] == 1
+    assert cleaned.report["skipped_duplicate_din"] == 1
+    assert cleaned.report["unmapped_status"] == 1
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        b"not a zip",
+        _zip({"drug.txt": "x"}),  # required files missing
+        _zip({**_vet_files(), "drug.txt": '"abc","","Human","1","X"\n'}),  # no vet products
+        _zip({**_vet_files(), "drug.txt": '"x","y"\n'}),  # wrong layout
+    ],
+)
+def test_canada_adapter_rejects_unusable_archives(data):
+    with pytest.raises(ca_dpd.ExtractError):
+        ca_dpd.clean_extract(data)
+
+
+def test_canada_source_stays_disabled_and_unconfirmed():
+    source = DataSource.objects.get(slug="ca-health-canada-dpd")
+    assert not source.import_enabled and source.terms_confirmed_at is None
+
+
+def test_download_retries_server_errors_then_succeeds(monkeypatch):
+    monkeypatch.setattr(datasources, "RETRY_BACKOFF", (0, 0))
+    responses = iter([(503, b"", "u", {}), (200, b"ok", "u", {"etag": "e"})])
+    monkeypatch.setattr(safe_http, "fetch_full", lambda *a, **k: next(responses))
+    status, body, _headers = datasources._download("http://x", time.monotonic() + 60, print)
+    assert (status, body) == (200, b"ok")
+
+
+def test_download_does_not_retry_client_errors(monkeypatch):
+    monkeypatch.setattr(datasources, "RETRY_BACKOFF", (0, 0))
+    calls = []
+
+    def fetch(*a, **k):
+        calls.append(1)
+        return 403, b"", "u", {}
+
+    monkeypatch.setattr(safe_http, "fetch_full", fetch)
+    assert datasources._download("http://x", time.monotonic() + 60, print)[0] == 403
+    assert len(calls) == 1
 
 
 # ---------- import ----------
