@@ -69,3 +69,27 @@ def sync_user(user) -> None:
     if user.is_staff != want_staff:
         type(user).objects.filter(pk=user.pk).update(is_staff=want_staff)
         user.is_staff = want_staff
+
+
+def promote_if_listed(user) -> bool:
+    """Make the user Admin when their email is in settings.ADMIN_EMAILS (audited). Idempotent."""
+    from django.conf import settings
+
+    listed = getattr(settings, "ADMIN_EMAILS", [])
+    email = (user.email or "").strip().lower()
+    if not email or email not in listed or user.role == "admin":
+        return False
+    from apps.core.models import AuditLog
+
+    before = user.role
+    user.role = "admin"
+    user.save(update_fields=["role"])
+    sync_user(user)
+    AuditLog.objects.create(
+        actor=None,
+        action="admin_bootstrap",
+        object_type="accounts.User",
+        object_id=str(user.pk),
+        after={"from_role": before, "via": "ADMIN_EMAILS"},
+    )
+    return True

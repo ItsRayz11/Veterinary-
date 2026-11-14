@@ -29,3 +29,9 @@ Setting a user's role in Admin > Users puts them in the matching "Role: …" gro
 3. Edit if needed, then use the action "Set review status: Official regulatory source" (or the clinical statuses for doses).
 4. The public API and species page update within about a minute (edge cache).
 Unclassified drugs (no class yet): Admin > Generics > filter "Drug class: empty".
+
+## Owner bootstrap (`ADMIN_EMAILS`)
+Set `ADMIN_EMAILS=you@example.com` on the API project. After you register that email and sign in,
+the account becomes Admin (audited as `admin_bootstrap`) and the web app opens `/admin-panel`
+directly. Staff still need two-factor. Email is not verified by the platform, so register that
+address yourself first and **remove the variable once you are admin**.

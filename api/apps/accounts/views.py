@@ -12,7 +12,7 @@ from rest_framework.throttling import SimpleRateThrottle
 from apps.core.schema import untyped_schema
 from apps.core.throttling import ClientIPMixin
 
-from . import lockout, mfa
+from . import lockout, mfa, roles
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
 
@@ -61,6 +61,7 @@ def login_view(request):
         raise
     lockout.success(username)
     user = s.validated_data["user"]
+    roles.promote_if_listed(user)
     if mfa.enabled(user):
         # Password is right but the session is NOT signed in until the second factor passes.
         request.session["mfa_pending_user"] = user.pk

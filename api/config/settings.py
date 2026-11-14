@@ -191,6 +191,9 @@ if SENTRY_DSN:
 
 # Two-factor authentication (apps/accounts/mfa.py). Mandatory for staff in production; off by
 # default in DEBUG so local development and tests do not need an authenticator app.
+# Owner bootstrap: an existing account whose email is listed here becomes Admin at its next sign-in.
+# Empty by default. Remove it once your account is admin (email is not verified by the platform).
+ADMIN_EMAILS = [e.strip().lower() for e in env.list("ADMIN_EMAILS", default=[]) if e.strip()]
 REQUIRE_STAFF_MFA = env.bool("REQUIRE_STAFF_MFA", default=not DEBUG)
 # A Fernet key: Fernet.generate_key() from the `cryptography` package, urlsafe-base64, 32 bytes.
 # Set it before enrolling real users; otherwise the key derives from SECRET_KEY.
