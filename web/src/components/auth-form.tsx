@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/primitives";
 import { Button, Field, Select, TextInput } from "@/components/ui/forms";
-import { ClientApiError, apiSend } from "@/lib/client-api";
+import { ClientApiError, apiFetch, apiSend } from "@/lib/client-api";
 import { safeNext } from "@/lib/safe-next";
 import { notifyAuthChanged } from "@/lib/use-user";
 
@@ -14,6 +14,8 @@ const ROLES = [
   { value: "student", label: "Veterinary student" },
   { value: "professional", label: "Veterinary professional" },
 ];
+
+const STAFF_ROLES = ["reviewer", "vet_reviewer", "editor", "moderator", "admin"];
 
 /** Roles chosen here are self-declared; privileged roles are only granted by admins. */
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
@@ -50,9 +52,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         }
       }
       notifyAuthChanged();
-      router.push(
-        safeNext(new URLSearchParams(window.location.search).get("next"), window.location.origin),
-      );
+      const next = new URLSearchParams(window.location.search).get("next");
+      let dest = safeNext(next, window.location.origin);
+      // Staff accounts land in the admin panel unless they were sent here from another page.
+      if (!register && dest === "/") {
+        const me = await apiFetch<{ role?: string }>("/auth/me");
+        if (me?.role && STAFF_ROLES.includes(me.role)) dest = "/admin-panel";
+      }
+      router.push(dest);
       router.refresh();
     } catch (err) {
       setError(
