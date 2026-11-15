@@ -1,15 +1,9 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from apps.core.models import ReviewStatus
 from apps.core.reference_data import UNIVERSITY_SOURCES
-from apps.core.text import normalize_name
 from apps.countries.models import Country
-from apps.universities import importer
-from apps.universities.models import University
-
-# The summary text is Wikipedia's; the licence is recorded with it.
-TEXT_LICENSE = "CC BY-SA 4.0 (Wikipedia)"
+from apps.universities import importer, sync
 
 
 class Command(BaseCommand):
@@ -39,34 +33,8 @@ class Command(BaseCommand):
                     if opts["dry_run"]:
                         self.stdout.write(f"  {iso2} {row['name']}")
                         continue
-                    result = self._store(country, row)
+                    result = sync.store_row(country, row)
                     created += result == "created"
                     updated += result == "updated"
                     skipped += result == "skipped"
             self.stdout.write(f"{iso2}: {created} created, {updated} updated, {skipped} skipped")
-
-    def _store(self, country, row) -> str:
-        image = row.pop("image") or {}
-        fields = {
-            **row,
-            "source_license": TEXT_LICENSE,
-            "image_url": image.get("url", ""),
-            "image_page_url": image.get("page_url", ""),
-            "image_credit": image.get("credit", ""),
-            "image_license": image.get("license", ""),
-            "image_license_url": image.get("license_url", ""),
-        }
-        existing = University.objects.filter(
-            country=country, normalized_name=normalize_name(row["name"])
-        ).first()
-        if existing is None:
-            University.objects.create(
-                country=country, review_status=ReviewStatus.IMPORTED_UNVERIFIED, **fields
-            )
-            return "created"
-        if existing.review_status != ReviewStatus.IMPORTED_UNVERIFIED:
-            return "skipped"
-        for k, v in fields.items():
-            setattr(existing, k, v)
-        existing.save()
-        return "updated"

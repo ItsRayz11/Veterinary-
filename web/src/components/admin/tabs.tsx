@@ -5,6 +5,7 @@ import { Button, Field, Select, Skeleton, TextInput } from "@/components/ui/form
 import { Modal } from "@/components/ui/modal";
 import { Alert, DataTable, EmptyState, td, th } from "@/components/ui/primitives";
 import { ClientApiError, apiFetch, apiSend } from "@/lib/client-api";
+import { ReviewWorkspace } from "./review-workspace";
 
 const STATUSES = [
   ["needs_verification", "Needs verification"],
@@ -72,16 +73,6 @@ interface QueueItem {
   has_source: boolean;
   updated_at: string;
 }
-interface Detail extends QueueItem {
-  fields: { field: string; value: string }[];
-  sources: {
-    title: string;
-    publisher: string;
-    url: string;
-    license_note: string;
-    source_type: string;
-  }[];
-}
 const PAGE_SIZE = 25;
 interface Version {
   date: string;
@@ -92,9 +83,11 @@ interface Version {
 
 export function ReviewQueueTab({
   counts,
+  canApprove,
   onChanged,
 }: {
   counts: Record<string, number>;
+  canApprove: boolean;
   onChanged: () => void;
 }) {
   const [model, setModel] = useState("");
@@ -106,7 +99,7 @@ export function ReviewQueueTab({
   if (query) params.set("q", query);
   const list = useList<QueueItem>(`/staff/review-queue?${params}`);
   const pages = Math.max(1, Math.ceil((list.count ?? 0) / PAGE_SIZE));
-  const [detail, setDetail] = useState<Detail | null>(null);
+  const [detail, setDetail] = useState<{ model: string; id: number } | null>(null);
   const [target, setTarget] = useState<QueueItem | null>(null);
   const [history, setHistory] = useState<{ label: string; versions: Version[] } | null>(null);
   const [status, setStatus] = useState<string>(STATUSES[1][0]);
@@ -134,12 +127,8 @@ export function ReviewQueueTab({
     }
   }
 
-  async function showDetail(item: QueueItem) {
-    try {
-      setDetail((await apiFetch<Detail>(`/staff/review-queue/${item.model}/${item.id}`)) ?? null);
-    } catch {
-      setError("Could not load this record.");
-    }
+  function showDetail(item: QueueItem) {
+    setDetail({ model: item.model, id: item.id });
   }
 
   async function showHistory(item: QueueItem) {
@@ -261,61 +250,15 @@ export function ReviewQueueTab({
         </nav>
       )}
 
-      <Modal
-        open={!!detail}
-        title={`Review: ${detail?.label ?? ""}`}
+      <ReviewWorkspace
+        target={detail}
+        canApprove={canApprove}
         onClose={() => setDetail(null)}
-      >
-        <div className="max-h-[60vh] space-y-3 overflow-y-auto text-sm">
-          <dl className="grid grid-cols-[minmax(6rem,10rem)_1fr] gap-x-3 gap-y-1">
-            {detail?.fields.map((f) => (
-              <div key={f.field} className="contents">
-                <dt className="text-muted">{f.field}</dt>
-                <dd className="break-words">{f.value || "(empty)"}</dd>
-              </div>
-            ))}
-          </dl>
-          <h3 className="font-semibold">Sources</h3>
-          {detail?.sources.length === 0 && (
-            <p className="text-muted">
-              No source linked. A record cannot be made public without one.
-            </p>
-          )}
-          {detail?.sources.map((s, i) => (
-            <div key={i} className="rounded border border-border p-2">
-              <p className="font-medium">{s.title}</p>
-              <p className="text-xs text-muted">
-                {[s.publisher, s.source_type.replaceAll("_", " ")].filter(Boolean).join(" · ")}
-              </p>
-              {s.license_note && <p className="text-xs">{s.license_note}</p>}
-              {/^https?:\/\//.test(s.url) && (
-                <a
-                  href={s.url}
-                  className="break-all text-xs text-primary underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {s.url}
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setDetail(null)}>
-            Close
-          </Button>
-          <Button
-            onClick={() => {
-              const item = detail;
-              setDetail(null);
-              if (item) setTarget(item);
-            }}
-          >
-            Change status
-          </Button>
-        </div>
-      </Modal>
+        onChanged={() => {
+          list.reload();
+          onChanged();
+        }}
+      />
 
       <Modal
         open={!!target}

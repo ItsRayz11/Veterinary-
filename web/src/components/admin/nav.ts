@@ -4,6 +4,7 @@ import {
   Bot,
   Box,
   Globe,
+  Workflow,
   Newspaper,
   Database,
   Download,
@@ -21,6 +22,7 @@ import {
 export type SectionKey =
   | "overview"
   | "queue"
+  | "pipeline"
   | "listings"
   | "prices"
   | "reports"
@@ -57,6 +59,7 @@ export const NAV: NavGroup[] = [
   {
     label: "Review & moderation",
     items: [
+      { key: "pipeline", label: "Pipeline & backlog", icon: Workflow, access: "all" },
       { key: "queue", label: "Review queue", icon: ListChecks, access: "all" },
       { key: "listings", label: "Jobs & scholarships", icon: Briefcase, access: "moderator" },
       { key: "prices", label: "Price submissions", icon: Tag, access: "moderator" },

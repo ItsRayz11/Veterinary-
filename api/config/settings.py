@@ -256,6 +256,15 @@ LOGGING = {
 }
 
 # Web push (optional): generate keys with `manage.py generate_vapid_keys`. Off while unset.
+# Cloudflare R2 (S3-compatible) for approved image assets. Server-side only: these values are
+# never sent to the browser. Leave empty to keep images as references (nothing is uploaded).
+R2_ACCOUNT_ID = env("R2_ACCOUNT_ID", default="")
+R2_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID", default="")
+R2_SECRET_ACCESS_KEY = env("R2_SECRET_ACCESS_KEY", default="")
+R2_BUCKET = env("R2_BUCKET", default="")
+R2_ENDPOINT = env("R2_ENDPOINT", default="")  # optional override, e.g. a jurisdiction endpoint
+R2_PUBLIC_BASE_URL = env("R2_PUBLIC_BASE_URL", default="")  # public custom domain / r2.dev URL
+
 VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
 VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
 VAPID_SUBJECT = env("VAPID_SUBJECT", default="mailto:admin@example.com")

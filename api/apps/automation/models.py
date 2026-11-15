@@ -287,3 +287,143 @@ class DataSource(TimeStampedModel):
             )
         if self.importer and not self.data_url:
             raise ValidationError("An importer needs a direct data URL.")
+
+
+# ---------- review pipeline: images, assessments, bulk operations ----------
+
+
+class ImageStatus(models.TextChoices):
+    PENDING = "pending", "Eligible, waiting to be stored"
+    STORED = "stored", "Stored in R2"
+    FAILED = "failed", "Failed (retry available)"
+    REJECTED = "rejected", "Not permitted"
+    SUPERSEDED = "superseded", "Replaced by a newer image"
+
+
+class ImageAsset(TimeStampedModel):
+    """One image referenced by a record, with the licence evidence that allows (or forbids)
+    copying it. The row is created for every reference found; only `pending` rows are ever
+    downloaded. Object keys are content-addressed, so the same bytes are stored once."""
+
+    content_type = models.ForeignKey("contenttypes.ContentType", on_delete=models.CASCADE)
+    object_id = models.PositiveBigIntegerField()
+    original_url = models.URLField(max_length=1000)
+    page_url = models.URLField(max_length=1000, blank=True, help_text="Attribution / file page")
+    credit = models.CharField(max_length=300, blank=True)
+    license = models.CharField(max_length=80, blank=True)
+    license_url = models.URLField(max_length=300, blank=True)
+    status = models.CharField(
+        max_length=12, choices=ImageStatus.choices, default=ImageStatus.PENDING, db_index=True
+    )
+    status_detail = models.CharField(max_length=300, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    mime_type = models.CharField(max_length=40, blank=True)
+    size_bytes = models.PositiveIntegerField(null=True, blank=True)
+    sha256 = models.CharField(max_length=64, blank=True, db_index=True)
+    object_key = models.CharField(max_length=300, blank=True)
+    stored_at = models.DateTimeField(null=True, blank=True)
+    duplicate_of = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="duplicates"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content_type", "object_id", "original_url"], name="uniq_image_per_record"
+            )
+        ]
+        indexes = [models.Index(fields=["content_type", "object_id"])]
+
+    def __str__(self):
+        return f"image {self.pk} ({self.status})"
+
+
+class RecordAssessment(TimeStampedModel):
+    """The pipeline's current opinion of one record: how it is grouped, how complete it is, what
+    is wrong with it and what should happen next. Derived data, rebuilt idempotently from the
+    record, its sources and its images; never the source of truth for publication."""
+
+    content_type = models.ForeignKey("contenttypes.ContentType", on_delete=models.CASCADE)
+    object_id = models.PositiveBigIntegerField()
+    model_key = models.CharField(max_length=60, db_index=True)
+    label = models.CharField(max_length=300)
+    review_status = models.CharField(max_length=32, db_index=True)
+    is_development_data = models.BooleanField(default=False)
+
+    country_iso2 = models.CharField(max_length=2, blank=True, db_index=True)
+    country_name = models.CharField(max_length=100, blank=True)
+    provider = models.CharField(max_length=60, blank=True, db_index=True)
+    batch = models.CharField(max_length=10, blank=True, db_index=True)  # import date
+    record_created_at = models.DateTimeField(null=True)
+    record_updated_at = models.DateTimeField(null=True)
+
+    source_state = models.CharField(max_length=16, db_index=True)  # see assessment.SourceState
+    trust_level = models.CharField(max_length=8, db_index=True)  # low / medium / high
+    risk = models.CharField(max_length=8)  # low / high (publication policy class)
+    completeness = models.PositiveSmallIntegerField(default=0)
+    missing_fields = models.JSONField(default=list)
+    issues = models.JSONField(default=list)  # codes, see assessment.ISSUES
+    issue_text = models.TextField(blank=True)  # "|code|code|" for contains-filters
+    primary_issue = models.CharField(max_length=30, blank=True, db_index=True)
+    duplicates = models.JSONField(default=list)  # [{model,id,label,reason}]
+    image_state = models.CharField(
+        max_length=12, db_index=True
+    )  # none/pending/stored/failed/rejected
+    recommendation = models.CharField(max_length=24, db_index=True)
+    reasons = models.JSONField(default=list)
+
+    snapshot = models.JSONField(default=dict)  # content fields at last assessment
+    content_hash = models.CharField(max_length=64, blank=True)
+    changed_fields = models.JSONField(default=list)  # vs the previous assessment
+    changed_at = models.DateTimeField(null=True, blank=True)
+    search_text = models.TextField(blank=True)
+    assessed_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-record_updated_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content_type", "object_id"], name="uniq_assessment_per_record"
+            )
+        ]
+        indexes = [models.Index(fields=["model_key", "object_id"])]
+
+    def __str__(self):
+        return f"{self.model_key}:{self.object_id} {self.recommendation}"
+
+
+class BulkStatus(models.TextChoices):
+    RUNNING = "running", "Running"
+    DONE = "done", "Completed"
+    PARTIAL = "partial", "Completed with failures"
+
+
+class BulkOperation(TimeStampedModel):
+    """A staged bulk action: the previewed record list is frozen here, executed in small chunks
+    (so each request fits the platform time limit), with per-record outcomes kept as a trail."""
+
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    action = models.CharField(max_length=24)
+    reason = models.CharField(max_length=300, blank=True)
+    targets = models.JSONField(default=list)  # [[model_key, pk], ...]
+    status = models.CharField(max_length=8, choices=BulkStatus.choices, default=BulkStatus.RUNNING)
+    cursor = models.PositiveIntegerField(default=0)
+    succeeded = models.PositiveIntegerField(default=0)
+    skipped = models.PositiveIntegerField(default=0)
+    failed = models.PositiveIntegerField(default=0)
+    results = models.JSONField(default=list)  # capped list of {model,id,outcome,detail}
+    retry_of = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="retries"
+    )
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def total(self) -> int:
+        return len(self.targets)

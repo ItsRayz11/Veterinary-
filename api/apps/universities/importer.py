@@ -17,6 +17,7 @@ import urllib.parse
 import urllib.request
 from collections.abc import Callable
 
+from apps.core import licensing
 from apps.core.reference_data import UNIVERSITY_SOURCES
 
 USER_AGENT = "VetRefBot/1.0 (https://github.com/ItsRayz11/Veterinary-; data import)"
@@ -30,8 +31,6 @@ _INSTITUTION = re.compile(r"college|school|faculty|universit|institute|cent(?:er
 _NOT_AN_INSTITUTION = re.compile(
     r"association|council|board|society|surgeons|veterinarians|application service", re.I
 )
-# Open licences only. Anything else (non-free logo, fair use, unknown) means no image.
-_OPEN_LICENSE = re.compile(r"^(cc0|public domain|pd\b|cc[ -]by(?:[ -]sa)?[ -][\d.]+)", re.I)
 _TAGS = re.compile(r"<[^>]+>")
 
 Fetch = Callable[[str, dict], dict]
@@ -75,7 +74,8 @@ def clean_name(title: str) -> str:
 
 
 def is_open_license(short_name: str) -> bool:
-    return bool(_OPEN_LICENSE.match(short_name.strip()))
+    """Open licences only; anything else (non-free logo, fair use, unknown) means no image."""
+    return licensing.is_open_license(short_name)
 
 
 def strip_html(value: str) -> str:

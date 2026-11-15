@@ -1,14 +1,38 @@
 """Verification workflow. The only sanctioned way to change a clinical record's review status."""
 
+from django.apps import apps as django_apps
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.core.models import PUBLIC_STATUSES, SIGNED_OFF_STATUSES, AuditLog, ReviewStatus
-from apps.sources.models import has_source
+from apps.core.models import (
+    PUBLIC_STATUSES,
+    SIGNED_OFF_STATUSES,
+    AuditLog,
+    PublishableModel,
+    ReviewStatus,
+)
+from apps.sources.models import has_usable_source
 
 # Statuses that assert a claim about the data's provenance, so they need >= 1 linked Source.
 NEEDS_SOURCE = PUBLIC_STATUSES | {ReviewStatus.PENDING_REVIEW}
+
+# Statuses that mean "waiting for a person".
+QUEUE_STATUSES = (
+    ReviewStatus.COMMUNITY_SUBMITTED,
+    ReviewStatus.NEEDS_VERIFICATION,
+    ReviewStatus.IMPORTED_UNVERIFIED,
+    ReviewStatus.PENDING_REVIEW,
+)
+
+
+def publishable_models() -> dict[str, type]:
+    """{'pharma.generic': Generic, ...} for every model with a review status."""
+    return {
+        m._meta.label_lower: m
+        for m in django_apps.get_models()
+        if issubclass(m, PublishableModel) and not m._meta.abstract
+    }
 
 
 @transaction.atomic
@@ -18,7 +42,7 @@ def set_review_status(record, new_status: str, by, reason: str = ""):
     old_status = record.review_status
 
     if new_status in NEEDS_SOURCE and not (
-        has_source(record) or getattr(record, "source_id", None)
+        has_usable_source(record) or getattr(record, "source_id", None)
     ):
         raise ValidationError("A source must be linked before this status can be set.")
 

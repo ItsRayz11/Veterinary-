@@ -3,9 +3,11 @@
   "crons": [
     { "path": "/api/v1/cron/link-check/", "schedule": "0 3 * * *" },
     { "path": "/api/v1/cron/feeds/", "schedule": "0 4 * * *" },
-    { "path": "/api/v1/cron/data-sources/", "schedule": "0 5 * * *" }
+    { "path": "/api/v1/cron/data-sources/", "schedule": "0 5 * * *" },
+    { "path": "/api/v1/cron/universities-sync/", "schedule": "30 5 * * *" },
+    { "path": "/api/v1/cron/review-pipeline/", "schedule": "0 6 * * *" }
   ],
-  "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then python manage.py migrate --noinput && python manage.py createcachetable && python manage.py bootstrap_public_data; fi; python manage.py collectstatic --noinput",
+  "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then python manage.py migrate --noinput && python manage.py createcachetable && python manage.py bootstrap_public_data && python manage.py backfill_sources; fi; python manage.py collectstatic --noinput",
   "functions": {
     "config/wsgi.py": {
       "maxDuration": 30,

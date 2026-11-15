@@ -6,8 +6,9 @@ from rest_framework.response import Response
 
 from apps.accounts.models import Role
 from apps.accounts.permissions import HasRole, IsEditor, IsModerator
+from apps.automation import assessment, bulk, images, pipeline
 from apps.automation import tasks as automation_tasks
-from apps.automation.models import DataSource, Feed, JobRun, SourceHealth
+from apps.automation.models import DataSource, Feed, ImageAsset, JobRun, SourceHealth
 from apps.core.models import AuditLog
 from apps.core.schema import untyped_schema
 from apps.education.models import QuestionReport
@@ -15,7 +16,7 @@ from apps.opportunities.models import Job, ListingStatus, Scholarship
 from apps.pricing import services as price_services
 from apps.pricing.models import PriceSubmission, SubmissionStatus
 
-from . import services
+from . import services, triage
 
 
 class IsAdminRole(HasRole):
@@ -119,6 +120,7 @@ def set_status(request, model_key, pk):
     )
     if error:
         return Response({"detail": error}, status=code)
+    assessment.assess(obj)
     return Response(services.serialize_record(model_key, obj))
 
 
@@ -558,3 +560,210 @@ def country_coverage(request):
     from apps.countries.coverage import coverage_report
 
     return Response({"results": coverage_report()})
+
+
+# ---------- review pipeline: triage, bulk actions, repairs ----------
+
+
+def _params(request) -> dict:
+    return {k: v for k, v in request.query_params.items()}
+
+
+def _int(value, default=1, cap=100000) -> int:
+    try:
+        return max(1, min(int(value), cap))
+    except (TypeError, ValueError):
+        return default
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def pipeline_overview(request):
+    return Response(triage.overview())
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def pipeline_facets(request):
+    return Response(triage.facets())
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def pipeline_groups(request):
+    by = request.query_params.get("by", "type")
+    if by not in triage.GROUPS:
+        return Response({"detail": "Unknown grouping."}, status=http.HTTP_400_BAD_REQUEST)
+    return Response({"by": by, "groups": triage.groups(_params(request), by)})
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def pipeline_items(request):
+    size = _int(request.query_params.get("page_size"), triage.PAGE_SIZE, 100)
+    return Response(
+        triage.items(_params(request), _int(request.query_params.get("page"), 1, 1000), size)
+    )
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def pipeline_search(request):
+    """Unified search over all records: name, ID, source, country or category."""
+    params = {"scope": "all", **_params(request)}
+    return Response(triage.items(params, _int(request.query_params.get("page"), 1, 1000)))
+
+
+def _targets(request) -> tuple[list[tuple[str, int]], bool]:
+    """Selected records: explicit `ids` or everything matching `filter`. (targets, truncated)."""
+    cap = bulk.MAX_TARGETS
+    ids = request.data.get("ids")
+    if isinstance(ids, list):
+        out = []
+        for item in ids[:cap]:
+            if isinstance(item, (list, tuple)) and len(item) == 2 and str(item[1]).isdigit():
+                out.append((str(item[0]), int(item[1])))
+        return out, len(ids) > cap
+    flt = request.data.get("filter")
+    flt = flt if isinstance(flt, dict) else {}
+    qs = triage.filtered({k: str(v) for k, v in flt.items()}).order_by("pk")
+    rows = list(qs.values_list("model_key", "object_id")[: cap + 1])
+    return [(m, i) for m, i in rows[:cap]], len(rows) > cap
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def bulk_preview(request):
+    action = str(request.data.get("action", ""))
+    if action not in bulk.ACTIONS:
+        return Response({"detail": "Unknown action."}, status=http.HTTP_400_BAD_REQUEST)
+    targets, truncated = _targets(request)
+    result = bulk.preview(action, targets, request.user)
+    result.pop("targets")
+    result["truncated"] = truncated
+    result["max_targets"] = bulk.MAX_TARGETS
+    return Response(result)
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def bulk_start(request):
+    action = str(request.data.get("action", ""))
+    if action not in bulk.ACTIONS:
+        return Response({"detail": "Unknown action."}, status=http.HTTP_400_BAD_REQUEST)
+    if action == "approve_safe" and not request.user.can_approve_clinical:
+        return Response(
+            {"detail": "Only veterinarian reviewers or admins can approve records."},
+            status=http.HTTP_403_FORBIDDEN,
+        )
+    targets, _ = _targets(request)
+    plan = bulk.preview(action, targets, request.user)
+    expected = request.data.get("expected_count")
+    if expected is None or int(expected) != plan["eligible"]:
+        return Response(
+            {
+                "detail": "The set changed since the preview. Preview again.",
+                "eligible": plan["eligible"],
+            },
+            status=http.HTTP_409_CONFLICT,
+        )
+    reason = str(request.data.get("reason", ""))[:300]
+    if action == "approve_safe" and not reason.strip():
+        return Response(
+            {"detail": "Give a reason; it is recorded in the audit log."},
+            status=http.HTTP_400_BAD_REQUEST,
+        )
+    op = bulk.start(action, plan["targets"], request.user, reason)
+    return Response(bulk.serialize(op), status=http.HTTP_201_CREATED)
+
+
+def _op(pk):
+    return bulk.BulkOperation.objects.filter(pk=pk).select_related("actor").first()
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def bulk_list(request):
+    ops = bulk.BulkOperation.objects.select_related("actor")[:20]
+    return Response({"results": [bulk.serialize(o) for o in ops]})
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def bulk_detail(request, pk):
+    op = _op(pk)
+    if op is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    return Response(bulk.serialize(op, with_results=True))
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def bulk_step(request, pk):
+    op = _op(pk)
+    if op is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    if op.actor_id != request.user.pk and not request.user.is_superuser:
+        return Response({"detail": "Not your operation."}, status=http.HTTP_403_FORBIDDEN)
+    return Response(bulk.serialize(bulk.step(op), with_results=True))
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def bulk_retry(request, pk):
+    op = _op(pk)
+    if op is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    new = bulk.retry_failed(op, request.user)
+    return Response(bulk.serialize(new), status=http.HTTP_201_CREATED)
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def record_repair(request, model_key, pk):
+    """Re-run the pipeline's preparation for one record: link sources, find images, reassess."""
+    obj = services.get_record(model_key, pk)
+    if obj is None:
+        return Response({"detail": "Record not found."}, status=http.HTTP_404_NOT_FOUND)
+    result = pipeline.prepare(obj)
+    assessment.assess(obj)
+    AuditLog.objects.create(
+        actor=request.user,
+        action="record_repaired",
+        object_type=obj._meta.label,
+        object_id=str(obj.pk),
+        after=result,
+    )
+    return Response({**result, "detail": services.record_detail(model_key, pk)})
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def image_retry(request, pk):
+    asset = ImageAsset.objects.filter(pk=pk).first()
+    if asset is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    asset = images.retry(asset)
+    record = asset.content_type.get_object_for_this_type(pk=asset.object_id)
+    assessment.assess(record)
+    AuditLog.objects.create(
+        actor=request.user,
+        action="image_retried",
+        object_type=record._meta.label,
+        object_id=str(record.pk),
+        after={"image": asset.pk, "status": asset.status, "detail": asset.status_detail},
+    )
+    return Response({"id": asset.pk, "status": asset.status, "status_detail": asset.status_detail})

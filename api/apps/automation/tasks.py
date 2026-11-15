@@ -257,10 +257,27 @@ def run_all_feeds(budget_seconds: float = LINK_CHECK_BUDGET, clock=time.monotoni
 
 # ---------- runner ----------
 
+
+def review_pipeline() -> dict:
+    """Link sources, find/store images and assess records waiting for review (pipeline.py)."""
+    from .pipeline import run_review_pipeline
+
+    return run_review_pipeline()
+
+
+def universities_sync() -> dict:
+    """Import veterinary schools for the country synced longest ago (unreviewed records only)."""
+    from apps.universities.sync import sync_next_country
+
+    return sync_next_country()
+
+
 TASKS = {
     "link-check": check_source_links,
     "feeds": run_all_feeds,
     "data-sources": check_data_sources,
+    "universities-sync": universities_sync,
+    "review-pipeline": review_pipeline,
 }
 
 

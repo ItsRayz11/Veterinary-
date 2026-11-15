@@ -27,6 +27,7 @@ import { ImportsTab } from "./imports-tab";
 import { ListingsTab } from "./listings-tab";
 import { NAV, canSee, parseSection, type SectionKey } from "./nav";
 import { Overview } from "./overview";
+import { PipelineTab } from "./pipeline-tab";
 import { SourcesTab } from "./sources-tab";
 import { AuditLogTab, PricesTab, QuestionReportsTab, ReviewQueueTab } from "./tabs";
 
@@ -342,8 +343,19 @@ export function AdminPanel() {
             {tab === "overview" && (
               <Overview summary={summary} isModerator={isModerator} go={setTab} />
             )}
+            {tab === "pipeline" && (
+              <PipelineTab
+                isAdmin={user.role === "admin"}
+                canApprove={summary?.can_approve_clinical ?? false}
+                onChanged={refresh}
+              />
+            )}
             {tab === "queue" && (
-              <ReviewQueueTab counts={summary?.review_queue ?? {}} onChanged={refresh} />
+              <ReviewQueueTab
+                counts={summary?.review_queue ?? {}}
+                canApprove={summary?.can_approve_clinical ?? false}
+                onChanged={refresh}
+              />
             )}
             {tab === "imports" && <ImportsTab onChanged={refresh} />}
             {tab === "listings" && isModerator && <ListingsTab onChanged={refresh} />}

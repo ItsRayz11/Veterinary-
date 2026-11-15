@@ -18,6 +18,13 @@ class SourceType(models.TextChoices):
     OTHER = "other", "Other"
 
 
+class VerificationStatus(models.TextChoices):
+    UNVERIFIED = "unverified", "Not yet verified"
+    PROVENANCE_OK = "provenance_ok", "Provenance and licence verified"
+    CONFLICT = "conflict", "Conflicting evidence"
+    INVALID = "invalid", "Invalid"
+
+
 class Source(TimeStampedModel):
     source_type = models.CharField(max_length=24, choices=SourceType.choices)
     title = models.CharField(max_length=500)
@@ -33,6 +40,20 @@ class Source(TimeStampedModel):
     edition = models.CharField(max_length=100, blank=True)
     license_note = models.CharField(max_length=300, blank=True)
     checksum = models.CharField(max_length=64, blank=True)
+    license_url = models.URLField(max_length=500, blank=True)
+
+    # Registry identity and automatic validation (apps.sources.linking). `canonical_url` is what
+    # two entries are compared by, so the same page is never registered twice.
+    canonical_url = models.CharField(max_length=1000, blank=True, db_index=True, editable=False)
+    provider = models.CharField(max_length=60, blank=True, db_index=True)
+    verification_status = models.CharField(
+        max_length=16,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.UNVERIFIED,
+        db_index=True,
+    )
+    verified_at = models.DateTimeField(null=True, blank=True, editable=False)
+    verification_note = models.CharField(max_length=300, blank=True, editable=False)
 
     class Meta:
         ordering = ["title"]
@@ -45,6 +66,14 @@ class Source(TimeStampedModel):
 
     def __str__(self):
         return self.title[:80]
+
+    def save(self, *args, **kwargs):
+        from .urlutil import canonicalize_url
+
+        self.canonical_url = canonicalize_url(self.url)
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = {*kwargs["update_fields"], "canonical_url"}
+        super().save(*args, **kwargs)
 
 
 class SourceLink(models.Model):
@@ -77,3 +106,13 @@ def sources_for(obj):
 def has_source(obj) -> bool:
     ct = ContentType.objects.get_for_model(obj)
     return SourceLink.objects.filter(content_type=ct, object_id=obj.pk).exists()
+
+
+def has_usable_source(obj) -> bool:
+    """A linked Source that has not been judged invalid. A raw URL on the record never counts."""
+    ct = ContentType.objects.get_for_model(obj)
+    return (
+        SourceLink.objects.filter(content_type=ct, object_id=obj.pk)
+        .exclude(source__verification_status=VerificationStatus.INVALID)
+        .exists()
+    )

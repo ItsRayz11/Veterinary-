@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "upload.wikimedia.org" },
       { protocol: "https", hostname: "thumb.wikimedia.org" },
+      // Approved images copied to Cloudflare R2 (public custom domain / r2.dev host, no scheme).
+      ...(process.env.NEXT_PUBLIC_R2_PUBLIC_HOST
+        ? [{ protocol: "https" as const, hostname: process.env.NEXT_PUBLIC_R2_PUBLIC_HOST }]
+        : []),
     ],
   },
   async headers() {
