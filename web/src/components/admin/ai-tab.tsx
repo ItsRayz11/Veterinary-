@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Field, Select, Skeleton, TextInput } from "@/components/ui/forms";
+import { Button, Field, Skeleton, TextInput } from "@/components/ui/forms";
 import { Modal } from "@/components/ui/modal";
 import { Alert, DataTable, td, th } from "@/components/ui/primitives";
 import { apiFetch, apiSend } from "@/lib/client-api";
 import { CrudSection, type FieldDef } from "./crud-section";
+import { ModelPicker } from "./model-picker";
 import { fmt, useList } from "./tabs";
 
 interface Provider extends Record<string, unknown> {
@@ -61,14 +62,10 @@ function presetFor(name: string, value: unknown) {
   return p ? { ...p, default_model: "" } : undefined;
 }
 
-function providerFields(fetched: string[]): FieldDef[] {
+function providerFields(modelsFor: (kind: unknown) => string[]): FieldDef[] {
   return PROVIDER_FIELDS.map((f) =>
     f.name === "default_model"
-      ? {
-          ...f,
-          suggestionsFor: (form) =>
-            [...new Set([...(form.kind === "agentrouter" ? AGENTROUTER_MODELS : []), ...fetched])].sort(),
-        }
+      ? { ...f, type: "model", suggestionsFor: (form) => modelsFor(form.kind) }
       : f,
   );
 }
@@ -153,6 +150,7 @@ function KeyDialog({
       onModels(res.models);
       return `${res.models.length} models available.`;
     });
+  const query = models ?? [];
 
   return (
     <Modal open title={`${provider.kind}: API key and model`} onClose={onClose}>
@@ -185,7 +183,20 @@ function KeyDialog({
                 });
                 setKey("");
                 onChanged();
-                return "Key saved. Now load the models and pick one.";
+                // Load this provider's models straight away so the list is ready to search.
+                try {
+                  const res = await apiFetch<{ ok: boolean; models: string[] }>(
+                    `/staff/ai/providers/${provider.id}/models/`,
+                  );
+                  if (res?.ok) {
+                    setModels(res.models);
+                    onModels(res.models);
+                    return `Key saved. ${res.models.length} models loaded; search and pick one.`;
+                  }
+                } catch {
+                  /* fall through to the manual button */
+                }
+                return "Key saved. Use Load models from provider to see its models.";
               })
             }
           >
@@ -213,14 +224,7 @@ function KeyDialog({
         </Button>
         {models && (
           <Field id="ai-model" label="Model">
-            <Select id="ai-model" value={model} onChange={(e) => setModel(e.target.value)}>
-              <option value="">Choose a model</option>
-              {models.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </Select>
+            <ModelPicker id="ai-model" value={model} onChange={setModel} models={query} />
           </Field>
         )}
         {models && (
@@ -253,14 +257,35 @@ export function AiTab() {
       .then((u) => setUsage(u ?? null))
       .catch(() => setUsage(null));
   }, []);
-  // Model names to suggest: AgentRouter's list plus whatever "List models" fetched from providers.
-  const [fetched, setFetched] = useState<string[]>([]);
-  const modelNames = [...new Set([...AGENTROUTER_MODELS, ...fetched])].sort();
+  // Models per provider kind, fetched live from each provider (AgentRouter also has a built-in list).
+  const [fetched, setFetched] = useState<Record<string, string[]>>({});
+  const addModels = (kind: string, m: string[]) =>
+    setFetched((f) => ({ ...f, [kind]: [...new Set(m)].sort() }));
+  const modelsFor = (kind: unknown): string[] => {
+    const k = String(kind ?? "");
+    return [...new Set([...(k === "agentrouter" ? AGENTROUTER_MODELS : []), ...(fetched[k] ?? [])])].sort();
+  };
+  const kindOf = (providerId: unknown) =>
+    (providers.rows ?? []).find((p) => String(p.id) === String(providerId))?.kind;
   const [tick, setTick] = useState(0);
   const [keyFor, setKeyFor] = useState<Provider | null>(null);
   const provOptions: [string, string][] = (providers.rows ?? []).flatMap((p) => [
     [String(p.id), p.kind] as [string, string],
   ]);
+
+  // Load each keyed provider's model list once so searching is instant.
+  const rowsKey = (providers.rows ?? []).map((p) => `${p.id}:${p.key_present}`).join(",");
+  useEffect(() => {
+    for (const p of providers.rows ?? []) {
+      if (!p.key_present) continue;
+      apiFetch<{ ok: boolean; models: string[] }>(`/staff/ai/providers/${p.id}/models/`)
+        .then((res) => {
+          if (res?.ok) addModels(p.kind, res.models);
+        })
+        .catch(() => undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowsKey]);
 
   return (
     <div className="space-y-8">
@@ -293,7 +318,7 @@ export function AiTab() {
             rate_limit_per_minute: 30,
           }}
           onFieldChange={presetFor}
-          fields={providerFields(fetched)}
+          fields={providerFields(modelsFor)}
           columns={[
             { header: "Provider", render: (r) => `${r.kind}${r.enabled ? "" : " (off)"}` },
             {
@@ -329,8 +354,8 @@ export function AiTab() {
                   `/staff/ai/providers/${r.id}/models/`,
                 );
                 if (!res?.ok) return res?.detail || "Could not load models.";
-                setFetched((f) => [...new Set([...f, ...res.models])]);
-                return `${res.models.length} models loaded; they now appear as suggestions below.`;
+                addModels(r.kind, res.models);
+                return `${res.models.length} ${r.kind} models loaded; search them when choosing a model.`;
               },
             },
             {
@@ -351,7 +376,7 @@ export function AiTab() {
             providers.reload();
             setTick((t) => t + 1);
           }}
-          onModels={(m) => setFetched((f) => [...new Set([...f, ...m])])}
+          onModels={(m) => addModels(keyFor.kind, m)}
         />
       )}
 
@@ -374,9 +399,19 @@ export function AiTab() {
           fields={[
             { name: "task", label: "Task", type: "select", options: TASKS, createOnly: true },
             { name: "provider", label: "Provider", type: "select" },
-            { name: "model", label: "Model", suggestions: modelNames },
+            {
+              name: "model",
+              label: "Model",
+              type: "model",
+              suggestionsFor: (form) => modelsFor(kindOf(form.provider)),
+            },
             { name: "fallback_provider", label: "Fallback provider", type: "select" },
-            { name: "fallback_model", label: "Fallback model", suggestions: modelNames },
+            {
+              name: "fallback_model",
+              label: "Fallback model",
+              type: "model",
+              suggestionsFor: (form) => modelsFor(kindOf(form.fallback_provider)),
+            },
             { name: "max_tokens", label: "Max tokens", type: "number" },
             { name: "enabled", label: "Enabled", type: "checkbox" },
           ]}

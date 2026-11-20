@@ -5,12 +5,13 @@ import { Button, Field, Select, TextInput } from "@/components/ui/forms";
 import { Modal } from "@/components/ui/modal";
 import { Alert, DataTable, td, th } from "@/components/ui/primitives";
 import { apiSend } from "@/lib/client-api";
+import { ModelPicker } from "./model-picker";
 import { ListShell, errText, useList } from "./tabs";
 
 export interface FieldDef {
   name: string;
   label: string;
-  type?: "text" | "textarea" | "number" | "select" | "checkbox" | "url";
+  type?: "text" | "textarea" | "number" | "select" | "checkbox" | "url" | "model";
   options?: readonly (readonly [string, string])[];
   hint?: string;
   /** Suggested values for a text field (free text is still allowed). */
@@ -219,6 +220,13 @@ export function CrudSection<R extends Row>({
                         </option>
                       ))}
                     </Select>
+                  ) : f.type === "model" ? (
+                    <ModelPicker
+                      id={id}
+                      value={String(v ?? "")}
+                      onChange={set}
+                      models={suggestions ?? []}
+                    />
                   ) : f.type === "textarea" ? (
                     <textarea
                       id={id}
