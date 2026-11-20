@@ -65,7 +65,12 @@ function presetFor(name: string, value: unknown) {
 function providerFields(modelsFor: (kind: unknown) => string[]): FieldDef[] {
   return PROVIDER_FIELDS.map((f) =>
     f.name === "default_model"
-      ? { ...f, type: "model", suggestionsFor: (form) => modelsFor(form.kind) }
+      ? {
+          ...f,
+          type: "model",
+          editOnly: true,
+          suggestionsFor: (form) => modelsFor(form.kind),
+        }
       : f,
   );
 }
@@ -318,6 +323,8 @@ export function AiTab() {
             rate_limit_per_minute: 30,
           }}
           onFieldChange={presetFor}
+          intro="After you save, the key dialog opens: paste your key there and this provider's models load into a dropdown."
+          onCreated={(row) => setKeyFor(row)}
           fields={providerFields(modelsFor)}
           columns={[
             { header: "Provider", render: (r) => `${r.kind}${r.enabled ? "" : " (off)"}` },

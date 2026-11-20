@@ -20,6 +20,8 @@ export interface FieldDef {
   suggestionsFor?: (form: Record<string, unknown>) => readonly string[];
   /** Only editable when creating. */
   createOnly?: boolean;
+  /** Hidden while creating (shown when editing an existing row). */
+  editOnly?: boolean;
 }
 export interface Column<R> {
   header: string;
@@ -53,6 +55,7 @@ export function CrudSection<R extends Row>({
   intro,
   dynamicOptions = {},
   onFieldChange,
+  onCreated,
 }: {
   path: string;
   fields: FieldDef[];
@@ -69,6 +72,8 @@ export function CrudSection<R extends Row>({
   dynamicOptions?: Record<string, readonly (readonly [string, string])[]>;
   /** Extra values to fill in when a field changes (e.g. provider presets). Only on create. */
   onFieldChange?: (name: string, value: unknown) => Record<string, unknown> | undefined;
+  /** Called with the new row after a successful create. */
+  onCreated?: (row: R) => void;
 }) {
   const list = useList<R>(`${path}/`);
   const [editing, setEditing] = useState<R | "new" | null>(null);
@@ -88,8 +93,10 @@ export function CrudSection<R extends Row>({
     setBusy("save");
     setError(null);
     try {
-      if (editing === "new") await apiSend("POST", `${path}/`, form);
-      else {
+      if (editing === "new") {
+        const created = await apiSend<R>("POST", `${path}/`, form);
+        if (created && onCreated) onCreated(created);
+      } else {
         const body: Record<string, unknown> = {};
         for (const f of fields) if (!f.createOnly) body[f.name] = form[f.name];
         await apiSend("PATCH", `${path}/${editing.id}/`, body);
@@ -186,7 +193,7 @@ export function CrudSection<R extends Row>({
         <div className="max-h-[65vh] space-y-3 overflow-y-auto pr-1">
           {error && <Alert tone="danger">{error}</Alert>}
           {fields
-            .filter((f) => editing === "new" || !f.createOnly)
+            .filter((f) => (editing === "new" ? !f.editOnly : !f.createOnly))
             .map((f) => {
               const id = `f-${f.name}`;
               const v = form[f.name];
