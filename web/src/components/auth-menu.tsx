@@ -11,23 +11,32 @@ export function AuthMenu() {
   if (user === undefined) return <span className="h-5 w-16" aria-hidden="true" />;
   if (!user)
     return (
-      <div className="flex gap-3 whitespace-nowrap text-sm">
-        <Link href="/login" className="text-muted hover:text-text">
+      <div className="flex gap-1 whitespace-nowrap text-sm">
+        <Link
+          href="/login"
+          className="inline-flex min-h-10 items-center rounded-md px-2 text-muted hover:text-text"
+        >
           Sign in
         </Link>
-        <Link href="/register" className="font-medium text-primary">
+        <Link
+          href="/register"
+          className="inline-flex min-h-10 items-center rounded-md px-2 font-medium text-primary"
+        >
           Register
         </Link>
       </div>
     );
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <Link href="/account" className="text-muted hover:text-text">
+    <div className="flex items-center gap-1 text-sm">
+      <Link
+        href="/account"
+        className="inline-flex min-h-10 items-center rounded-md px-2 text-muted hover:text-text"
+      >
         {user.username}
       </Link>
       <button
         type="button"
-        className="text-muted hover:text-text"
+        className="inline-flex min-h-10 items-center rounded-md px-2 text-muted hover:text-text"
         onClick={async () => {
           await apiSend("POST", "/auth/logout");
           notifyAuthChanged();
