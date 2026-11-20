@@ -26,12 +26,26 @@ export function Modal({
     <dialog
       ref={ref}
       onClose={onClose}
+      onClick={(e) => {
+        // Click on the backdrop (outside the dialog box) closes it.
+        if (e.target === e.currentTarget) onClose();
+      }}
       aria-labelledby={titleId}
-      className="m-auto w-[min(32rem,92vw)] card p-4 text-text backdrop:bg-black/50"
+      className="m-auto max-h-[92vh] w-[min(32rem,92vw)] overflow-y-auto card p-4 text-text backdrop:bg-black/50"
     >
-      <h2 id={titleId} className="mb-2 text-base font-semibold">
-        {title}
-      </h2>
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-2 flex items-start justify-between gap-2 bg-surface px-4 pt-4 pb-2">
+        <h2 id={titleId} className="text-base font-semibold">
+          {title}
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-xl leading-none text-muted hover:bg-surface-2"
+        >
+          ×
+        </button>
+      </div>
       {children}
     </dialog>
   );

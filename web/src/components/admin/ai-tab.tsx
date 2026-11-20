@@ -232,23 +232,28 @@ function KeyDialog({
             <ModelPicker id="ai-model" value={model} onChange={setModel} models={query} />
           </Field>
         )}
-        {models && (
-          <Button
-            disabled={!model}
-            loading={busy === "use"}
-            onClick={() =>
-              run("use", async () => {
-                await apiSend("PATCH", `/staff/ai/providers/${provider.id}/`, {
-                  default_model: model,
-                });
-                onChanged();
-                return `Preferred model set to ${model}.`;
-              })
-            }
-          >
-            Use this model
+        <div className="flex flex-wrap gap-2">
+          {models && (
+            <Button
+              disabled={!model}
+              loading={busy === "use"}
+              onClick={() =>
+                run("use", async () => {
+                  await apiSend("PATCH", `/staff/ai/providers/${provider.id}/`, {
+                    default_model: model,
+                  });
+                  onChanged();
+                  return `Preferred model set to ${model}.`;
+                })
+              }
+            >
+              Use this model
+            </Button>
+          )}
+          <Button variant="secondary" onClick={onClose}>
+            Close
           </Button>
-        )}
+        </div>
       </div>
     </Modal>
   );
@@ -268,7 +273,9 @@ export function AiTab() {
     setFetched((f) => ({ ...f, [kind]: [...new Set(m)].sort() }));
   const modelsFor = (kind: unknown): string[] => {
     const k = String(kind ?? "");
-    return [...new Set([...(k === "agentrouter" ? AGENTROUTER_MODELS : []), ...(fetched[k] ?? [])])].sort();
+    return [
+      ...new Set([...(k === "agentrouter" ? AGENTROUTER_MODELS : []), ...(fetched[k] ?? [])]),
+    ].sort();
   };
   const kindOf = (providerId: unknown) =>
     (providers.rows ?? []).find((p) => String(p.id) === String(providerId))?.kind;
