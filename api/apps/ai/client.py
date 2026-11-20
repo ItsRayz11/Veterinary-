@@ -120,6 +120,12 @@ def run_task(task: str, prompt: str, *, system: str = "", actor=None) -> str:
     raise AIError(last)
 
 
+_NOT_JSON_MSG = (
+    "The provider answered with a web page, not JSON (often a bot/WAF block or a wrong base URL). "
+    "Check the base URL ends in /v1, or use a provider that allows server-side API calls."
+)
+
+
 def list_models(provider: AIProvider) -> tuple[bool, list[str], str]:
     """Model ids from the provider /models endpoint (no user data sent); some gateways lack it."""
     try:
@@ -136,6 +142,8 @@ def list_models(provider: AIProvider) -> tuple[bool, list[str], str]:
         return True, ids[:500], ""
     except (AIError, safe_http.FetchError) as exc:
         return False, [], str(exc)
+    except ValueError:  # JSONDecodeError / bad encoding
+        return False, [], _NOT_JSON_MSG
     except urllib.error.HTTPError as exc:
         hint = (
             " This provider does not publish a model list; type the name from its console."
@@ -162,6 +170,8 @@ def check_connection(provider: AIProvider) -> tuple[bool, str]:
         ok, msg = True, "Connected."
     except (AIError, safe_http.FetchError) as exc:
         ok, msg = False, str(exc)
+    except ValueError:  # JSONDecodeError / bad encoding
+        ok, msg = False, _NOT_JSON_MSG
     except urllib.error.HTTPError as exc:
         if exc.code in (404, 405) and provider.default_model:
             # Some gateways (e.g. AgentRouter) do not document /models: try one tiny completion.
