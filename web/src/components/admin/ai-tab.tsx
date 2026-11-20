@@ -47,9 +47,29 @@ const AGENTROUTER_MODELS = [
   "gpt-5.6-sol",
 ];
 
-function providerFields(models: string[]): FieldDef[] {
+/** Connection defaults filled in when a provider is picked. The env name is only a fallback:
+ * a key entered in the admin panel wins. No model is pre-selected; names come from the provider. */
+const PROVIDER_PRESETS: Record<string, { base_url: string; api_key_env: string }> = {
+  openai: { base_url: "https://api.openai.com/v1", api_key_env: "OPENAI_API_KEY" },
+  openrouter: { base_url: "https://openrouter.ai/api/v1", api_key_env: "OPENROUTER_API_KEY" },
+  agentrouter: { base_url: "https://agentrouter.org/v1", api_key_env: "AGENTROUTER_API_KEY" },
+};
+
+function presetFor(name: string, value: unknown) {
+  if (name !== "kind") return undefined;
+  const p = PROVIDER_PRESETS[String(value)];
+  return p ? { ...p, default_model: "" } : undefined;
+}
+
+function providerFields(fetched: string[]): FieldDef[] {
   return PROVIDER_FIELDS.map((f) =>
-    f.name === "default_model" ? { ...f, suggestions: models } : f,
+    f.name === "default_model"
+      ? {
+          ...f,
+          suggestionsFor: (form) =>
+            [...new Set([...(form.kind === "agentrouter" ? AGENTROUTER_MODELS : []), ...fetched])].sort(),
+        }
+      : f,
   );
 }
 
@@ -69,12 +89,12 @@ const PROVIDER_FIELDS: FieldDef[] = [
     name: "base_url",
     label: "Base URL (https)",
     type: "url",
-    hint: "OpenAI: https://api.openai.com/v1 · AgentRouter: https://agentrouter.org/v1",
+    hint: "Filled in automatically when you pick a provider; change it only for a custom gateway.",
   },
   {
     name: "api_key_env",
     label: "Key reference (optional)",
-    hint: "Optional. Leave empty and use the row action API key and model to enter the key.",
+    hint: "Name of a server environment variable, never the key itself. A key entered with the row action API key and model takes priority.",
   },
   { name: "default_model", label: "Preferred model" },
   { name: "monthly_budget_usd", label: "Monthly budget (USD, 0 = off)", type: "number" },
@@ -265,8 +285,15 @@ export function AiTab() {
           caption="AI providers"
           empty="No provider configured. AI features stay off until you add one."
           newLabel="Add a provider"
-          defaults={{ monthly_budget_usd: 0, timeout_seconds: 20, rate_limit_per_minute: 30 }}
-          fields={providerFields(modelNames)}
+          defaults={{
+            kind: "openai",
+            ...PROVIDER_PRESETS.openai,
+            monthly_budget_usd: 0,
+            timeout_seconds: 20,
+            rate_limit_per_minute: 30,
+          }}
+          onFieldChange={presetFor}
+          fields={providerFields(fetched)}
           columns={[
             { header: "Provider", render: (r) => `${r.kind}${r.enabled ? "" : " (off)"}` },
             {

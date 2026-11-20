@@ -15,6 +15,8 @@ export interface FieldDef {
   hint?: string;
   /** Suggested values for a text field (free text is still allowed). */
   suggestions?: readonly string[];
+  /** Suggestions that depend on the other form values (e.g. the chosen provider). */
+  suggestionsFor?: (form: Record<string, unknown>) => readonly string[];
   /** Only editable when creating. */
   createOnly?: boolean;
 }
@@ -49,6 +51,7 @@ export function CrudSection<R extends Row>({
   defaults = {},
   intro,
   dynamicOptions = {},
+  onFieldChange,
 }: {
   path: string;
   fields: FieldDef[];
@@ -63,6 +66,8 @@ export function CrudSection<R extends Row>({
   intro?: ReactNode;
   /** Options for select fields that depend on other data (e.g. a list of providers). */
   dynamicOptions?: Record<string, readonly (readonly [string, string])[]>;
+  /** Extra values to fill in when a field changes (e.g. provider presets). Only on create. */
+  onFieldChange?: (name: string, value: unknown) => Record<string, unknown> | undefined;
 }) {
   const list = useList<R>(`${path}/`);
   const [editing, setEditing] = useState<R | "new" | null>(null);
@@ -184,7 +189,13 @@ export function CrudSection<R extends Row>({
             .map((f) => {
               const id = `f-${f.name}`;
               const v = form[f.name];
-              const set = (x: unknown) => setForm((s) => ({ ...s, [f.name]: x }));
+              const set = (x: unknown) =>
+                setForm((s) => ({
+                  ...s,
+                  [f.name]: x,
+                  ...(editing === "new" ? onFieldChange?.(f.name, x) : undefined),
+                }));
+              const suggestions = f.suggestionsFor ? f.suggestionsFor(form) : f.suggestions;
               if (f.type === "checkbox")
                 return (
                   <label key={f.name} className="flex min-h-11 items-center gap-2 text-sm">
@@ -222,12 +233,12 @@ export function CrudSection<R extends Row>({
                         id={id}
                         type={f.type === "number" ? "number" : f.type === "url" ? "url" : "text"}
                         value={String(v ?? "")}
-                        list={f.suggestions ? `${id}-list` : undefined}
+                        list={suggestions ? `${id}-list` : undefined}
                         onChange={(e) => set(e.target.value)}
                       />
-                      {f.suggestions && (
+                      {suggestions && (
                         <datalist id={`${id}-list`}>
-                          {f.suggestions.map((m) => (
+                          {suggestions.map((m) => (
                             <option key={m} value={m} />
                           ))}
                         </datalist>
