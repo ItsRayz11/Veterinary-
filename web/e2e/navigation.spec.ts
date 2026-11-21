@@ -8,6 +8,70 @@ const WEBKIT_TAB_REASON =
   "WebKit does not Tab to links by default (Safari behaviour); covered by the programmatic focus-visible test";
 
 test.describe("keyboard and focus", () => {
+  // The WebKit builds Playwright drives never Tab to links (a platform default), so the order is
+  // derived from the DOM, which is what sequential keyboard navigation follows when there is no
+  // positive tabindex, and each stop is then really focused. This is NOT the same as pressing Tab
+  // in WebKit: real Tab traversal of links is covered on Chromium and Firefox only.
+  test("sequential focus order follows the page: skip link, header, main, footer (all engines)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/");
+    await expect(headerSignIn(page)).toBeVisible();
+
+    const stops = await page.evaluate(() => {
+      const sel =
+        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select, textarea, [tabindex]';
+      const rank = (e: Element) =>
+        e.closest("header")
+          ? 1
+          : e.closest("main")
+            ? 2
+            : e.closest("footer")
+              ? 3
+              : e.closest("nav")
+                ? 4
+                : 0;
+      return [...document.querySelectorAll(sel)]
+        .filter((e) => {
+          const s = getComputedStyle(e);
+          const r = e.getBoundingClientRect();
+          return s.display !== "none" && s.visibility !== "hidden" && r.width > 0 && r.height > 0;
+        })
+        .map((e) => ({
+          name: (e.getAttribute("aria-label") || e.textContent || e.id || e.tagName)
+            .trim()
+            .slice(0, 30),
+          tabindex: e.getAttribute("tabindex"),
+          rank: rank(e),
+        }));
+    });
+
+    expect(stops.length).toBeGreaterThan(10);
+    expect(stops[0].name).toBe("Skip to content");
+    expect(stops.filter((s) => s.tabindex !== null && Number(s.tabindex) > 0)).toEqual([]);
+    // Regions never interleave: skip link (0), header (1), main (2), footer (3).
+    const ranks = stops.map((s) => s.rank).filter((r) => r !== 4);
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+  });
+
+  test("Enter activates a focused nav link and the skip link (all engines)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/");
+    await expect(headerSignIn(page)).toBeVisible();
+
+    await page.getByRole("link", { name: "Skip to content" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/#main$/);
+
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Calculators" })
+      .focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/calculators$/);
+  });
+
   test("every interactive control in the header and tab bar shows a focus ring (all engines)", async ({
     page,
   }) => {
