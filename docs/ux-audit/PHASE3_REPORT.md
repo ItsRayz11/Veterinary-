@@ -76,6 +76,19 @@ Not started, with the reason: filter chips and a mobile drawer (the app has no d
 - Browser: **549 tests listed** (183 per engine; the 7 stack tests run on Chromium only). Last full local run, before the calculator and status work: 445 passed, 6 flaky, 3 failed, 17 skipped in 39.6 minutes (the machine had about 2 GB free RAM; Firefox was slow). Of those 3 failures: 2 Firefox context-teardown timeouts (a Firefox harness problem, probably memory pressure; not proven) and 1 spurious `500 /api/v1/auth/me` from the mock keep-alive race (the Chromium flaky one had the same cause), since fixed. The calculator spec afterwards: 77 passed, 1 flaky, 0 failed on all three engines.
 - Not re-run end to end locally after the final test edits: the full 549-test suite. GitHub's run on `dfce9e6` is the first complete run of everything together; its counts are in section 1.
 
+### Performance check of the navigation component (local Lighthouse, noisy)
+
+Same method as Phase 2 (local production build, mock API, Chrome 157, COOP header stripped by the tooling proxy, 2 runs per page and form factor, machine with about 2 GB free RAM). The build used was made before the status-badge fix, which does not touch `/` or `/search`.
+
+| Page, form factor | LCP before (Phase 2) | LCP now | TBT now (2 runs) |
+| --- | --- | --- | --- |
+| `/` mobile | 1221, 1221 ms | 1159, 1251 ms | 166, 616 ms |
+| `/search?q=amox` mobile | 905, 864 ms | 794, 987 ms | 660, 139 ms |
+| `/` desktop | 305, 300 ms | 325, 333 ms | 1511, 24 ms |
+| `/search?q=amox` desktop | 481, 479 ms | 494, 492 ms | 6, 10 ms |
+
+CLS stays 0; accessibility stays 100, best-practices 96, SEO 100 (`/search` 63, deliberately `noindex`). Desktop LCP is consistently about 13 to 33 ms higher; mobile LCP is within the spread. Total blocking time varies from 6 to 1511 ms between runs of the same page, so it says nothing about this change. **Conclusion: no regression shown, but a cost of tens of milliseconds cannot be ruled out on this machine.** A quieter machine or CI-based Lighthouse would settle it; I did not do that.
+
 ## 10. Rollback
 
 `git revert` the Phase 3 commits (`dd953ca`, `8ef9b9b`, `dfce9e6` and this docs commit). No data, schema, configuration or infrastructure changes were made.
