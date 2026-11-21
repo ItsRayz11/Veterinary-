@@ -1,4 +1,4 @@
-import type { Page, Route } from "@playwright/test";
+import { expect, type Locator, type Page, type Route } from "@playwright/test";
 
 /** The 11 target widths plus 430, which the Phase 1 after-fix run did not cover. */
 export const WIDTHS = [320, 375, 390, 430, 640, 768, 820, 910, 1024, 1280, 1440, 1920] as const;
@@ -57,4 +57,14 @@ export async function setQuery(page: Page, text: string) {
   await input.click();
   await input.fill("");
   await input.pressSequentially(text);
+}
+
+/**
+ * Waits until React has attached to a control. Typing before that is lost (React resets controlled
+ * inputs to their state when it takes over), which shows up on slower engines and devices.
+ */
+export async function waitForHydration(control: Locator) {
+  await expect
+    .poll(() => control.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps"))))
+    .toBe(true);
 }

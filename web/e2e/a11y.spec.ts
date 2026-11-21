@@ -1,5 +1,3 @@
-import AxeBuilder from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
 import {
   emptySearch,
   fixtureSearch,
@@ -9,6 +7,7 @@ import {
   ROUTES,
   setQuery,
 } from "./helpers";
+import { scan } from "./axe";
 import { expect, test } from "./fixtures";
 
 // Firefox's content process crashes intermittently ("Page crashed") while axe-core analyses some pages,
@@ -25,16 +24,6 @@ test.afterEach(async ({}, testInfo) => {
     });
   }
 });
-
-async function scan(page: Page, label: string) {
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"])
-    .analyze();
-  const summary = violations.map(
-    (v) => `[${v.impact}] ${v.id} (${v.nodes.length}): ${v.nodes[0]?.target.join(" ")}`,
-  );
-  expect(summary, `axe violations on ${label}`).toEqual([]);
-}
 
 const MODES = [
   { name: "phone light", width: 390, scheme: "light" as const },
