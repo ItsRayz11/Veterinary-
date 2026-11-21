@@ -11,6 +11,21 @@ import {
 } from "./helpers";
 import { expect, test } from "./fixtures";
 
+// Firefox's content process crashes intermittently ("Page crashed") while axe-core analyses some pages,
+// mostly the home page: about 30% of attempts locally and 4 of 32 first attempts on GitHub. It is not
+// tied to any CSS feature, timing, worker count or axe code path we could isolate (see
+// docs/ux-audit/FIREFOX_AXE_CRASH.md). A real accessibility violation is deterministic and fails every
+// attempt, so retrying cannot hide one; each retry is recorded as an annotation and reported as flaky.
+test.describe.configure({ retries: 3 });
+test.afterEach(async ({}, testInfo) => {
+  if (testInfo.retry > 0) {
+    testInfo.annotations.push({
+      type: "axe-retry",
+      description: `attempt ${testInfo.retry + 1}: previous attempt failed (see FIREFOX_AXE_CRASH.md)`,
+    });
+  }
+});
+
 async function scan(page: Page, label: string) {
   const { violations } = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"])
