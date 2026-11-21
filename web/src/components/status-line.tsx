@@ -13,10 +13,18 @@ const MAP: Record<string, ReviewStatus> = {
   deprecated: "deprecated",
 };
 
+/** Badges that tell the reader a person has checked the record. */
+const REVIEWED: ReviewStatus[] = ["verified", "expert_reviewed"];
+
 export function StatusLine({ status }: { status: Status }) {
+  const mapped: ReviewStatus = MAP[status.code] ?? "needs_verification";
+  // Defence in depth for docs/CLINICAL_GOVERNANCE.md: a record flagged as an unreviewed import is never
+  // shown with a reviewed badge, even if its code says otherwise. This only ever downgrades the label.
   const key: ReviewStatus = status.is_development_data
     ? "development"
-    : (MAP[status.code] ?? "needs_verification");
+    : status.is_unverified_import && REVIEWED.includes(mapped)
+      ? "imported"
+      : mapped;
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <StatusBadge status={key} />
