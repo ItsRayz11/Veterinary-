@@ -1,7 +1,8 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { AuthMenu } from "@/components/auth-menu";
 import { NavLinks, type NavItem } from "@/components/nav-links";
+import { NavigationProgress } from "@/components/navigation-progress";
 import { PublicChrome } from "@/components/public-chrome";
 
 const NAV: NavItem[] = [
@@ -17,6 +18,9 @@ const NAV: NavItem[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface focus:p-2"
