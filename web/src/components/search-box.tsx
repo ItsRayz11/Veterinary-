@@ -166,7 +166,7 @@ export function SearchBox({
               type="button"
               onClick={clear}
               aria-label="Clear search"
-              className="absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-lg text-muted hover:text-text"
+              className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-lg text-muted hover:text-text"
             >
               <span aria-hidden="true">×</span>
             </button>

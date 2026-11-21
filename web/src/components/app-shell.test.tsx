@@ -36,7 +36,8 @@ describe("AppShell responsive chrome", () => {
   it("gives the sign-in and register links a touch-sized hit area", () => {
     for (const label of ["Sign in", "Register"]) {
       const link = html.match(new RegExp(`<a[^>]*>${label}</a>`))![0];
-      expect(link).toContain("min-h-10");
+      expect(link).toContain("min-h-11");
+      expect(link).toContain("min-w-11");
     }
   });
 });

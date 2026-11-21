@@ -14,13 +14,13 @@ export function AuthMenu() {
       <div className="flex gap-1 whitespace-nowrap text-sm">
         <Link
           href="/login"
-          className="inline-flex min-h-10 items-center rounded-md px-2 text-muted hover:text-text"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-muted hover:text-text"
         >
           Sign in
         </Link>
         <Link
           href="/register"
-          className="inline-flex min-h-10 items-center rounded-md px-2 font-medium text-primary"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 font-medium text-primary"
         >
           Register
         </Link>
@@ -30,13 +30,13 @@ export function AuthMenu() {
     <div className="flex items-center gap-1 text-sm">
       <Link
         href="/account"
-        className="inline-flex min-h-10 items-center rounded-md px-2 text-muted hover:text-text"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-muted hover:text-text"
       >
         {user.username}
       </Link>
       <button
         type="button"
-        className="inline-flex min-h-10 items-center rounded-md px-2 text-muted hover:text-text"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-muted hover:text-text"
         onClick={async () => {
           await apiSend("POST", "/auth/logout");
           notifyAuthChanged();
