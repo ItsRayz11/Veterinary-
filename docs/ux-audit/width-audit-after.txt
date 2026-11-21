@@ -1,0 +1,13 @@
+after w=320 nav=bottom footer=false authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=375 nav=bottom footer=false authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=390 nav=bottom footer=false authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=640 nav=bottom footer=false authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=768 nav=bottom footer=false authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=820 nav=bottom footer=false authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=910 nav=bottom footer=false authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=1024 nav=top footer=true authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=1280 nav=top footer=true authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=1440 nav=top footer=true authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+after w=1920 nav=top footer=true authH=40 overflow=none navConflict=none contentCovered=none smallAuth=none
+4xx/5xx responses:
+   110x 403 /api/v1/auth/me

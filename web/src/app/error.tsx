@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import { Alert } from "@/components/ui/primitives";
 import { reportError } from "@/lib/report-error";
@@ -12,13 +13,27 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
   return (
     <div className="mx-auto max-w-xl space-y-3 pt-8">
       <Alert tone="danger" title="Something went wrong">
+        {/* Next.js hides the real message of a server error in production builds, so this text has to
+            be useful on its own: say the likely cause, that nothing is lost, and what to do. */}
         {error.message.includes("unreachable")
           ? "The data service is currently unreachable. Nothing has been lost; please try again shortly."
-          : "This page could not be loaded."}
+          : "This page could not be loaded. The data service may be temporarily unavailable. Nothing you entered has been lost; please try again in a moment."}
       </Alert>
-      <button type="button" onClick={reset} className="neo rounded-lg px-3 py-2 text-sm">
-        Try again
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={reset}
+          className="neo inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-medium"
+        >
+          Try again
+        </button>
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm underline"
+        >
+          Go to the home page
+        </Link>
+      </div>
     </div>
   );
 }

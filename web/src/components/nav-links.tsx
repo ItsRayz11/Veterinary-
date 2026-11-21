@@ -28,7 +28,7 @@ export function NavLinks({ items, variant }: { items: NavItem[]; variant: "top" 
                   ? "bg-primary text-primary-fg"
                   : "text-muted hover:bg-surface-2 hover:text-text"
               }`
-            : `flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2 text-center text-[11px] font-medium ${
+            : `flex min-w-11 flex-auto flex-col items-center gap-0.5 px-0 py-2 text-center text-[10.5px] font-medium tracking-tight ${
                 active ? "text-primary" : "text-muted"
               }`;
         return (
