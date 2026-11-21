@@ -11,7 +11,7 @@ Not touched: clinical data, calculators and their formulas, backend APIs, authen
 | --- | --- | --- |
 | `291f135` (Phase 2) | success | Chromium 148 passed; Firefox 144 passed + 4 flaky; WebKit 145 passed + 3 skipped |
 | `e0de293` | success | Chromium 150 passed; Firefox 147 passed (3 axe retries on `/`); WebKit 146 passed |
-| `dfce9e6` (this phase) | success (all 4 jobs: lint/types/unit, Chromium, Firefox, WebKit) | **Per-browser counts, flaky and skipped numbers for this run were not recorded**: GitHub's API became unreachable from my machine right after the run finished, so I only have the job conclusions. Check the run's logs and artifacts for the numbers. |
+| `dfce9e6` (this phase) | success (all 4 jobs) | Chromium **183 passed** (1.2 min, including the 7 slow/failing-backend tests on Linux); Firefox **174 passed** + 2 axe retries on `/` (desktop light and dark) that then passed; WebKit **173 passed**, 10 skipped (7 Chromium-only stack tests + the 3 Tab-walk tests). I read these counts from the job logs after the run; they could not be fetched at first because GitHub became unreachable from my machine for a while. |
 
 - The repository's existing `ci.yml` `web` job was red on `main` at its lint/format/typecheck step. The only problem I found there was a prettier failure in `status-line.tsx` (I did not read the failing log line itself), and the job passes on this branch after that whitespace-only fix. `api` passes. `api-postgres` fails exactly as it does on `main` (informational, `continue-on-error`); I did not investigate it.
 - Linux fonts did **not** change the responsive results: every width/route test passed on GitHub's Ubuntu runners for all three engines (the main residual risk I had flagged).
@@ -74,7 +74,7 @@ Not started, with the reason: filter chips and a mobile drawer (the app has no d
 - Unit: **17 files, 204 tests passed** (184 earlier + 5 navigation + 15 status-line).
 - Lint 0 errors (1 pre-existing warning), typecheck clean, build compiled.
 - Browser: **549 tests listed** (183 per engine; the 7 stack tests run on Chromium only). Last full local run, before the calculator and status work: 445 passed, 6 flaky, 3 failed, 17 skipped in 39.6 minutes (the machine had about 2 GB free RAM; Firefox was slow). Of those 3 failures: 2 Firefox context-teardown timeouts (a Firefox harness problem, probably memory pressure; not proven) and 1 spurious `500 /api/v1/auth/me` from the mock keep-alive race (the Chromium flaky one had the same cause), since fixed. The calculator spec afterwards: 77 passed, 1 flaky, 0 failed on all three engines.
-- Not re-run end to end locally after the final test edits: the full 549-test suite. GitHub's run on `dfce9e6` is the first complete run of everything together; it reported success on all four jobs, but I do not have its counts (section 1), so I cannot say how many tests retried or were skipped in it.
+- Not re-run end to end locally after the final test edits: the full 549-test suite. GitHub's run on `dfce9e6` is the first complete run of everything together; its counts are in section 1.
 
 ## 10. Rollback
 
