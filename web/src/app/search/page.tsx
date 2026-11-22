@@ -33,7 +33,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Search</h1>
-      <SearchBox autoFocus />
+      <SearchBox key={q} autoFocus initialQuery={q} />
       {failed && (
         <Alert tone="danger">Search is unavailable right now. Please try again shortly.</Alert>
       )}

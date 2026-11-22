@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import vm from "node:vm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Listener = (event: Record<string, unknown>) => void;
 
@@ -164,18 +164,35 @@ describe("service worker", () => {
     expect(await res!.text()).toBe("slow but real page");
   });
 
-  it("serves the saved copy when the network is slow, and refreshes it afterwards", async () => {
-    sw.network.pages["/drugs/x"] = "old copy";
-    await (await sw.request("/drugs/x"))!.text(); // saved
-    sw.network.pages["/drugs/x"] = "new copy";
-    sw.network.delay = 200;
-    const started = Date.now();
-    const res = await sw.request("/drugs/x");
-    expect(await res!.text()).toBe("old copy");
-    expect(Date.now() - started).toBeLessThan(150); // did not wait for the network
-    await new Promise((r) => setTimeout(r, 300)); // the late response refreshes the cache
-    sw.network.online = false;
-    expect(await (await sw.request("/drugs/x"))!.text()).toBe("new copy");
+  // Fake timers make this deterministic: it no longer depends on how fast the machine is. The worker
+  // is loaded after the fake clock is installed so its setTimeout is the fake one.
+  describe("with a controlled clock", () => {
+    afterEach(() => vi.useRealTimers());
+
+    it("serves the saved copy when the network is slow, and refreshes it afterwards", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] }); // not setImmediate: reading a Response body needs it
+      const slow = loadWorker();
+      await slow.send("install");
+      slow.network.pages["/drugs/x"] = "old copy";
+      await (await slow.request("/drugs/x"))!.text(); // saved
+
+      slow.network.pages["/drugs/x"] = "new copy";
+      slow.network.delay = 200; // the test build of the worker gives up waiting after 50 ms
+      const pending = slow.request("/drugs/x");
+      // Let the worker reach its two timers (its 50 ms timeout and the 200 ms network) without
+      // moving the clock, so the order below cannot depend on how fast the machine is.
+      for (let i = 0; i < 50 && vi.getTimerCount() < 2; i++) await Promise.resolve();
+      expect(vi.getTimerCount()).toBe(2);
+      await vi.advanceTimersByTimeAsync(50); // only the worker's own timeout has elapsed
+      const res = await pending;
+      // Answered from the saved copy while the 200 ms network call is still outstanding.
+      expect(await res!.text()).toBe("old copy");
+
+      await vi.advanceTimersByTimeAsync(200); // the late response lands and refreshes the cache
+      slow.network.delay = 0; // offline fails at once (the fake clock is not advanced again)
+      slow.network.online = false;
+      expect(await (await slow.request("/drugs/x"))!.text()).toBe("new copy");
+    });
   });
 
   it("prefers the saved copy over a 5xx from the server", async () => {

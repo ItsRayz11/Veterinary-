@@ -4,17 +4,27 @@ import type { ReactNode } from "react";
 import { IconChip, type CategoryName } from "@/components/ui/icons";
 import { SITE_URL } from "@/lib/site";
 
-export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
-  const jsonLd = {
+/**
+ * Google requires `item` (a URL) on every breadcrumb except the last. A middle crumb that has no
+ * page of its own (for example a section with no index page) is left out of the structured data,
+ * and the remaining crumbs are renumbered. The visible trail is unchanged.
+ */
+export function breadcrumbJsonLd(items: { label: string; href?: string }[]) {
+  const usable = items.filter((it, i) => it.href || i === items.length - 1);
+  return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: items.map((it, i) => ({
+    itemListElement: usable.map((it, i) => ({
       "@type": "ListItem",
       position: i + 1,
       name: it.label,
       ...(it.href ? { item: `${SITE_URL}${it.href}` } : {}),
     })),
   };
+}
+
+export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
+  const jsonLd = breadcrumbJsonLd(items);
   return (
     <nav aria-label="Breadcrumb" className="text-sm text-muted">
       <script

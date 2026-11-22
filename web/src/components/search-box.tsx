@@ -25,8 +25,18 @@ const GROUPS: { title: string; category: CategoryName }[] = [
   { title: "Companies", category: "companies" },
 ];
 
-export function SearchBox({ autoFocus = false }: { autoFocus?: boolean }) {
-  const [q, setQ] = useState("");
+export function SearchBox({
+  autoFocus = false,
+  initialQuery = "",
+}: {
+  autoFocus?: boolean;
+  initialQuery?: string;
+}) {
+  const [q, setQ] = useState(initialQuery);
+  const [loading, setLoading] = useState(false);
+  // Suggestions are for typing: a query seeded from the URL already has its results on the page.
+  const [touched, setTouched] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [fetched, setResults] = useState<Results | null>(null);
   const [error, setError] = useState(false);
   const [active, setActive] = useState(-1);
@@ -36,9 +46,10 @@ export function SearchBox({ autoFocus = false }: { autoFocus?: boolean }) {
   const seq = useRef(0);
 
   useEffect(() => {
-    if (q.trim().length < 2) return;
+    if (!touched || q.trim().length < 2) return;
     const mine = ++seq.current;
     const t = setTimeout(async () => {
+      setLoading(true);
       try {
         const res = await fetch(`/api/v1/search?q=${encodeURIComponent(q)}`);
         if (!res.ok) throw new Error();
@@ -49,10 +60,20 @@ export function SearchBox({ autoFocus = false }: { autoFocus?: boolean }) {
         }
       } catch {
         if (mine === seq.current) setError(true);
+      } finally {
+        if (mine === seq.current) setLoading(false);
       }
     }, 200);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, touched]);
+
+  function clear() {
+    seq.current++; // drop any in-flight response
+    setQ("");
+    setLoading(false);
+    setActive(-1);
+    inputRef.current?.focus();
+  }
 
   // Derived, not stored: clearing the box hides stale results without a setState-in-effect.
   const results = q.trim().length >= 2 && !dismissed ? fetched : null;
@@ -120,9 +141,10 @@ export function SearchBox({ autoFocus = false }: { autoFocus?: boolean }) {
           />
           <input
             id="global-search"
+            ref={inputRef}
             type="search"
             role="combobox"
-            aria-expanded={!!results}
+            aria-expanded={!!results && !empty}
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={active >= 0 ? optionId(active) : undefined}
@@ -132,21 +154,35 @@ export function SearchBox({ autoFocus = false }: { autoFocus?: boolean }) {
               setQ(e.target.value);
               setActive(-1);
               setDismissed(false);
+              setTouched(true);
             }}
             onKeyDown={onKeyDown}
             placeholder="Search medicines, brands, companies…"
             autoComplete="off"
-            className="neo-inset h-11 w-full rounded-lg border border-border pl-10 pr-3 text-base"
+            className="neo-inset h-11 w-full rounded-lg border border-border pl-10 pr-11 text-base [&::-webkit-search-cancel-button]:hidden"
           />
+          {q && (
+            <button
+              type="button"
+              onClick={clear}
+              aria-label="Clear search"
+              className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-lg text-muted hover:text-text"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
         </div>
       </form>
       <div aria-live="polite">
+        {loading && !error && q.trim().length >= 2 && (
+          <p className="mt-1 text-sm text-muted">Searching…</p>
+        )}
         {error && <p className="mt-1 text-sm text-danger">Search is unavailable right now.</p>}
       </div>
       {results && (
         <div
           id={listId}
-          role="listbox"
+          role={empty ? "status" : "listbox"}
           aria-label="Search suggestions"
           className="card absolute left-0 right-0 z-20 mt-1 max-h-[70vh] overflow-y-auto p-2 shadow-lg"
         >

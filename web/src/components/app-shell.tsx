@@ -1,7 +1,8 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { AuthMenu } from "@/components/auth-menu";
 import { NavLinks, type NavItem } from "@/components/nav-links";
+import { NavigationProgress } from "@/components/navigation-progress";
 import { PublicChrome } from "@/components/public-chrome";
 
 const NAV: NavItem[] = [
@@ -17,6 +18,9 @@ const NAV: NavItem[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface focus:p-2"
@@ -29,7 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link href="/" className="text-lg font-semibold tracking-tight text-primary">
               VetRef
             </Link>
-            <nav aria-label="Primary" className="hidden gap-1 text-sm sm:flex">
+            <nav aria-label="Primary" className="hidden gap-1 text-sm lg:flex">
               <NavLinks items={NAV} variant="top" />
             </nav>
             <div className="ml-auto">
@@ -38,11 +42,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
       </PublicChrome>
-      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-4 sm:pb-8">
+      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-4 lg:pb-8">
         {children}
       </main>
       <PublicChrome>
-        <footer className="hidden border-t border-border py-4 text-center text-xs text-muted sm:block">
+        <footer className="hidden border-t border-border py-4 text-center text-xs text-muted lg:block">
           Clinical reference for licensed veterinary professionals. Does not replace clinical
           judgement or the product label.{" "}
           <Link href="/credits" className="underline">
@@ -61,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <PublicChrome>
         <nav
           aria-label="Mobile"
-          className="glass fixed inset-x-0 bottom-0 z-30 flex border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] sm:hidden"
+          className="glass fixed inset-x-0 bottom-0 z-30 flex border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] lg:hidden"
         >
           <NavLinks items={NAV.filter((n) => n.href !== "/")} variant="bottom" />
         </nav>
