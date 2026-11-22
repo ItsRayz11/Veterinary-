@@ -29,12 +29,15 @@ export function SpeciesPhoto({
   sizes = "(min-width: 768px) 25vw, 50vw",
   priority = false,
   className = "aspect-[4/3]",
+  decorative = false,
 }: {
   slug: string;
   name: string;
   sizes?: string;
   priority?: boolean;
   className?: string;
+  /** The name is already written next to the photo (a card), so the image adds nothing for a screen reader. */
+  decorative?: boolean;
 }) {
   const c = SPECIES[slug];
   if (!c) {
@@ -50,7 +53,7 @@ export function SpeciesPhoto({
     <span className={`relative block overflow-hidden bg-surface-2 ${className}`}>
       <Image
         src={c.file}
-        alt={name}
+        alt={decorative ? "" : name}
         fill
         sizes={sizes}
         priority={priority}
@@ -72,7 +75,7 @@ export function SpeciesCard({
 }) {
   return (
     <Link href={`/species/${slug}`} className="card card-link group block overflow-hidden">
-      <SpeciesPhoto slug={slug} name={name} priority={priority} />
+      <SpeciesPhoto slug={slug} name={name} priority={priority} decorative />
       <span className="flex items-center justify-between gap-2 p-3 font-medium">
         {name}
         <ArrowRight
