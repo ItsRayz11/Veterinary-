@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
         : []),
     ],
   },
+  // There are no index pages for these sections (slug routes only). Temporary (307) redirects keep
+  // the choice reversible; slug routes such as /drugs/<slug> are unaffected.
+  async redirects() {
+    return [
+      { source: "/drugs", destination: "/classes", permanent: false },
+      { source: "/products", destination: "/search", permanent: false },
+      { source: "/companies", destination: "/search", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {
