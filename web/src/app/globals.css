@@ -386,6 +386,8 @@ body {
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    /* Without this, an infinite skeleton pulse would strobe at 0.01ms per cycle. */
+    animation-iteration-count: 1 !important;
   }
   .card-link,
   .neo {
