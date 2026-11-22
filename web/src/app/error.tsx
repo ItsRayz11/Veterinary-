@@ -5,10 +5,20 @@ import { useEffect } from "react";
 import { Alert } from "@/components/ui/primitives";
 import { reportError } from "@/lib/report-error";
 
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
     // Expected "service unreachable" states are not bugs in our code; everything else is reported.
-    if (!error.message.includes("unreachable")) reportError(error, "Page error");
+    if (!error.message.includes("unreachable"))
+      reportError(
+        error,
+        error.digest ? `Page error (server digest ${error.digest})` : "Page error",
+      );
   }, [error]);
   return (
     <div className="mx-auto max-w-xl space-y-3 pt-8">
