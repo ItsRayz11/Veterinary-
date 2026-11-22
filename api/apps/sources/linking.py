@@ -197,7 +197,11 @@ def _license_key(value: str) -> str:
 
 def _repoint_other_references(dup: Source, keep: Source) -> None:
     """Move every remaining foreign key that points at `dup` (questions, prices, import runs)."""
-    for rel in Source._meta.related_objects:
+    # include_hidden: keys declared with related_name="+" (ImportBatch, PriceRecord, ...) are not in
+    # `related_objects`, and leaving them behind makes the later delete() raise ProtectedError.
+    for rel in Source._meta.get_fields(include_hidden=True):
+        if not rel.auto_created or rel.concrete:
+            continue  # only reverse relations
         if rel.related_model is SourceLink or not (rel.one_to_many or rel.many_to_one):
             continue
         rel.related_model.objects.filter(**{rel.field.name: dup}).update(**{rel.field.name: keep})
