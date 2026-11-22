@@ -110,7 +110,7 @@ test.describe("data service down", () => {
     const alert = page.getByRole("alert").filter({ hasText: "Something went wrong" });
     await expect(alert).toContainText("could not be loaded");
     await expect(alert).toContainText("data service may be temporarily unavailable");
-    await expect(alert).toContainText("Nothing you entered has been lost");
+    await expect(alert).not.toContainText("has been lost");
 
     const retry = page.getByRole("button", { name: "Try again" });
     const home = page.getByRole("link", { name: "Go to the home page" });

@@ -14,10 +14,10 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
     <div className="mx-auto max-w-xl space-y-3 pt-8">
       <Alert tone="danger" title="Something went wrong">
         {/* Next.js hides the real message of a server error in production builds, so this text has to
-            be useful on its own: say the likely cause, that nothing is lost, and what to do. */}
+            be useful on its own: say the likely cause and what to do (no claim about unsaved input: this page cannot know). */}
         {error.message.includes("unreachable")
-          ? "The data service is currently unreachable. Nothing has been lost; please try again shortly."
-          : "This page could not be loaded. The data service may be temporarily unavailable. Nothing you entered has been lost; please try again in a moment."}
+          ? "The data service is currently unreachable. Please try again shortly."
+          : "This page could not be loaded. The data service may be temporarily unavailable. Please try again in a moment."}
       </Alert>
       <div className="flex flex-wrap items-center gap-2">
         <button
