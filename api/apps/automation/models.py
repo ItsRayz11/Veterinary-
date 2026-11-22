@@ -359,7 +359,8 @@ class RecordAssessment(TimeStampedModel):
     record_created_at = models.DateTimeField(null=True)
     record_updated_at = models.DateTimeField(null=True)
 
-    source_state = models.CharField(max_length=16, db_index=True)  # see assessment.SourceState
+    # Values: assessment.SOURCE_STATES (longest is 17 characters; 32 leaves room to grow).
+    source_state = models.CharField(max_length=32, db_index=True)
     trust_level = models.CharField(max_length=8, db_index=True)  # low / medium / high
     risk = models.CharField(max_length=8)  # low / high (publication policy class)
     completeness = models.PositiveSmallIntegerField(default=0)

@@ -50,6 +50,17 @@ _TECHNICAL = {
     "slug",
 }
 
+# Every value `source_state` can take. The column is a bounded varchar on PostgreSQL (SQLite does
+# not enforce the length), so a test checks these against the model max_length.
+SOURCE_STATES = (
+    "none",
+    "raw_url_only",
+    "invalid",
+    "conflict",
+    "linked_ok",
+    "linked_unverified",
+)
+
 ISSUES = {
     "no_source": "No source recorded",
     "raw_url_only": "Source URL is not linked to the registry",
