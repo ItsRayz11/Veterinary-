@@ -27,12 +27,23 @@ Widening a `varchar` on PostgreSQL is a catalogue-only change (no table rewrite)
    linked but unverified could not be saved).
 
 ## Rollback
-The reverse migration narrows the column to 16 and **fails if any row now holds a value longer than
-16 characters** (it would, after any `linked_unverified` assessment is stored). To roll back, first
-rewrite or delete those assessment rows (they are derived data and are recomputed), or leave the wider
-column in place; it is harmless.
+Rolling back `0011` is deliberately non-destructive: the reverse step does **not** narrow the column
+(the migration's `WidenOnly` operation skips the database change when reversed). After
+`migrate automation 0010` the Django state says 16 but the database column stays 32, which is harmless
+and cannot fail or lose values. No assessment rows are deleted. Verified on local PostgreSQL:
+0010 (16), 0011 (32), back to 0010 (column stays 32), forward again (32). Narrowing the column later,
+if ever wanted, should be a separate reviewed migration after checking for longer values.
+
+## Staged release checklist (nothing here has been run against production)
+1. Review and approve this PR; confirm `api-postgres` is green (703 passed on GitHub, PostgreSQL 17).
+2. **Warning:** `api/vercel.json` runs `migrate` on production builds, so merging to `main` migrates
+   production automatically. Run the migration on staging first (`python manage.py migrate automation`
+   against a staging database copy), check `\d automation_recordassessment` shows `character varying(32)`.
+3. On staging, run the review pipeline once and confirm assessments with `linked_unverified` save.
+4. Then, with explicit owner approval, merge; watch the production build log for `automation.0011`.
+5. After deploy: re-run the review pipeline so records that could not be assessed are assessed;
+   check the staff review queue loads and the three formerly failing flows work.
 
 ## Verification limits
-Local PostgreSQL was a disposable bundled build without contrib extensions, so the `pg_trgm` DDL in
-`pharma.0002` was skipped by a local test helper (not committed). Trigram search behaviour is therefore
-not covered by the local Postgres run; GitHub's Postgres 17 job is the check for it.
+Local PostgreSQL was a disposable bundled build without contrib extensions, so 8 trigram tests failed
+locally. On GitHub (PostgreSQL 17 service image, `pg_trgm` available) the whole suite passes: 703 passed.

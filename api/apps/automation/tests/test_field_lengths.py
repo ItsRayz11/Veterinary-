@@ -29,3 +29,18 @@ def test_other_assessment_columns_fit_their_longest_values():
     assert fields["recommendation"] >= len("regulator_review")  # longest recommendation
     assert fields["primary_issue"] >= max(map(len, assessment.ISSUES))
     assert fields["image_state"] >= len("rejected")
+
+
+def test_migration_0011_does_not_narrow_the_column_on_rollback():
+    import importlib
+
+    mig = importlib.import_module("apps.automation.migrations.0011_source_state_length")
+    (op,) = mig.Migration.operations
+    called = []
+
+    class Editor:
+        def alter_field(self, *a, **k):
+            called.append(1)
+
+    op.database_backwards("automation", Editor(), None, None)
+    assert called == []
