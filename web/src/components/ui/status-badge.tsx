@@ -10,6 +10,9 @@ export type ReviewStatus =
   | "deprecated"
   | "development";
 
+/** Statements a reviewer has signed off. Everything else shows the hollow review mark. */
+const REVIEWED: ReadonlySet<ReviewStatus> = new Set(["verified", "expert_reviewed"]);
+
 const STYLES: Record<ReviewStatus, { label: string; cls: string }> = {
   verified: { label: "Verified", cls: "bg-ok-bg text-ok" },
   expert_reviewed: { label: "Expert reviewed", cls: "bg-ok-bg text-ok" },
@@ -28,7 +31,14 @@ const STYLES: Record<ReviewStatus, { label: string; cls: string }> = {
 export function StatusBadge({ status }: { status: ReviewStatus }) {
   const { label, cls } = STYLES[status];
   return (
-    <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-medium ${cls}`}
+    >
+      <span
+        className="review-mark"
+        data-reviewed={REVIEWED.has(status) ? "true" : "false"}
+        aria-hidden="true"
+      />
       {label}
     </span>
   );

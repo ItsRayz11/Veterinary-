@@ -157,7 +157,7 @@ export function SearchBox({
               setTouched(true);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Search medicines, brands, companies…"
+            placeholder="Drug, brand or company"
             autoComplete="off"
             className="neo-inset h-11 w-full rounded-lg border border-border pl-10 pr-11 text-base [&::-webkit-search-cancel-button]:hidden"
           />
@@ -216,9 +216,7 @@ export function SearchBox({
                 aria-label={GROUPS[gi].title}
                 className="py-1"
               >
-                <p className="px-2 text-xs font-medium uppercase tracking-wide text-muted">
-                  {GROUPS[gi].title}
-                </p>
+                <p className="px-2 pb-1 text-xs font-medium text-muted">{GROUPS[gi].title}</p>
                 {items.map((it) => {
                   const i = index++;
                   return (

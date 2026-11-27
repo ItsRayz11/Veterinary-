@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import type { Tone } from "./icons";
 
 /** Small line illustrations (64x48) drawn for each calculator. Decorative; the title carries the meaning. */
 const ART: Record<string, ReactNode> = {
@@ -75,25 +74,18 @@ const FALLBACK = (
   </>
 );
 
-export function CalcArt({
-  slug,
-  tone = "violet",
-  className = "h-12 w-16",
-}: {
-  slug: string;
-  tone?: Tone;
-  className?: string;
-}) {
+/** Drawn in the accent ink: the illustrations are the one place the calculators carry colour. */
+export function CalcArt({ slug, className = "h-12 w-16" }: { slug: string; className?: string }) {
   return (
     <svg
       viewBox="0 0 64 48"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className={`tone-${tone} shrink-0 text-[var(--tone)] ${className}`}
+      className={`shrink-0 text-primary ${className}`}
     >
       {ART[slug] ?? FALLBACK}
     </svg>

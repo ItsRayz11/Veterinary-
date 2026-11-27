@@ -21,14 +21,15 @@ export function NavLinks({ items, variant }: { items: NavItem[]; variant: "top" 
       {items.map((n) => {
         const active = isActive(pathname, n.href);
         const Icon = n.icon ? CATEGORIES[n.icon].icon : null;
+        // Desktop: labels only, the active page is a quiet surface step. Phones: icon over label.
         const cls =
           variant === "top"
-            ? `inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors ${
+            ? `inline-flex h-9 items-center rounded-[var(--radius-md)] px-3 transition-colors ${
                 active
-                  ? "bg-primary text-primary-fg"
-                  : "text-muted hover:bg-surface-2 hover:text-text"
+                  ? "bg-surface-2 font-medium text-text"
+                  : "text-text-2 hover:bg-surface-2 hover:text-text"
               }`
-            : `flex min-w-11 flex-auto flex-col items-center gap-0.5 px-0 py-2 text-center text-[10.5px] font-medium tracking-tight ${
+            : `flex min-h-14 min-w-11 flex-1 flex-col items-center justify-center gap-1 text-center text-[11px] font-medium ${
                 active ? "text-primary" : "text-muted"
               }`;
         return (
@@ -38,8 +39,8 @@ export function NavLinks({ items, variant }: { items: NavItem[]; variant: "top" 
             aria-current={active ? "page" : undefined}
             className={cls}
           >
-            {Icon && (
-              <Icon size={variant === "top" ? 15 : 20} strokeWidth={1.75} aria-hidden="true" />
+            {Icon && variant === "bottom" && (
+              <Icon size={20} strokeWidth={1.5} aria-hidden="true" />
             )}
             <span className="max-w-full truncate">{n.label}</span>
           </Link>

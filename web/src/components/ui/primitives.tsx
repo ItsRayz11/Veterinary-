@@ -1,7 +1,7 @@
 import { FileSearch } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconChip, type CategoryName } from "@/components/ui/icons";
+import { CategoryIcon, type CategoryName } from "@/components/ui/icons";
 import { SITE_URL } from "@/lib/site";
 
 /**
@@ -70,9 +70,9 @@ export function Alert({
   return (
     <div
       role={tone === "danger" ? "alert" : "note"}
-      className={`rounded-md p-3 text-sm ${ALERT[tone]}`}
+      className={`rounded-[var(--radius-md)] px-4 py-3 text-sm ${ALERT[tone]}`}
     >
-      {title && <p className="font-semibold">{title}</p>}
+      {title && <p className="font-medium">{title}</p>}
       <div>{children}</div>
     </div>
   );
@@ -91,11 +91,8 @@ export function Section({
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-28">
-      <h2
-        id={`${id}-h`}
-        className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight"
-      >
-        {category && <IconChip category={category} size="sm" />}
+      <h2 id={`${id}-h`} className="mb-4 flex items-center gap-2 text-lg font-medium">
+        {category && <CategoryIcon category={category} size={18} className="text-muted" />}
         {title}
       </h2>
       {children}
@@ -121,7 +118,7 @@ export const td = "border-b border-border px-3 py-2 align-top";
 
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-surface/60 p-5 text-sm">
+    <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-dashed border-border bg-surface p-5 text-sm">
       <FileSearch
         size={22}
         strokeWidth={1.5}
@@ -140,12 +137,15 @@ export function SectionNav({ items }: { items: { id: string; label: string }[] }
   return (
     <nav
       aria-label="On this page"
-      className="glass sticky top-14 z-10 -mx-4 overflow-x-auto px-4 sm:rounded-lg"
+      className="chrome-bar sticky top-16 z-10 -mx-4 overflow-x-auto border-b px-4 sm:-mx-6 sm:px-6"
     >
-      <ul className="flex gap-4 whitespace-nowrap py-2 text-sm">
+      <ul className="flex gap-5 whitespace-nowrap text-sm">
         {items.map((i) => (
           <li key={i.id}>
-            <a href={`#${i.id}`} className="text-muted hover:text-text">
+            <a
+              href={`#${i.id}`}
+              className="inline-flex min-h-11 items-center text-text-2 hover:text-primary"
+            >
               {i.label}
             </a>
           </li>
@@ -166,9 +166,9 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-      {lead && <div className="max-w-2xl text-sm text-muted">{lead}</div>}
+    <header className="space-y-3">
+      <h1 className="text-[32px] sm:text-[40px]">{title}</h1>
+      {lead && <div className="max-w-2xl text-[15px] leading-relaxed text-text-2">{lead}</div>}
       {children}
     </header>
   );
@@ -177,7 +177,7 @@ export function PageHeader({
 /** A tile for bento grids and link lists. Pass `href` to make the whole tile a link. */
 export function Tile({ href, title, desc }: { href: string; title: string; desc?: string }) {
   return (
-    <Link href={href} className="card card-link block p-4">
+    <Link href={href} className="card card-link block p-5">
       <span className="font-medium">{title}</span>
       {desc && <span className="mt-1 block text-sm text-muted">{desc}</span>}
     </Link>

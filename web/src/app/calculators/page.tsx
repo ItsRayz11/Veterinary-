@@ -35,19 +35,7 @@ export default function CalculatorsIndex() {
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ALL.map((c) => (
           <li key={c.href}>
-            <CalculatorCard
-              href={c.href}
-              slug={c.slug}
-              title={c.title}
-              desc={c.desc}
-              tone={
-                c.slug === "withdrawal-date"
-                  ? "amber"
-                  : c.slug === "dose-calculator"
-                    ? "teal"
-                    : "violet"
-              }
-            />
+            <CalculatorCard href={c.href} slug={c.slug} title={c.title} desc={c.desc} />
           </li>
         ))}
       </ul>
