@@ -36,7 +36,7 @@ The web app looks like a well-made reference book, not a marketing site. Colour 
 - **Depth:** hairline borders; one small neutral shadow on light, none on dark.
 - **Icons:** lucide, 16-20px, stroke 1.5, neutral (`.icon-chip` is grey, never tinted).
 - **Legacy class names** `.glass`, `.neo`, `.neo-inset`, `.prism-edge` still exist so older
-  pages adopt the system; they now render flat. Prefer `.card`, `.btn-primary`, `.btn-secondary`.
+  pages adopt the system; they now render flat. Prefer `.card` and the `Button` component (`ui/forms.tsx`).
 
 ## Layout
 

@@ -47,7 +47,7 @@ export default async function SpeciesIndex() {
                   .map((c) => (
                     <li key={c.slug}>
                       <Link
-                        className="neo inline-block rounded-full px-3 py-1 text-primary"
+                        className="neo inline-flex min-h-11 items-center rounded-[var(--radius-md)] px-3 text-primary"
                         href={`/species/${c.slug}`}
                       >
                         {c.name}

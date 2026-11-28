@@ -47,6 +47,14 @@ export function MoreSheet({ groups }: { groups: Groups }) {
   useEffect(() => {
     ref.current?.close();
   }, [pathname]);
+  // Close when the layout switches to desktop (tablet rotation, window resize): the tab bar is
+  // hidden there, and a modal left open would keep the whole page inert.
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 64rem)");
+    const onChange = () => desktop.matches && ref.current?.close();
+    desktop.addEventListener("change", onChange);
+    return () => desktop.removeEventListener("change", onChange);
+  }, []);
   return (
     <dialog
       id={SHEET_ID}

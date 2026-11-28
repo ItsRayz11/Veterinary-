@@ -159,7 +159,7 @@ export function SearchBox({
             onKeyDown={onKeyDown}
             placeholder="Drug, brand or company"
             autoComplete="off"
-            className="neo-inset h-11 w-full rounded-lg border border-border pl-10 pr-11 text-base [&::-webkit-search-cancel-button]:hidden"
+            className="neo-inset h-11 w-full rounded-[var(--radius-md)] border border-border pl-10 pr-11 text-base [&::-webkit-search-cancel-button]:hidden"
           />
           {q && (
             <button

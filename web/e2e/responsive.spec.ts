@@ -44,7 +44,8 @@ for (const width of WIDTHS) {
               if (visible(top) !== desktop) out.push(`top nav visible=${visible(top)}`);
               if (visible(bottom) === desktop)
                 out.push(`bottom tab bar visible=${visible(bottom)}`);
-              if (visible(footer) !== desktop) out.push(`footer visible=${visible(footer)}`);
+              // The footer (site map, credits) is shown at every width since the redesign.
+              if (!visible(footer)) out.push("footer hidden");
 
               const main = document.querySelector("main")!;
               const lastContentBottom = Math.max(
@@ -55,6 +56,17 @@ for (const width of WIDTHS) {
               if (visible(bottom)) {
                 const covered = Math.round(lastContentBottom - bottom!.getBoundingClientRect().top);
                 if (covered > 0) out.push(`content hidden behind the tab bar by ${covered}px`);
+                // Scrolled to the end, the footer's last line must clear the fixed tab bar.
+                const lastFooterLine = Math.max(
+                  ...[...footer!.querySelectorAll("a, span, p")]
+                    .filter((e) => e.getBoundingClientRect().height > 0)
+                    .map((e) => e.getBoundingClientRect().bottom),
+                );
+                const footerCovered = Math.round(
+                  lastFooterLine - bottom!.getBoundingClientRect().top,
+                );
+                if (footerCovered > 0)
+                  out.push(`footer hidden behind the tab bar by ${footerCovered}px`);
               }
 
               const small = (sel: string, what: string) =>

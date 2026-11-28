@@ -207,6 +207,34 @@ test.describe("signed out", () => {
     await expect(page).toHaveURL(/\/study$/);
     await expect(tabs.getByRole("link", { name: "Study" })).toHaveAttribute("aria-current", "page");
   });
+
+  test("More sheet opens the rest of the site and never traps the desktop layout", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto("/");
+    await page
+      .getByRole("navigation", { name: "Mobile" })
+      .getByRole("button", { name: "More" })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "More pages" });
+    await expect(sheet).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+
+    // Regression: rotating to a desktop width with the sheet open left the page inert.
+    await page
+      .getByRole("navigation", { name: "Mobile" })
+      .getByRole("button", { name: "More" })
+      .click();
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(sheet).toBeHidden();
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Study" })
+      .click();
+    await expect(page).toHaveURL(/\/study$/);
+  });
 });
 
 test.describe("signed in (mocked user, the API is never asked)", () => {

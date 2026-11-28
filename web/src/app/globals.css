@@ -131,7 +131,6 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-plex-sans), system-ui, sans-serif;
-  font-feature-settings: "tnum" 0;
 }
 
 /* Page titles are set in the reference-book serif: one voice for every h1 on the site. Unlayered
@@ -290,40 +289,6 @@ output {
   }
   .data-table tbody tr:hover {
     background: var(--primary-tint);
-  }
-  /* Primary and secondary buttons. */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    min-height: 2.75rem;
-    padding-inline: 1.125rem;
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    font-size: 0.9375rem;
-    transition:
-      background-color var(--dur-fast) ease,
-      border-color var(--dur-fast) ease,
-      transform var(--dur-fast) var(--ease-out);
-  }
-  .btn:active {
-    transform: scale(0.97);
-  }
-  .btn-primary {
-    background: var(--primary);
-    color: var(--primary-fg);
-  }
-  .btn-primary:hover {
-    background: var(--primary-strong);
-  }
-  .btn-secondary {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary:hover {
-    background: var(--surface-2);
   }
   /* The site's signature: the review mark. Filled = reviewed, ring = not yet reviewed. */
   .review-mark {
@@ -484,10 +449,12 @@ output {
     /* Without this, an infinite skeleton pulse would strobe at 0.01ms per cycle. */
     animation-iteration-count: 1 !important;
   }
+  /* Press feedback is movement: drop it. Tailwind's active:scale-* uses the separate scale property. */
   .card-link:active,
   .neo:active:not(:disabled),
-  .btn:active {
+  [class*="active:scale"]:active {
     transform: none;
+    scale: none !important;
   }
   /* Gentler, not zero: keep the fade, drop the movement. */
   .rise > *,
