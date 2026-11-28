@@ -263,6 +263,30 @@ def audit_log(request):
 
 
 @untyped_schema
+@api_view(["GET", "POST"])
+@permission_classes([IsEditor])
+def notifications(request):
+    """Push status for the signed-in staff member; POST sends a test notification to their own
+    devices. Never sends to anyone else, never returns keys or endpoints."""
+    from apps.push import service as push
+    from apps.push.models import PushSubscription
+
+    status = {
+        "server_enabled": push.enabled(),
+        "devices": PushSubscription.objects.filter(user=request.user).count(),
+        "digest_schedule": "Every day at 07:00 UTC, only when something needs attention",
+    }
+    if request.method == "POST":
+        status["delivered"] = push.notify(
+            request.user,
+            "VetRef test notification",
+            "Notifications from the review panel reach this device.",
+            "/admin-panel",
+        )
+    return Response(status)
+
+
+@untyped_schema
 @api_view(["GET"])
 @permission_classes([IsEditor])
 def attention(request):

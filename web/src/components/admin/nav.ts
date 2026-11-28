@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Bell,
   Briefcase,
   Bot,
   Box,
@@ -21,6 +22,7 @@ import {
 
 export type SectionKey =
   | "overview"
+  | "notifications"
   | "queue"
   | "pipeline"
   | "listings"
@@ -54,7 +56,10 @@ export interface NavGroup {
 export const NAV: NavGroup[] = [
   {
     label: "Overview",
-    items: [{ key: "overview", label: "Dashboard", icon: LayoutDashboard, access: "all" }],
+    items: [
+      { key: "overview", label: "Dashboard", icon: LayoutDashboard, access: "all" },
+      { key: "notifications", label: "Notifications", icon: Bell, access: "all" },
+    ],
   },
   {
     label: "Review & moderation",

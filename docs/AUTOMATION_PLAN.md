@@ -36,10 +36,16 @@ decisions arrive pre-checked, grouped and one click away.
 | 6. Failed searches | `search/suggest.py`, admin "Failed searches" | Spelling suggestions for the top 20; "Ask AI" uses the AI route for "Tagging" and only offers a generic that is already listed. Accepting adds an audited synonym. |
 | 7. University sync | `universities.sync.sync_countries` | Several countries per run within 20 s; one failing country no longer loses the others. |
 
-To get the digest on your phone: open Account on the site, turn on notifications. To use "Ask AI":
-admin panel > AI providers, route the "Tagging / deduplication hints" task to the provider you use
-for Claude (the client is OpenAI-compatible; a native Anthropic SDK provider would be a separate
-change).
+To get the digest on your phone: admin panel > Notifications. It shows whether push is set up on
+the server (VAPID keys; setup steps are on that screen), turns notifications on for the device you
+are using, sends you a test, and lets an admin send the digest at once.
+
+"Ask AI" uses the provider routed to the "Tagging / deduplication hints" task if there is one;
+otherwise it uses Claude through the assistant's official Anthropic SDK client
+(`ANTHROPIC_API_KEY`, model `ASSISTANT_MODEL`). With neither, it says what to set up.
+
+Pausing a source (Source registry > Pause) now also leaves it out of the daily GitHub sync's checks
+and alert, so an unreachable source no longer fails the job every day. Resume brings both back.
 
 ## Original gaps (kept for reference)
 

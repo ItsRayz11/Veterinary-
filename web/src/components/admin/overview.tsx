@@ -62,8 +62,9 @@ function NeedsAttention({ go }: { go: (k: SectionKey) => void }) {
         </ul>
       )}
       <p className="mt-2 text-xs text-muted">
-        Sent each morning as a notification to staff who turned notifications on in Account. Browser
-        errors not seen for 14 days are closed automatically and reopen if they happen again.
+        Sent each morning as a notification to staff who turned notifications on (Notifications, in
+        this panel). Browser errors not seen for 14 days are closed automatically and reopen if they
+        happen again.
       </p>
     </section>
   );

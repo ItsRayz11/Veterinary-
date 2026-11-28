@@ -36,7 +36,7 @@ class Command(BaseCommand):
             if not sources:
                 raise CommandError(f"No data source {opts['source']!r}.")
         cache: dict = {}
-        for source in sources.filter(enabled=True):
+        for source in sources.filter(enabled=True, paused=False):  # paused: not checked, no alert
             datasources.check_source(source, cache)
             state = "ok" if source.last_ok else (source.last_error or "unreachable")
             flag = " [update available]" if source.update_available else ""
