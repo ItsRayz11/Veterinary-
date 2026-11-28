@@ -15,6 +15,7 @@
 - Vercel Cron keeps only the cheap reachability checks (`/api/v1/cron/data-sources/`); a full import is too long for a 30 s function.
 - Manual: `python manage.py sync_data_sources --source uk-vmd-pid --force`; Admin > Data sources has "Check selected sources now".
 - A source needs `import_enabled` and confirmed terms. Everything imported is "Imported, not reviewed".
+- A paused source (admin panel > Source registry > Pause) is not checked and never fails the `--alert` run; Resume restores both.
 
 ## Safety properties
 - Idempotent: re-running changes nothing (rows are matched by registration number; files by checksum).

@@ -436,3 +436,24 @@ def test_staff_panel_lists_sources_with_status_and_import_state(monkeypatch):
     assert by_name["FARAD (withdrawal interval guidance)"]["can_import"] is False
     anonymous = APIClient().get("/api/v1/staff/automation/")
     assert anonymous.status_code in (401, 403)
+
+
+def test_a_paused_source_is_not_checked_and_never_fails_the_daily_alert(monkeypatch, capsys):
+    """An admin pauses an unreachable source (for example a regulator site that times out) so the
+    daily sync stops failing; resuming it brings the checks and the alert back."""
+    source = DataSource.objects.get(slug="farad")
+    DataSource.objects.filter(pk=source.pk).update(
+        consecutive_failures=datasources.FAILURES_BEFORE_ALERT + 5, last_error="TimeoutError"
+    )
+    assert any(p.startswith("farad:") for p in datasources.source_problems())
+
+    DataSource.objects.filter(pk=source.pk).update(paused=True)
+    assert not any(p.startswith("farad:") for p in datasources.source_problems())
+    calls = fake_fetch(monkeypatch)
+    call_command("sync_data_sources", "--check-only")
+    assert "farad:" not in capsys.readouterr().out
+    urls = {u for u in (source.landing_url, source.data_url) if u}
+    assert urls and not any(url in urls for url, _ in calls)
+
+    DataSource.objects.filter(pk=source.pk).update(paused=False)
+    assert any(p.startswith("farad:") for p in datasources.source_problems())

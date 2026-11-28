@@ -351,10 +351,11 @@ FAILURES_BEFORE_ALERT = 3
 
 
 def source_problems(now=None) -> list[str]:
-    """Human-readable alerts: sources failing repeatedly, or import-enabled ones gone stale."""
+    """Human-readable alerts: sources failing repeatedly, or import-enabled ones gone stale.
+    A source an admin paused is left out until it is resumed."""
     now = now or timezone.now()
     out = []
-    for s in DataSource.objects.filter(enabled=True):
+    for s in DataSource.objects.filter(enabled=True, paused=False):
         if s.consecutive_failures >= FAILURES_BEFORE_ALERT:
             out.append(
                 f"{s.slug}: unreachable {s.consecutive_failures} checks in a row ({s.last_error})"

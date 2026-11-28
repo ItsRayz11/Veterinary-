@@ -23,6 +23,7 @@ import { CoverageTab, MissesTab } from "./coverage-tab";
 import { MarketTab } from "./market-tab";
 import { AutomationTab } from "./automation-tab";
 import { ErrorsTab } from "./errors-tab";
+import { NotificationsTab } from "./notifications-tab";
 import { ImportsTab } from "./imports-tab";
 import { ListingsTab } from "./listings-tab";
 import { NAV, canSee, parseSection, type SectionKey } from "./nav";
@@ -370,6 +371,7 @@ export function AdminPanel() {
             {tab === "ai" && user.role === "admin" && <AiTab />}
             {tab === "automation" && <AutomationTab />}
             {tab === "errors" && <ErrorsTab />}
+            {tab === "notifications" && <NotificationsTab isAdmin={user.role === "admin"} />}
             {tab === "audit" && user.role === "admin" && <AuditLogTab />}
           </div>
         </main>

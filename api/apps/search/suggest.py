@@ -2,7 +2,8 @@
 
 Two sources of suggestions, both pointing only at generics already in the public catalogue:
 - spelling: the search's own typo-tolerant matcher (trigram on Postgres, difflib elsewhere);
-- AI (on request): the provider routed for "tagging" names the international nonproprietary name
+- AI (on request): the provider routed for "tagging" (or, without one, Claude via the assistant's
+  Anthropic client) names the international nonproprietary name
   the term most likely refers to. The answer is used only if that exact name (or a synonym of it)
   is already listed, and it is always shown as an AI suggestion for a person to accept.
 
@@ -63,14 +64,34 @@ def _listed_generic_named(name: str) -> Generic | None:
     return syn.generic if syn else None
 
 
+def _ask(term: str, actor=None) -> str:
+    """The provider an admin routed to "tagging" wins; without one, Claude through the official
+    Anthropic SDK client the assistant already uses (ANTHROPIC_API_KEY)."""
+    from apps.ai.client import AIError, minimise, run_task
+    from apps.ai.models import AITaskRoute
+
+    if AITaskRoute.objects.filter(task=AI_TASK, enabled=True).exists():
+        return run_task(AI_TASK, term, system=AI_SYSTEM, actor=actor)
+    from apps.assistant.llm import LLMError, get_llm
+
+    llm = get_llm()
+    if llm is None:
+        raise AIError(
+            "No AI is set up: add ANTHROPIC_API_KEY on the API, or route the Tagging task to a "
+            "provider in AI providers."
+        )
+    try:
+        return llm.complete(AI_SYSTEM, minimise(term))
+    except LLMError as exc:
+        raise AIError(str(exc)) from exc
+
+
 def ai_suggestion(miss: SearchMiss, actor=None) -> dict:
     """Ask the configured provider. Returns {"suggestions": [...], "answer": str, "note": str}.
 
     Raises ai.client.AIError (safe to show) when no provider is set up or the call fails.
     """
-    from apps.ai.client import run_task
-
-    raw = run_task(AI_TASK, miss.example or miss.query, system=AI_SYSTEM, actor=actor)
+    raw = _ask(miss.example or miss.query, actor)
     answer = (raw or "").strip().splitlines()[0].strip(" .\"'`")[:100] if raw else ""
     if not answer or answer.upper() == "UNKNOWN":
         return {"suggestions": [], "answer": "", "note": "The AI did not recognise this term."}

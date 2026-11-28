@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Alert } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/forms";
 import { apiFetch, apiSend } from "@/lib/client-api";
@@ -8,8 +8,24 @@ import { keyToBytes, pushSupported } from "@/lib/push";
 
 type State = "loading" | "unsupported" | "off-server" | "blocked" | "off" | "on";
 
-/** Opt in to a notice when a job or scholarship you posted is approved or declined. */
-export function NotificationSettings() {
+const DEFAULT_DESCRIPTION =
+  "Get a notice on this device when a job or scholarship you posted is approved or declined. Nothing else is sent, and you can turn it off at any time.";
+
+/**
+ * Opt this device in or out of web push. The Account page uses the default wording; the review
+ * panel passes its own (staff also get the daily digest) and asks to see why it is unavailable.
+ */
+export function NotificationSettings({
+  description = DEFAULT_DESCRIPTION,
+  onChange,
+  showUnavailable = false,
+}: {
+  description?: ReactNode;
+  /** Called after this device is turned on or off. */
+  onChange?: () => void;
+  /** Explain an unsupported browser or a server without push instead of rendering nothing. */
+  showUnavailable?: boolean;
+} = {}) {
   const [state, setState] = useState<State>("loading");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,6 +63,7 @@ export function NotificationSettings() {
       });
       await apiSend("POST", "/push/subscribe", sub.toJSON());
       setState("on");
+      onChange?.();
     } catch {
       setError("Could not turn notifications on. Please try again.");
     } finally {
@@ -65,6 +82,7 @@ export function NotificationSettings() {
         await sub.unsubscribe();
       }
       setState("off");
+      onChange?.();
     } catch {
       setError("Could not turn notifications off. Please try again.");
     } finally {
@@ -72,17 +90,24 @@ export function NotificationSettings() {
     }
   }
 
-  if (state === "loading" || state === "unsupported" || state === "off-server") return null;
+  if (state === "loading") return null;
+  if (state === "unsupported" || state === "off-server") {
+    if (!showUnavailable) return null;
+    return (
+      <p className="text-sm text-muted">
+        {state === "unsupported"
+          ? "This browser cannot receive notifications. On iPhone and iPad, add the site to the Home Screen first, then open it from there."
+          : "Notifications are not switched on for the site yet (see above)."}
+      </p>
+    );
+  }
 
   return (
     <section aria-labelledby="notify-heading" className="space-y-2 card p-4">
       <h2 id="notify-heading" className="text-lg font-semibold">
         Notifications
       </h2>
-      <p className="text-sm text-muted">
-        Get a notice on this device when a job or scholarship you posted is approved or declined.
-        Nothing else is sent, and you can turn it off at any time.
-      </p>
+      <p className="text-sm text-muted">{description}</p>
       {error && <Alert tone="danger">{error}</Alert>}
       {state === "blocked" && (
         <p className="text-sm">

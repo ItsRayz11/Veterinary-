@@ -69,7 +69,7 @@ def test_accept_refuses_hidden_generics_and_conflicting_synonyms(generic, editor
 def test_ai_answer_is_used_only_when_that_generic_is_listed(generic, monkeypatch):
     m = miss("valbazen")
     answers = iter(["Albendazole.", "Fenbendazole", "UNKNOWN"])
-    monkeypatch.setattr("apps.ai.client.run_task", lambda *a, **k: next(answers))
+    monkeypatch.setattr(suggest, "_ask", lambda *a, **k: next(answers))
     hit = suggest.ai_suggestion(m)
     assert hit["suggestions"] == [{"slug": generic.slug, "name": "Albendazole", "via": "ai"}]
     unknown_to_us = suggest.ai_suggestion(m)
@@ -96,6 +96,39 @@ def test_ai_errors_are_safe_to_show(generic, monkeypatch):
     def boom(*a, **k):
         raise AIError("Provider returned HTTP 429.")
 
-    monkeypatch.setattr("apps.ai.client.run_task", boom)
+    monkeypatch.setattr(suggest, "_ask", boom)
     with pytest.raises(AIError, match="429"):
         suggest.ai_suggestion(miss("valbazen"))
+
+
+def test_without_a_tagging_route_ask_ai_uses_claude_and_says_when_nothing_is_set_up(
+    generic, monkeypatch, settings
+):
+    class FakeClaude:
+        model = "claude-opus-5-5"
+
+        def complete(self, system, user):
+            assert "INN" in system and user == "valbazen"
+            return "Albendazole"
+
+    monkeypatch.setattr("apps.assistant.llm.get_llm", lambda: FakeClaude())
+    m = miss("valbazen")
+    assert suggest.ai_suggestion(m)["suggestions"][0]["via"] == "ai"
+
+    monkeypatch.setattr("apps.assistant.llm.get_llm", lambda: None)
+    with pytest.raises(AIError, match="ANTHROPIC_API_KEY"):
+        suggest.ai_suggestion(m)
+
+
+def test_an_admin_routed_provider_wins_over_the_default(generic, monkeypatch):
+    from apps.ai.models import AIProvider, AITaskRoute
+
+    provider = AIProvider.objects.create(
+        kind="openrouter", base_url="https://openrouter.ai/api/v1", enabled=True
+    )
+    AITaskRoute.objects.create(task="tagging", provider=provider, model="any-model")
+    monkeypatch.setattr("apps.ai.client.run_task", lambda *a, **k: "Albendazole")
+    monkeypatch.setattr(
+        "apps.assistant.llm.get_llm", lambda: (_ for _ in ()).throw(AssertionError("not used"))
+    )
+    assert suggest.ai_suggestion(miss("valbazen"))["suggestions"][0]["slug"] == generic.slug

@@ -147,3 +147,34 @@ def test_informational_items_alone_do_not_send_a_notification(monkeypatch):
     SearchMiss.objects.create(query="zzz", example="zzz", count=5)
     out = attention.staff_digest()
     assert out["items"] == 1 and sent == []
+
+
+def test_staff_can_check_push_status_and_send_a_test_only_to_themselves(monkeypatch, settings):
+    from apps.push.models import PushSubscription
+
+    settings.VAPID_PUBLIC_KEY, settings.VAPID_PRIVATE_KEY = "pub", "priv"
+    sent = []
+    monkeypatch.setattr(
+        "apps.push.service._send_one", lambda sub, payload: sent.append(sub.user_id)
+    )
+    me = User.objects.create_user("ed", password="x", role=Role.EDITOR)
+    other = User.objects.create_user("other", password="x", role=Role.ADMIN)
+    for i, u in enumerate((me, other)):
+        PushSubscription.objects.create(
+            user=u, endpoint=f"https://push.example.org/{i}", p256dh="k", auth="a"
+        )
+    client = APIClient()
+    assert client.get("/api/v1/staff/notifications/").status_code in (401, 403)
+    client.force_authenticate(me)
+    status = client.get("/api/v1/staff/notifications/").json()
+    assert status["server_enabled"] is True and status["devices"] == 1 and "delivered" not in status
+    out = client.post("/api/v1/staff/notifications/").json()
+    assert out["delivered"] == 1 and sent == [me.pk]  # never another person's devices
+
+
+def test_push_status_says_when_the_server_is_not_set_up(settings):
+    settings.VAPID_PUBLIC_KEY = settings.VAPID_PRIVATE_KEY = ""
+    client = APIClient()
+    client.force_authenticate(User.objects.create_user("ed", password="x", role=Role.EDITOR))
+    out = client.post("/api/v1/staff/notifications/").json()
+    assert out["server_enabled"] is False and out["delivered"] == 0
