@@ -16,6 +16,40 @@ from .models import (
 )
 
 MODERATOR_ROLES = {Role.MODERATOR, Role.ADMIN}
+SCREEN_REFERENCES = 50  # most recent published prices compared against
+
+
+def screen_submission(sub: PriceSubmission) -> dict:
+    """Compare a new-price submission with published prices for the same pack, country,
+    currency and price type. Advisory only: a moderator still decides; nothing is approved or
+    rejected here. Pure arithmetic (median), no AI."""
+    from apps.automation.policy import is_price_outlier
+
+    empty = {"references": 0, "median": None, "outlier": False}
+    if sub.kind != SubmissionKind.NEW_PRICE or sub.amount is None:
+        return empty
+    currency = sub.currency or sub.country.currency_code
+    amounts = [
+        float(a)
+        for a in PriceRecord.objects.published()
+        .filter(
+            pack_id=sub.pack_id,
+            country_id=sub.country_id,
+            currency=currency,
+            price_type=sub.price_type,
+        )
+        .order_by("-observed_on")
+        .values_list("amount", flat=True)[:SCREEN_REFERENCES]
+    ]
+    if not amounts:
+        return empty
+    ordered = sorted(amounts)
+    median = ordered[len(ordered) // 2]
+    return {
+        "references": len(amounts),
+        "median": f"{median:.2f}",
+        "outlier": is_price_outlier(float(sub.amount), amounts),
+    }
 
 
 def _check_moderator(user):

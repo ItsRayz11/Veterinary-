@@ -1,6 +1,6 @@
 # Automation plan: what still needs a person, and what does not have to
 
-Status 2026-11-27. Builds on `REVIEW_PIPELINE.md`, `DATA_SYNC.md` and `PUBLICATION_TIERS.md`.
+Status 2026-11-28: items 1-7 built (see "Built" below). Builds on `REVIEW_PIPELINE.md`, `DATA_SYNC.md` and `PUBLICATION_TIERS.md`.
 
 ## The line that does not move
 
@@ -24,7 +24,24 @@ decisions arrive pre-checked, grouped and one click away.
 | Listing expiry (jobs, scholarships) | `ListingQuerySet` filters on `expires_on` | on read |
 | Interrupted runs closed as failed | `tasks.run_task` | each run |
 
-## Gaps, in priority order
+## Built (2026-11-28)
+
+| Item | Where | Notes |
+| --- | --- | --- |
+| 1. Staff digest | `automation/attention.py`, task `staff-digest` (Vercel cron 07:00 UTC) | Web push to staff who enabled notifications; quiet days and informational-only days send nothing. Same list on the admin dashboard ("Needs attention", `GET /api/v1/staff/attention/`). Email is not configured on the server, so there is no email copy yet. |
+| 2. Missed runs | `attention.missed_runs` | A scheduled task with no run for 26 h is listed as "has not run on schedule". |
+| 3. Price outliers | `pricing.services.screen_submission` | Shown on each pending submission (typical price, number compared). Advisory only. |
+| 4. Image retry backoff | `images.retry_due` | Correction: failed images were already retried automatically; what was missing was backoff (1, 2, 4 days). The admin "Retry" button still works at any time. |
+| 5. Stale errors | `attention.close_stale_errors` (in the digest task) | 14 days unseen; a new occurrence reopens. |
+| 6. Failed searches | `search/suggest.py`, admin "Failed searches" | Spelling suggestions for the top 20; "Ask AI" uses the AI route for "Tagging" and only offers a generic that is already listed. Accepting adds an audited synonym. |
+| 7. University sync | `universities.sync.sync_countries` | Several countries per run within 20 s; one failing country no longer loses the others. |
+
+To get the digest on your phone: open Account on the site, turn on notifications. To use "Ask AI":
+admin panel > AI providers, route the "Tagging / deduplication hints" task to the provider you use
+for Claude (the client is OpenAI-compatible; a native Anthropic SDK provider would be a separate
+change).
+
+## Original gaps (kept for reference)
 
 ### 1. Tell staff when something needs them (highest value, small)
 Today nothing reaches staff unless they open `/admin-panel`. Push (`apps/push/service.notify`) is

@@ -32,6 +32,9 @@ urlpatterns = [
     path("staff/country-coverage/", views.country_coverage),
     path("staff/search-misses/", views.search_misses),
     path("staff/search-misses/<int:pk>/resolve/", views.search_miss_resolve),
+    path("staff/search-misses/<int:pk>/accept/", views.search_miss_accept),
+    path("staff/search-misses/<int:pk>/ai-suggest/", views.search_miss_ai),
+    path("staff/attention/", views.attention),
     path("staff/automation/", views.automation_status),
     path("staff/automation/run/<str:task>/", views.automation_run),
 ]

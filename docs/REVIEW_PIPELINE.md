@@ -12,7 +12,7 @@ store eligible images in R2 -> assess (group facets, completeness, duplicates, c
 recommendation). `universities-sync` imports one country per run. Neither task changes a record's
 review status.
 
-Schedules (`api/vercel.json`): `universities-sync` 05:30, `review-pipeline` 06:00 UTC daily.
+Schedules (`api/vercel.json`): `universities-sync` 05:30 (several countries per run), `review-pipeline` 06:00, `staff-digest` 07:00 UTC daily (see `AUTOMATION_PLAN.md`).
 Elsewhere: `python manage.py run_task review-pipeline`. Admin "Run pipeline now" also works.
 Existing data: `python manage.py backfill_sources` (also run in the production build).
 

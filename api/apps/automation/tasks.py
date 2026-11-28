@@ -266,10 +266,18 @@ def review_pipeline() -> dict:
 
 
 def universities_sync() -> dict:
-    """Import veterinary schools for the country synced longest ago (unreviewed records only)."""
-    from apps.universities.sync import sync_next_country
+    """Import veterinary schools for the countries synced longest ago, as many as fit the time
+    budget (unreviewed records only)."""
+    from apps.universities.sync import sync_countries
 
-    return sync_next_country()
+    return sync_countries()
+
+
+def staff_digest() -> dict:
+    """Close stale browser errors and push one digest of what needs a person (attention.py)."""
+    from .attention import staff_digest as run
+
+    return run()
 
 
 TASKS = {
@@ -278,6 +286,7 @@ TASKS = {
     "data-sources": check_data_sources,
     "universities-sync": universities_sync,
     "review-pipeline": review_pipeline,
+    "staff-digest": staff_digest,
 }
 
 
