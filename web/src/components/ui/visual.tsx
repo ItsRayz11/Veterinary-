@@ -23,8 +23,8 @@ export function PageTitle({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <IconChip category={category} size="lg" />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{children}</h1>
+      <IconChip category={category} size="md" />
+      <h1 className="text-[32px] sm:text-[40px]">{children}</h1>
       {help && <HelpTip label={helpLabel}>{help}</HelpTip>}
     </div>
   );
@@ -43,9 +43,9 @@ export function RelatedResources({
           <li key={i.href}>
             <Link
               href={i.href}
-              className="neo inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm"
+              className="neo inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] px-3 text-sm"
             >
-              <CategoryIcon category={i.category} size={15} className="text-primary" />
+              <CategoryIcon category={i.category} size={16} className="text-muted" />
               {i.label}
             </Link>
           </li>
@@ -59,24 +59,21 @@ export function RelatedResources({
 export function SectionHeader({
   id,
   title,
-  category,
   action,
 }: {
   id: string;
   title: string;
-  category?: CategoryName;
   action?: { href: string; label: string };
 }) {
   return (
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 id={id} className="flex items-center gap-2 text-base font-semibold tracking-tight">
-        {category && <IconChip category={category} size="sm" />}
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <h2 id={id} className="text-lg font-medium">
         {title}
       </h2>
       {action && (
         <Link
           href={action.href}
-          className="inline-flex items-center gap-1 rounded-md px-1 py-1.5 text-sm text-primary hover:underline"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1 text-sm text-primary underline-offset-4 hover:underline"
         >
           {action.label}
           <ArrowRight size={14} aria-hidden="true" />
@@ -98,7 +95,7 @@ export function MetadataBadge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+      className={`inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-medium ${
         tone ? `tone-${tone} bg-[var(--tone-bg)] text-[var(--tone)]` : "bg-surface-2 text-muted"
       }`}
     >
@@ -138,20 +135,20 @@ export function FeatureCard({
   return (
     <Link
       href={href}
-      className={`card card-link prism-edge group flex gap-3 p-4 ${t} ${
+      className={`card card-link group flex gap-4 p-4 sm:p-5 ${t} ${
         layout === "stack" ? "flex-col" : "items-center"
       }`}
     >
       {lead ?? <IconChip category={category} icon={icon} tone={tone} />}
       <span className="min-w-0 flex-1">
         <span className="block font-medium leading-snug">{title}</span>
-        {desc && <span className="mt-0.5 line-clamp-2 block text-sm text-muted">{desc}</span>}
+        {desc && <span className="mt-0.5 line-clamp-2 text-sm text-muted">{desc}</span>}
         {meta && <span className="mt-2 flex flex-wrap items-center gap-1.5">{meta}</span>}
       </span>
       <ArrowRight
         size={16}
         aria-hidden="true"
-        className="shrink-0 self-center text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+        className="shrink-0 self-center text-muted transition-[color,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-primary"
       />
     </Link>
   );
@@ -162,26 +159,27 @@ export function CalculatorCard({
   slug,
   title,
   desc,
-  tone = "violet",
 }: {
   href: string;
   slug: string;
   title: string;
   desc?: string;
-  tone?: Tone;
 }) {
   return (
-    <Link href={href} className="card card-link prism-edge group flex h-full flex-col gap-3 p-4">
-      <span
-        className={`tone-${tone} flex h-20 items-center justify-center rounded-lg bg-[var(--tone-bg)]`}
-      >
-        <CalcArt slug={slug} tone={tone} className="h-14 w-[4.5rem]" />
+    // A compact row on phones (the list stays scannable), the illustrated tile from sm up.
+    <Link
+      href={href}
+      className="card card-link group flex h-full items-center gap-4 p-4 sm:flex-col sm:items-stretch"
+    >
+      <span className="flex size-16 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-surface-2 sm:h-24 sm:w-auto">
+        <CalcArt slug={slug} className="h-10 w-14 sm:h-14 sm:w-[4.5rem]" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-medium leading-snug">{title}</span>
-        {desc && <span className="mt-0.5 line-clamp-2 block text-sm text-muted">{desc}</span>}
+        {desc && <span className="mt-0.5 line-clamp-2 text-sm text-muted">{desc}</span>}
       </span>
-      <span className="inline-flex items-center gap-1 text-sm text-primary">
+      <ArrowRight size={16} aria-hidden="true" className="shrink-0 text-muted sm:hidden" />
+      <span className="hidden items-center gap-1 text-sm text-primary sm:inline-flex">
         Open calculator
         <ArrowRight
           size={14}
@@ -212,9 +210,9 @@ export function DocumentCard({
       href={href}
       target="_blank"
       rel="noopener noreferrer nofollow"
-      className="card card-link tone-blue prism-edge group flex h-full gap-3 p-4"
+      className="card card-link tone-blue group flex h-full gap-4 p-4 sm:p-5"
     >
-      <span className="relative flex h-16 w-12 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-[var(--tone)] shadow-[3px_3px_0_var(--tone-bg)]">
+      <span className="relative flex h-16 w-12 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-[var(--tone)] shadow-[3px_3px_0_var(--surface-2)]">
         <FileText size={22} strokeWidth={1.5} aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
@@ -262,7 +260,7 @@ export function CountryHero({
           <div className="flex items-center gap-4">
             <Flag iso2={iso2} name={name} className="h-12 w-[4.5rem]" />
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+              <h1 className="text-[32px] sm:text-[40px]">{name}</h1>
               {regulator && (
                 <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
                   <Landmark size={14} aria-hidden="true" />
@@ -274,18 +272,18 @@ export function CountryHero({
           <dl className="mt-5 grid grid-cols-2 gap-3 sm:max-w-md">
             <div className="card tone-teal p-3">
               <dt className="flex items-center gap-1.5 text-xs text-muted">
-                <Pill size={14} aria-hidden="true" className="text-[var(--tone)]" />
+                <Pill size={14} aria-hidden="true" className="text-muted" />
                 Products listed
               </dt>
-              <dd className="mt-1 text-xl font-semibold">{productCount}</dd>
+              <dd className="mt-1 text-2xl font-medium tabular-nums">{productCount}</dd>
             </div>
             {universityCount !== undefined && (
               <div className="card card-link tone-blue relative p-3">
                 <dt className="flex items-center gap-1.5 text-xs text-muted">
-                  <CategoryIcon category="universities" size={14} className="text-[var(--tone)]" />
+                  <CategoryIcon category="universities" size={14} className="text-muted" />
                   Veterinary schools
                 </dt>
-                <dd className="mt-1 text-xl font-semibold">
+                <dd className="mt-1 text-2xl font-medium tabular-nums">
                   <Link
                     href={`/universities?country=${iso2}`}
                     className="after:absolute after:inset-0 after:content-['']"
@@ -299,10 +297,10 @@ export function CountryHero({
             {currency && (
               <div className="card tone-amber p-3">
                 <dt className="flex items-center gap-1.5 text-xs text-muted">
-                  <Coins size={14} aria-hidden="true" className="text-[var(--tone)]" />
+                  <Coins size={14} aria-hidden="true" className="text-muted" />
                   Price currency
                 </dt>
-                <dd className="mt-1 text-xl font-semibold">{currency}</dd>
+                <dd className="mt-1 text-2xl font-medium tabular-nums">{currency}</dd>
               </div>
             )}
           </dl>

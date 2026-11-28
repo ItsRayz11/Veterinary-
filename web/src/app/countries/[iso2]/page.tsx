@@ -88,7 +88,11 @@ export default async function CountryPage({
           {pages > 1 && (
             <nav aria-label="Pagination" className="flex items-center justify-between text-sm">
               {page > 1 ? (
-                <Link className="neo rounded-full px-3 py-2" href={href(page - 1)} rel="prev">
+                <Link
+                  className="neo inline-flex min-h-11 items-center rounded-[var(--radius-md)] px-4"
+                  href={href(page - 1)}
+                  rel="prev"
+                >
                   Previous
                 </Link>
               ) : (
@@ -98,7 +102,11 @@ export default async function CountryPage({
                 Page {page} of {pages}
               </span>
               {page < pages ? (
-                <Link className="neo rounded-full px-3 py-2" href={href(page + 1)} rel="next">
+                <Link
+                  className="neo inline-flex min-h-11 items-center rounded-[var(--radius-md)] px-4"
+                  href={href(page + 1)}
+                  rel="next"
+                >
                   Next
                 </Link>
               ) : (

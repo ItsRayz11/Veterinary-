@@ -26,11 +26,18 @@ describe("AppShell responsive chrome", () => {
     expect(nav).not.toContain("sm:hidden");
   });
 
+  // The footer is the last thing on the page, so it reserves the space under the fixed tab bar.
   it("only drops the bottom padding reserved for the tab bar when the tab bar is hidden", () => {
-    const main = html.match(/<main[^>]*>/)![0];
-    expect(main).toContain("pb-24");
-    expect(main).toContain("lg:pb-8");
-    expect(main).not.toContain("sm:pb-8");
+    const footer = html.match(/<footer[^>]*>/)![0];
+    expect(footer).toContain("pb-24");
+    expect(footer).toContain("lg:pb-8");
+    expect(footer).not.toContain("sm:pb-8");
+  });
+
+  it("keeps the phone tab bar to five targets (four tabs and More)", () => {
+    const nav = html.match(/<nav aria-label="Mobile"[\s\S]*?<\/nav>/)![0];
+    expect(nav.match(/<a /g)).toHaveLength(4);
+    expect(nav).toContain(">More<");
   });
 
   it("gives the sign-in and register links a touch-sized hit area", () => {

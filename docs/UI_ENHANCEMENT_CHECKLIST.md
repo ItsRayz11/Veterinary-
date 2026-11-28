@@ -3,6 +3,8 @@
 Tracks the website-wide enhancement brief. `[x]` done and verified, `[ ]` open.
 
 ## Design system and components
+- [x] Redesign "the formulary" (see [DESIGN.md](DESIGN.md)): neutral ink ramp, one teal accent, Plex Sans + Newsreader, review-mark signature, flat surfaces replacing glass/neumorphism
+- [x] Phone navigation: four tabs plus a More sheet; footer site map on every size
 - [x] Semantic tone tokens (teal, blue, green, violet, amber, red) with dark mode
 - [x] Central icon system (Lucide) with category mapping (`ui/icons.tsx`)
 - [x] Calculator line illustrations (`ui/calc-art.tsx`)

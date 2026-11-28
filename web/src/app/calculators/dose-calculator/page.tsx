@@ -22,7 +22,7 @@ export default async function Page({ searchParams }: PageProps<"/calculators/dos
       />
       <div className="flex items-center gap-4">
         <span className="tone-teal flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-[var(--tone-bg)]">
-          <CalcArt slug="dose-calculator" tone="teal" className="h-12 w-16" />
+          <CalcArt slug="dose-calculator" className="h-12 w-16" />
         </span>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dose calculator</h1>
       </div>

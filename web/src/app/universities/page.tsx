@@ -43,7 +43,7 @@ export default async function UniversitiesIndex({ searchParams }: PageProps<"/un
             <Link
               href="/universities"
               aria-current={country ? undefined : "page"}
-              className={`neo inline-flex min-h-9 items-center rounded-full px-3 ${country ? "" : "font-semibold text-primary"}`}
+              className={`neo inline-flex min-h-11 items-center rounded-[var(--radius-md)] px-3 ${country ? "" : "border-primary font-medium text-primary"}`}
             >
               All countries
             </Link>
@@ -53,7 +53,7 @@ export default async function UniversitiesIndex({ searchParams }: PageProps<"/un
               <Link
                 href={`/universities?country=${c.iso2}`}
                 aria-current={country === c.iso2 ? "page" : undefined}
-                className={`neo inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 ${country === c.iso2 ? "font-semibold text-primary" : ""}`}
+                className={`neo inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-md)] px-3 ${country === c.iso2 ? "border-primary font-medium text-primary" : ""}`}
               >
                 <Flag iso2={c.iso2} className="h-3.5 w-5" />
                 {c.name}

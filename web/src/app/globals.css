@@ -1,30 +1,33 @@
 @import "tailwindcss";
 
-/* Design tokens. Clinical, restrained palette: teal primary, neutral slate surfaces.
-   Semantic status colours are reserved for verification/safety meaning, not decoration. */
+/* Design tokens. "The formulary": quiet ink-grey surfaces like label stock, one teal accent from
+   the brand, and colour reserved for meaning (review status, safety). Decoration never carries
+   colour; photographs and the review mark do. */
 :root {
-  --bg: #f2f7f7;
+  --bg: #f6f7f7;
   --surface: #ffffff;
-  --surface-2: #f0f2f5;
-  --border: #d9dee5;
-  --text: #16202b;
-  --text-muted: #55636f;
+  --surface-2: #eef1f1;
+  --border: #dde3e3;
+  --hairline: rgba(18, 26, 28, 0.08);
+  --text: #121a1c;
+  --text-2: #3e4b51;
+  --text-muted: #56646b;
   --primary: #0b6e6e;
+  --primary-strong: #085858;
   --primary-fg: #ffffff;
+  --primary-tint: #e3f0ef;
   --focus: #1a73e8;
 
-  /* Depth tokens (not contrast-tested: text never sits on these alone, always on a surface). */
-  --glass: rgba(255, 255, 255, 0.68);
-  --glass-border: rgba(255, 255, 255, 0.7);
-  --glass-shadow: 0 8px 32px rgba(11, 52, 55, 0.1);
-  --neo-light: rgba(255, 255, 255, 0.95);
-  --neo-dark: rgba(11, 52, 55, 0.14);
-  --card-shadow: 0 1px 2px rgba(11, 52, 55, 0.06), 0 4px 16px rgba(11, 52, 55, 0.06);
-  --glow-a: rgba(70, 185, 142, 0.22);
-  --glow-b: rgba(8, 126, 121, 0.16);
+  /* Depth: neutral, small, never coloured. */
+  --shadow-sm: 0 1px 2px rgba(18, 26, 28, 0.05);
+  --shadow-md: 0 1px 2px rgba(18, 26, 28, 0.04), 0 8px 24px rgba(18, 26, 28, 0.06);
+  --card-shadow: var(--shadow-sm);
 
-  /* Motion: strong ease-out for entrances and press feedback (built-in easings are too weak). */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Motion: one curve for everything, a few durations. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur-menu: 200ms;
+  --dur-enter: 420ms;
 
   --ok: #1b7a3d;
   --ok-bg: #e5f4ea;
@@ -35,14 +38,14 @@
   --info: #1f5fa8;
   --info-bg: #e3eefa;
 
-  /* Semantic accents for category icons (decorative; text never relies on them). */
+  /* Tones survive only for metadata badges that encode a real category. Icons are neutral. */
   --tone-teal: #0b6e6e;
-  --tone-teal-bg: #dff1f0;
+  --tone-teal-bg: #e3f0ef;
   --tone-blue: #1f5fa8;
   --tone-blue-bg: #e3eefa;
   --tone-green: #2a7a3a;
   --tone-green-bg: #e5f4ea;
-  --tone-violet: #6040b0;
+  --tone-violet: #5a3fa6;
   --tone-violet-bg: #ece8f8;
   --tone-amber: #8a5a00;
   --tone-amber-bg: #fdf1d6;
@@ -52,23 +55,21 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e1418;
-    --surface: #151d23;
-    --surface-2: #1c262e;
-    --border: #2b3944;
-    --text: #e6ecf1;
-    --text-muted: #9aa9b5;
-    --primary: #45b3b3;
+    --bg: #0d1213;
+    --surface: #131a1b;
+    --surface-2: #1b2425;
+    --border: #2a3537;
+    --hairline: rgba(236, 242, 242, 0.08);
+    --text: #e9eff0;
+    --text-2: #b9c5c8;
+    --text-muted: #94a3a7;
+    --primary: #4fb8b3;
+    --primary-strong: #6cc9c4;
     --primary-fg: #06201f;
+    --primary-tint: #12302f;
     --focus: #7cb3ff;
-    --glass: rgba(21, 29, 35, 0.66);
-    --glass-border: rgba(255, 255, 255, 0.09);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    --neo-light: rgba(255, 255, 255, 0.05);
-    --neo-dark: rgba(0, 0, 0, 0.55);
-    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
-    --glow-a: rgba(70, 185, 142, 0.12);
-    --glow-b: rgba(69, 179, 179, 0.1);
+    --shadow-sm: 0 0 0 transparent;
+    --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
     --ok: #6fd08f;
     --ok-bg: #14301f;
     --warn: #f0c060;
@@ -98,9 +99,12 @@
   --color-surface-2: var(--surface-2);
   --color-border: var(--border);
   --color-text: var(--text);
+  --color-text-2: var(--text-2);
   --color-muted: var(--text-muted);
   --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
   --color-primary-fg: var(--primary-fg);
+  --color-primary-tint: var(--primary-tint);
   --color-ok: var(--ok);
   --color-ok-bg: var(--ok-bg);
   --color-warn: var(--warn);
@@ -109,33 +113,57 @@
   --color-danger-bg: var(--danger-bg);
   --color-info: var(--info);
   --color-info-bg: var(--info-bg);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-newsreader);
+  --radius-sm: 6px;
+  --radius-md: 10px;
   --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-xl: 18px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background:
-    radial-gradient(60rem 28rem at 8% -6%, var(--glow-a), transparent 70%),
-    radial-gradient(48rem 26rem at 96% 4%, var(--glow-b), transparent 70%), var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
 }
 
-/* Design language. Glass: navigation and featured panels only. Neumorphism: small interactive
-   controls only. Tables, doses, warnings and results stay on flat, opaque surfaces so clinical
-   text is always read against a solid background. */
+/* Page titles are set in the reference-book serif: one voice for every h1 on the site. Unlayered
+   on purpose so it wins over per-page weight utilities and stays consistent. */
+h1 {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* Figures (doses, counts, prices) always line up. */
+.tabular,
+td,
+dd,
+output {
+  font-variant-numeric: tabular-nums;
+}
+
 @layer components {
+  /* Historic name kept so every page adopts the new look: an opaque raised panel, no blur. */
   .glass {
-    background: var(--glass);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
-    backdrop-filter: blur(16px) saturate(150%);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
   }
   .card {
     background: var(--surface);
@@ -145,52 +173,54 @@ body {
   }
   .card-link {
     transition:
-      transform 160ms var(--ease-out),
-      border-color 160ms ease,
-      box-shadow 160ms ease;
+      border-color var(--dur-fast) ease,
+      background-color var(--dur-fast) ease,
+      transform var(--dur-fast) var(--ease-out);
   }
-  /* Hover lift only for real pointers: touch fires sticky false hovers on tap. */
   @media (hover: hover) and (pointer: fine) {
     .card-link:hover {
-      transform: translateY(-2px);
-      border-color: var(--primary);
+      border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
     }
   }
   .card-link:active {
-    transform: scale(0.98);
+    transform: scale(0.985);
   }
+  /* Small interactive control (chips, secondary buttons): flat surface with a hairline. */
   .neo {
     background: var(--surface);
     border: 1px solid var(--border);
-    box-shadow:
-      5px 5px 12px var(--neo-dark),
-      -5px -5px 12px var(--neo-light);
     transition:
-      box-shadow 140ms ease,
-      transform 140ms ease;
+      border-color var(--dur-fast) ease,
+      background-color var(--dur-fast) ease,
+      transform var(--dur-fast) var(--ease-out);
   }
   .neo:hover:not(:disabled) {
-    box-shadow:
-      7px 7px 16px var(--neo-dark),
-      -7px -7px 16px var(--neo-light);
+    background: var(--surface-2);
+    border-color: color-mix(in srgb, var(--text) 18%, var(--border));
   }
   .neo:active:not(:disabled) {
-    box-shadow:
-      inset 3px 3px 7px var(--neo-dark),
-      inset -3px -3px 7px var(--neo-light);
+    transform: scale(0.97);
   }
+  /* Inputs. */
   .neo-inset {
-    background: var(--surface-2);
-    box-shadow:
-      inset 2px 2px 5px var(--neo-dark),
-      inset -2px -2px 5px var(--neo-light);
+    background: var(--surface);
+    transition:
+      border-color var(--dur-fast) ease,
+      box-shadow var(--dur-fast) ease;
+  }
+  .neo-inset:hover {
+    border-color: color-mix(in srgb, var(--text) 22%, var(--border));
+  }
+  .neo-inset:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+    outline: none;
   }
   .bento {
     display: grid;
     gap: 0.75rem;
     grid-template-columns: minmax(0, 1fr);
   }
-  /* Row-layout tiles need ~14rem for their text: one column on phones, two from 30rem. */
   @media (min-width: 30rem) {
     .bento {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -241,89 +271,113 @@ body {
     --tone: var(--tone-red);
     --tone-bg: var(--tone-red-bg);
   }
+  /* Category glyphs are wayfinding, not decoration: one neutral treatment everywhere. */
   .icon-chip {
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    color: var(--tone, var(--primary));
-    background: var(--tone-bg, var(--surface-2));
+    color: var(--text-2);
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
   }
-  /* Soft prism edge on feature cards: a thin tinted top highlight, no extra blur layers. */
   .prism-edge {
-    background-image: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tone, var(--primary)) 7%, transparent),
-      transparent 55%
-    );
+    background-image: none;
   }
   .data-table tbody tr:nth-child(even) {
-    background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+    background: color-mix(in srgb, var(--surface-2) 50%, transparent);
   }
   .data-table tbody tr:hover {
-    background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+    background: var(--primary-tint);
+  }
+  /* The site's signature: the review mark. Filled = reviewed, ring = not yet reviewed. */
+  .review-mark {
+    display: inline-block;
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .review-mark[data-reviewed="false"] {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px currentColor;
   }
 }
 
-/* Entrance motion. CSS-only (compositor-friendly, no JS, no hydration flash): opacity and
-   transform only. Content is fully visible where scroll-driven animation is unsupported. */
+/* One orchestrated entrance, on the homepage hero only: copy rises, then the photo plate. */
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-
-/* Scroll reveal never starts fully transparent, so content stays readable in no-JS renders,
-   full-page captures and crawler snapshots. */
-@keyframes reveal-in {
+@keyframes plate-in {
   from {
-    opacity: 0.45;
-    transform: translateY(12px);
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-
 @keyframes fade-in {
   from {
-    opacity: 0.45;
+    opacity: 0;
+  }
+}
+/* Bottom sheet (mobile "More" menu). */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
   }
 }
 
 @layer utilities {
-  /* Page-load entrance for the hero: its children fade up in a short stagger. The glass
-     container itself is never animated (opacity on a backdrop-filter element flickers). */
   .rise > * {
-    animation: rise-in 280ms var(--ease-out) both;
+    animation: rise-in var(--dur-enter) var(--ease-out) both;
+  }
+  /* The headline is the page's largest paint: it never waits for an animation. */
+  .rise > h1 {
+    animation: none;
   }
   .rise > :nth-child(2) {
-    animation-delay: 40ms;
+    animation-delay: 50ms;
   }
   .rise > :nth-child(3) {
-    animation-delay: 80ms;
+    animation-delay: 100ms;
   }
   .rise > :nth-child(n + 4) {
-    animation-delay: 120ms;
+    animation-delay: 150ms;
   }
-  /* Below-the-fold blocks reveal as they scroll into view. The range is a fixed distance so
-     tall sections do not stay faded while their top is already on screen. */
-  @supports (animation-timeline: view()) {
-    .reveal {
-      animation: reveal-in linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 160px;
-    }
+  .plate-in > * {
+    animation: plate-in 560ms var(--ease-out) both;
+    animation-delay: calc(160ms + var(--i, 0) * 60ms);
+  }
+  /* Kept as a no-op hook: sections no longer fade in on scroll (it read as filler motion and
+     left content washed out in captures). */
+  .reveal {
+    animation: none;
+  }
+  .sheet[open] {
+    animation: sheet-in 320ms var(--ease-out);
+  }
+  .sheet[open]::backdrop {
+    animation: backdrop-in 200ms ease;
   }
   @media print {
     .rise > *,
-    .reveal {
+    .plate-in > * {
       animation: none;
     }
   }
@@ -349,7 +403,7 @@ body {
   inset-inline: 0;
   top: 0;
   z-index: 60;
-  height: 3px;
+  height: 2px;
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
@@ -371,16 +425,22 @@ body {
   }
 }
 
+/* Header bar: the one translucent surface, so content scrolls visibly beneath it. */
+.chrome-bar {
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-color: var(--border);
+}
 @media (prefers-reduced-transparency: reduce) {
-  .glass {
-    background: var(--surface);
+  .chrome-bar {
+    background: var(--bg);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Arrow nudges and similar hover motion elsewhere are decorative: switch them off. */
   *,
   *::before,
   *::after {
@@ -389,20 +449,18 @@ body {
     /* Without this, an infinite skeleton pulse would strobe at 0.01ms per cycle. */
     animation-iteration-count: 1 !important;
   }
-  .card-link,
-  .neo {
-    transition: none;
-  }
-  .card-link:hover,
-  .card-link:active {
+  /* Press feedback is movement: drop it. Tailwind's active:scale-* uses the separate scale property. */
+  .card-link:active,
+  .neo:active:not(:disabled),
+  [class*="active:scale"]:active {
     transform: none;
+    scale: none !important;
   }
   /* Gentler, not zero: keep the fade, drop the movement. */
-  .rise > * {
-    animation: fade-in 0.01ms both;
-  }
-  .reveal {
+  .rise > *,
+  .plate-in > * {
     animation-name: fade-in;
+    animation-delay: 0ms;
   }
 }
 
