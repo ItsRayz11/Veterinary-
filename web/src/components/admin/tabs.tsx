@@ -351,6 +351,27 @@ interface Submission {
   evidence_url: string;
   submitted_by: string;
   created_at: string;
+  /** Advisory comparison with published prices (same pack, country, currency, type). */
+  screening?: { references: number; median: string | null; outlier: boolean };
+}
+
+function Screening({ s }: { s: Submission }) {
+  const sc = s.screening;
+  if (s.kind !== "new_price" || !sc) return null;
+  if (sc.outlier)
+    return (
+      <p className="mt-1 text-xs font-medium text-warn">
+        Far from {sc.references} published prices (typical {s.currency} {sc.median}). Check the
+        evidence before approving.
+      </p>
+    );
+  if (sc.references >= 3)
+    return (
+      <p className="mt-1 text-xs text-muted">
+        In line with {sc.references} published prices (typical {s.currency} {sc.median})
+      </p>
+    );
+  return <p className="mt-1 text-xs text-muted">Too few published prices to compare</p>;
 }
 
 export function PricesTab({ onChanged }: { onChanged: () => void }) {
@@ -399,6 +420,7 @@ export function PricesTab({ onChanged }: { onChanged: () => void }) {
                     {s.kind === "new_price"
                       ? `${s.currency} ${s.amount} (${s.price_type})`
                       : `Reports as incorrect: ${s.target}`}
+                    <Screening s={s} />
                     {s.note && <p className="text-muted">{s.note}</p>}
                     {s.evidence_url && (
                       <a

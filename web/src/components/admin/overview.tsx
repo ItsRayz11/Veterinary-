@@ -7,6 +7,68 @@ import type { SectionKey } from "./nav";
 import type { Summary } from "./admin-panel";
 import { fmt } from "./tabs";
 
+interface Attention {
+  items: { severity: "danger" | "warn" | "info"; section: SectionKey; text: string }[];
+  generated_at: string;
+}
+
+const DOT = { danger: "bg-danger", warn: "bg-warn", info: "bg-muted" } as const;
+
+/** The same list the daily push digest sends; empty means nothing is waiting on a person. */
+function NeedsAttention({ go }: { go: (k: SectionKey) => void }) {
+  const [data, setData] = useState<Attention | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    apiFetch<Attention>("/staff/attention")
+      .then((a) => live && setData(a ?? null))
+      .catch(() => live && setData(null));
+    return () => {
+      live = false;
+    };
+  }, []);
+  if (data === undefined) return <Skeleton className="h-16 w-full" />;
+  if (data === null) return null;
+  return (
+    <section aria-labelledby="attention-h" className="card p-4">
+      <h2 id="attention-h" className="text-sm font-semibold">
+        Needs attention
+      </h2>
+      {data.items.length === 0 ? (
+        <p className="mt-1 flex items-center gap-2 text-sm text-muted">
+          <span className="review-mark text-ok" aria-hidden="true" />
+          Nothing is waiting: every scheduled job ran, no imports are held and no sources are
+          failing.
+        </p>
+      ) : (
+        <ul className="mt-2 divide-y divide-border">
+          {data.items.map((item, i) => (
+            <li key={i}>
+              <button
+                type="button"
+                onClick={() => go(item.section)}
+                className="flex min-h-11 w-full items-center gap-3 py-2 text-left text-sm hover:text-primary"
+              >
+                <span
+                  className={`size-2 shrink-0 rounded-full ${DOT[item.severity]}`}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1">{item.text}</span>
+                <span className="sr-only">
+                  ({item.severity === "danger" ? "urgent" : "to check"})
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-xs text-muted">
+        Sent each morning as a notification to staff who turned notifications on in Account. Browser
+        errors not seen for 14 days are closed automatically and reopen if they happen again.
+      </p>
+    </section>
+  );
+}
+
 interface Auto {
   runs: { id: number; task: string; status: string; at: string; error: string }[];
   broken_sources: { id: number }[];
@@ -71,6 +133,7 @@ export function Overview({
 
   return (
     <div className="space-y-5">
+      <NeedsAttention go={go} />
       <section aria-label="Waiting for a person">
         <h2 className="mb-2 text-sm font-semibold">Waiting for a person</h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import { startStack, type Stack } from "./stack";
 
@@ -23,6 +24,14 @@ test.describe("record that does not exist", () => {
   }
 });
 
+async function openFromMoreSheet(page: Page, label: string) {
+  await page
+    .getByRole("navigation", { name: "Mobile" })
+    .getByRole("button", { name: "More" })
+    .click();
+  await page.getByRole("dialog", { name: "More pages" }).getByRole("link", { name: label }).click();
+}
+
 test.describe("slow data service", () => {
   let stack: Stack;
   test.beforeAll(async () => {
@@ -46,10 +55,8 @@ test.describe("slow data service", () => {
     await page.waitForTimeout(1000);
 
     const started = Date.now();
-    await page
-      .getByRole("navigation", { name: "Mobile" })
-      .getByRole("link", { name: "Universities" })
-      .click();
+    // Phones reach Universities through the tab bar's More sheet.
+    await openFromMoreSheet(page, "Universities");
 
     const bar = page.getByTestId("nav-progress");
     await expect(bar).toHaveCount(1);
@@ -79,10 +86,8 @@ test.describe("slow data service", () => {
     await page.goto("/");
     await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeVisible();
     await page.waitForTimeout(1000);
-    await page
-      .getByRole("navigation", { name: "Mobile" })
-      .getByRole("link", { name: "Jobs" })
-      .click();
+    // Phones reach Jobs through the tab bar's More sheet.
+    await openFromMoreSheet(page, "Jobs");
     const bar = page.getByTestId("nav-progress");
     await expect(bar).toHaveCount(1);
     const anim = await bar.evaluate((e) => getComputedStyle(e, "::before").animationName);

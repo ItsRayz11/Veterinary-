@@ -15,9 +15,11 @@ Nothing is uploaded unless R2 is configured; until then rows simply stay `pendin
 
 import hashlib
 from collections.abc import Callable
+from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.licensing import is_open_license, requires_attribution
@@ -215,6 +217,18 @@ def retry(asset: ImageAsset, **kw) -> ImageAsset:
     return process(asset, **kw)
 
 
+def retry_due(now) -> Q:
+    """Failed assets whose backoff has passed: 1, 2, then 4 days after attempts 1, 2, 3...
+    Re-running the pipeline by hand cannot use up the attempts in minutes; a staff "Retry" in the
+    admin (`retry`) still works at any time."""
+    due = Q(pk__in=[])
+    for n in range(1, MAX_ATTEMPTS):
+        due |= Q(attempts=n, last_attempt_at__lte=now - timedelta(days=2 ** (n - 1)))
+    return Q(status=ImageStatus.FAILED, attempts__lt=MAX_ATTEMPTS) & (
+        due | Q(attempts=0) | Q(last_attempt_at__isnull=True)
+    )
+
+
 def process_pending(limit: int = 5, budget_seconds: float = 12.0, **kw) -> dict:
     """Process eligible assets (pending first, then failed with attempts left) within a budget."""
     import time
@@ -222,7 +236,7 @@ def process_pending(limit: int = 5, budget_seconds: float = 12.0, **kw) -> dict:
     started = time.monotonic()
     done = failed = 0
     qs = ImageAsset.objects.filter(
-        status__in=(ImageStatus.PENDING, ImageStatus.FAILED), attempts__lt=MAX_ATTEMPTS
+        Q(status=ImageStatus.PENDING) | retry_due(timezone.now())
     ).order_by("status", "attempts", "pk")  # 'failed' < 'pending' alphabetically; re-sorted below
     batch = sorted(
         qs[: limit * 4], key=lambda a: (a.status != ImageStatus.PENDING, a.attempts, a.pk)

@@ -8,6 +8,7 @@ from apps.accounts.models import Role
 from apps.accounts.permissions import HasRole, IsEditor, IsModerator
 from apps.automation import assessment, bulk, images, pipeline
 from apps.automation import tasks as automation_tasks
+from apps.automation.attention import report as attention_report
 from apps.automation.models import DataSource, Feed, ImageAsset, JobRun, SourceHealth
 from apps.core.models import AuditLog
 from apps.core.schema import untyped_schema
@@ -15,6 +16,8 @@ from apps.education.models import QuestionReport
 from apps.opportunities.models import Job, ListingStatus, Scholarship
 from apps.pricing import services as price_services
 from apps.pricing.models import PriceSubmission, SubmissionStatus
+from apps.search import suggest
+from apps.search.models import SearchMiss
 
 from . import services, triage
 
@@ -151,6 +154,7 @@ def _serialize_submission(s: PriceSubmission) -> dict:
         "evidence_url": s.evidence_url,
         "submitted_by": s.submitted_by.username,
         "created_at": s.created_at,
+        "screening": price_services.screen_submission(s),
     }
 
 
@@ -256,6 +260,15 @@ def audit_log(request):
             ]
         }
     )
+
+
+@untyped_schema
+@api_view(["GET"])
+@permission_classes([IsEditor])
+def attention(request):
+    """What needs a person now: failed or missed scheduled runs, held imports, broken sources,
+    price outliers, new browser errors, frequent failed searches. Same data as the daily digest."""
+    return Response(attention_report())
 
 
 @untyped_schema
@@ -524,6 +537,8 @@ def source_action(request, pk, action):
 
 # ---------- search misses ----------
 
+SUGGEST_FOR_TOP = 20  # rows that get spelling suggestions (a few fuzzy queries each)
+
 
 @untyped_schema
 @api_view(["GET"])
@@ -536,15 +551,55 @@ def search_misses(request):
     except ValueError:
         limit = 50
     include = request.query_params.get("resolved") == "1"
-    return Response({"results": top_misses(limit, include)})
+    rows = top_misses(limit, include)
+    misses = {m.pk: m for m in SearchMiss.objects.filter(pk__in=[r["id"] for r in rows])}
+    for i, r in enumerate(rows):
+        if i >= SUGGEST_FOR_TOP:  # fuzzy matching is a few queries per row: top entries only
+            r["suggestions"] = []
+            continue
+        r["suggestions"] = (
+            suggest.spelling_suggestions(misses[r["id"]]) if r["id"] in misses else []
+        )
+    return Response({"results": rows})
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def search_miss_accept(request, pk):
+    """Add the failed spelling as a synonym of a listed generic (one click, audited)."""
+    miss = SearchMiss.objects.filter(pk=pk).first()
+    if miss is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    try:
+        synonym = suggest.accept(miss, str(request.data.get("generic", "")), request.user)
+    except ValidationError as exc:
+        return Response({"detail": " ".join(exc.messages)}, status=http.HTTP_400_BAD_REQUEST)
+    return Response(
+        {"id": miss.pk, "resolved": True, "synonym_id": synonym.pk if synonym else None}
+    )
+
+
+@untyped_schema
+@api_view(["POST"])
+@permission_classes([IsEditor])
+def search_miss_ai(request, pk):
+    """Ask the AI provider routed for tagging which listed generic a failed search means."""
+    from apps.ai.client import AIError
+
+    miss = SearchMiss.objects.filter(pk=pk).first()
+    if miss is None:
+        return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)
+    try:
+        return Response(suggest.ai_suggestion(miss, actor=request.user))
+    except AIError as exc:
+        return Response({"detail": str(exc)}, status=http.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @untyped_schema
 @api_view(["POST"])
 @permission_classes([IsEditor])
 def search_miss_resolve(request, pk):
-    from apps.search.models import SearchMiss
-
     miss = SearchMiss.objects.filter(pk=pk).first()
     if miss is None:
         return Response({"detail": "Not found."}, status=http.HTTP_404_NOT_FOUND)

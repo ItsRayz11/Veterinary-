@@ -211,3 +211,70 @@ def test_sitemap_slug_lists(pk, settings):
     assert "updated_at" in rows[0]
     assert rows[0]["unverified"] is True
     assert APIClient().get("/api/v1/products/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_scheduled_sync_covers_several_countries_within_the_time_budget(monkeypatch):
+    from apps.universities import sync
+
+    call_command("seed_reference")
+    now, seen, per_country = [0.0], [], [1.0]
+
+    def fake_sync(iso2, fetch=None):
+        seen.append(iso2)
+        now[0] += per_country[0]
+        return {"country": iso2, "created": 1, "updated": 0, "skipped": 0}
+
+    monkeypatch.setattr(sync, "sync_country", fake_sync)
+    mapped = [c for c in sync.UNIVERSITY_SOURCES if Country.objects.filter(iso2=c).exists()]
+
+    out = sync.sync_countries(clock=lambda: now[0])  # fast: as many as allowed, none twice
+    assert len(seen) == len(set(seen)) == min(len(mapped), sync.MAX_COUNTRIES_PER_RUN)
+    assert out["countries"] == seen and out["created"] == len(seen)
+
+    seen.clear()
+    per_country[0] = 8.0  # slow: stops before the 20 s budget would be overrun
+    sync.sync_countries(clock=lambda: now[0], budget_seconds=20)
+    assert len(seen) == 2
+
+
+@pytest.mark.django_db
+def test_next_country_skips_every_country_a_run_covered():
+    from apps.automation.models import JobRun
+    from apps.universities import sync
+
+    call_command("seed_reference")
+    mapped = [c for c in sync.UNIVERSITY_SOURCES if Country.objects.filter(iso2=c).exists()]
+    assert len(mapped) >= 3
+    JobRun.objects.create(
+        task="universities-sync",
+        status="ok",
+        summary={"country": mapped[0], "countries": mapped[:2]},
+    )
+    assert sync.next_country() not in mapped[:2]
+    assert sync.next_country(exclude=frozenset(mapped[2:3])) not in mapped[:3]
+
+
+@pytest.mark.django_db
+def test_one_failing_country_keeps_the_others_and_all_failing_fails_the_run(monkeypatch):
+    from apps.universities import sync
+
+    call_command("seed_reference")
+    mapped = [c for c in sync.UNIVERSITY_SOURCES if Country.objects.filter(iso2=c).exists()]
+
+    def flaky(iso2, fetch=None):
+        if iso2 == mapped[0]:
+            raise TimeoutError("wikidata slow")
+        return {"country": iso2, "created": 1, "updated": 0, "skipped": 0}
+
+    monkeypatch.setattr(sync, "sync_country", flaky)
+    out = sync.sync_countries(clock=lambda: 0.0)
+    assert mapped[0] not in out["countries"] and out["created"] == len(out["countries"]) >= 1
+    assert any(r.get("error", "").startswith("TimeoutError") for r in out["runs"])
+
+    def broken(iso2, fetch=None):
+        raise TimeoutError("down")
+
+    monkeypatch.setattr(sync, "sync_country", broken)
+    with pytest.raises(TimeoutError):
+        sync.sync_countries(clock=lambda: 0.0)
